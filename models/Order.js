@@ -26,7 +26,7 @@ const orderSchema = new mongoose.Schema({
     default: "Processing" 
   },
   orderDate: { type: Date, default: Date.now },
-  paymentId: { type: mongoose.Schema.Types.ObjectId, ref: "Payment" } // ........................Linking payment table
+  paymentId: { type: mongoose.Schema.Types.ObjectId, ref: "Payment" } // ..................Linking payment table...................
 }, { timestamps: true });
 
 const Order = mongoose.model("Order", orderSchema);
