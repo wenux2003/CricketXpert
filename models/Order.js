@@ -1,33 +1,39 @@
 import mongoose from "mongoose";
 
-// Sub-schema for order items
+// Sub-schema for items in the order
 const orderItemSchema = new mongoose.Schema({
-  productId: { type: mongoose.Schema.Types.ObjectId, ref: "Product", required: true },
-  productName: { type: String, required: true },
-  category: { type: String, enum: ["Bat", "Ball", "Helmet", "Pads", "Gloves", "Other"], required: true },
+  productId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "Product", // Reference to Product table
+    required: true
+  },
   quantity: { type: Number, required: true, min: 1 },
   priceAtOrder: { type: Number, required: true, min: 0 }
 });
 
-// Main order schema
+// Main Order Schema
 const orderSchema = new mongoose.Schema({
-  userId: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true },
-  items: { type: [orderItemSchema], required: true },
-  amount: { type: Number, required: true, min: 0 },
-  address: {
-    street: { type: String, required: true },
-    city: { type: String, required: true },
-    postalCode: { type: String, required: true },
-    country: { type: String, default: "Sri Lanka" }
+  userId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "User", // Reference to User table
+    required: true
   },
-  status: { 
-    type: String, 
-    enum: ["Processing", "Out for Delivery", "Delivered", "Cancelled"], 
-    default: "Processing" 
+  items: {
+    type: [orderItemSchema], // Array of products with quantity & price
+    required: true
+  },
+  totalAmount: { type: Number, required: true, min: 0 },
+  status: {
+    type: String,
+    enum: ["Processing", "Out for Delivery", "Delivered", "Cancelled"],
+    default: "Processing"
   },
   orderDate: { type: Date, default: Date.now },
-  paymentId: { type: mongoose.Schema.Types.ObjectId, ref: "Payment" } // ..................Linking payment table...................
+  paymentId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "Payment", // Reference to Payment table
+    required: true
+  }
 }, { timestamps: true });
 
-const Order = mongoose.model("Order", orderSchema);
-export default Order;
+export default mongoose.model("Order", orderSchema);
