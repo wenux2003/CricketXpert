@@ -5,7 +5,7 @@ const paymentSchema = new mongoose.Schema({
   orderId: { type: mongoose.Schema.Types.ObjectId, ref: 'Order', default: null }, // optional
   paymentType: {
     type: String,
-    enum: ['payroll', 'supplier_payment', 'customer_payment'],
+    enum: ['order_paymnet', 'booking_payment'],
     required: true
   },
   amount: { type: Number, required: true },
