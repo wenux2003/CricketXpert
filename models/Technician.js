@@ -2,7 +2,7 @@ const mongoose = require('mongoose');
 
 const technicianSchema = new mongoose.Schema({
   // Reference to the user table
-  user: { 
+  customerId: { 
     type: mongoose.Schema.Types.ObjectId, 
     ref: 'User', // This links to the User collection
     required: true 

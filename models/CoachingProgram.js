@@ -5,7 +5,7 @@ const coachingProgramSchema = new mongoose.Schema({
   description: { type: String },
   fee: { type: Number },
   duration: { type: Number }, 
-  coachId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },// Meka ref harid balanna poddak
+  coachId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
   certificateTemplate: { type: String }, 
   materials: [{ type: String }], 
 }, { timestamps: true }); 

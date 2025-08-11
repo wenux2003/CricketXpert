@@ -13,10 +13,21 @@ const orderItemSchema = new mongoose.Schema({
 
 // Main Order Schema
 const orderSchema = new mongoose.Schema({
+<<<<<<< Updated upstream
   userId: {
     type: mongoose.Schema.Types.ObjectId,
     ref: "User", // Reference to User table
     required: true
+=======
+  customerId: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true },
+  items: { type: [orderItemSchema], required: true },
+  amount: { type: Number, required: true, min: 0 },
+  address: {
+    street: { type: String, required: true },
+    city: { type: String, required: true },
+    postalCode: { type: String, required: true },
+    country: { type: String, default: "Sri Lanka" }
+>>>>>>> Stashed changes
   },
   items: {
     type: [orderItemSchema], // Array of products with quantity & price
