@@ -8,7 +8,15 @@ const enrollmentSchema = new mongoose.Schema({
     type: String,
     enum: ['pending', 'confirmed', 'cancelled', 'completed'],
     default: 'pending'
-  }
+  },
+  paymentId: { type: mongoose.Schema.Types.ObjectId, ref: 'Payments' },// 👈 Reference to Payment
+
+  progress: [{
+    partName: String,       // e.g. "Lesson 1", "Module 2"
+    completed: Boolean,     // true/false
+    completedAt: Date
+  }]
+
 }, { timestamps: true });
 
-module.exports = mongoose.model('Enrollment', enrollmentSchema);
+module.exports = mongoose.model('Enrollment', enrollmentSchema)

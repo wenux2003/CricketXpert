@@ -7,7 +7,11 @@ const coachingProgramSchema = new mongoose.Schema({
   duration: { type: Number }, 
   coachId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
   certificateTemplate: { type: String }, 
-  materials: [{ type: String }], 
+materials: [{
+  name: String,
+  type: String,
+  url: String
+}]
 }, { timestamps: true }); 
 
 module.exports = mongoose.model('CoachingProgram', coachingProgramSchema);
