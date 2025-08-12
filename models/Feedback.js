@@ -1,9 +1,14 @@
+// models/feedback.model.js
 const mongoose = require('mongoose');
 
 const feedbackSchema = new mongoose.Schema({
   requestId: {
     type: mongoose.Schema.Types.ObjectId,
-    ref: 'RepairRequest',
+    required: true
+  },
+  requestType: {
+    type: String,
+    enum: ['Order', 'RepairRequest', 'CoachingProgram', 'Ground', 'Other'],
     required: true
   },
   customerId: {
@@ -34,3 +39,4 @@ const feedbackSchema = new mongoose.Schema({
 });
 
 module.exports = mongoose.model('Feedback', feedbackSchema);
+
