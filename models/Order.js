@@ -13,7 +13,7 @@ const orderItemSchema = new mongoose.Schema({
 
 // Main Order schema
 const orderSchema = new mongoose.Schema({
-  userId: {
+  customerId: {
     type: mongoose.Schema.Types.ObjectId,
     ref: "User", // Reference to User model
     required: true
@@ -40,7 +40,7 @@ const orderSchema = new mongoose.Schema({
     type: Date,
     default: Date.now
   },
-  payment: {
+  paymentId: {
     type: mongoose.Schema.Types.ObjectId,
     ref: "Payment", // Reference to Payment model
     required: true
