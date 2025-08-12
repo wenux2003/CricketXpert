@@ -1,44 +1,50 @@
 import mongoose from "mongoose";
 
-// Sub-schema for items in the order
+// Schema for items in the order
 const orderItemSchema = new mongoose.Schema({
   productId: {
     type: mongoose.Schema.Types.ObjectId,
-    ref: "Product", // Reference to Product table
+    ref: "Product", // Reference to Product model
     required: true
   },
   quantity: { type: Number, required: true, min: 1 },
   priceAtOrder: { type: Number, required: true, min: 0 }
 });
 
-// Main Order Schema
+// Main Order schema
 const orderSchema = new mongoose.Schema({
-  customerId: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true },
-  items: { type: [orderItemSchema], required: true },
-  amount: { type: Number, required: true, min: 0 },
-  address: {
-    street: { type: String, required: true },
-    city: { type: String, required: true },
-    postalCode: { type: String, required: true },
-    country: { type: String, default: "Sri Lanka" }
-
-  },
-  items: {
-    type: [orderItemSchema], // Array of products with quantity & price
+  userId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "User", // Reference to User model
     required: true
   },
-  totalAmount: { type: Number, required: true, min: 0 },
+  items: {
+    type: [orderItemSchema], // Array of products with quantity and price
+    required: true
+  },
+  amount: {
+    type: Number,
+    required: true
+  },
+  address: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "User", // get address from the User table
+    required: true
+  },
   status: {
     type: String,
     enum: ["Processing", "Out for Delivery", "Delivered", "Cancelled"],
-    default: "Processing"
+    default: "Food Processing"
   },
-  orderDate: { type: Date, default: Date.now },
-  paymentId: {
+  date: {
+    type: Date,
+    default: Date.now
+  },
+  payment: {
     type: mongoose.Schema.Types.ObjectId,
-    ref: "Payment", // Reference to Payment table
+    ref: "Payment", // Reference to Payment model
     required: true
   }
-}, { timestamps: true });
+});
 
 export default mongoose.model("Order", orderSchema);
