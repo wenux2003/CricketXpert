@@ -1,21 +1,18 @@
 const mongoose = require('mongoose');
-const connectDB = require('./config/db'); // Make sure this connects to your MongoDB
+const connectDB = require('./config/db');
 
-// Import your models
+// Import models
 const Coach = require('./models/Coach');
 const CoachingProgram = require('./models/CoachingProgram');
 const Enrollment = require('./models/Enrollment');
-
-console.log("🔍 CoachingProgram schema definition:");
-console.log(JSON.stringify(CoachingProgram.schema.obj, null, 2)); // 👈 Shows what Node is actually using
+const Booking = require('./models/Booking'); // ✅ Added
 
 async function testModels() {
   await connectDB();
 
   try {
-    // 1️⃣ Create a Coach
     const coach = await Coach.create({
-      userId: new mongoose.Types.ObjectId(),
+      CoachId: new mongoose.Types.ObjectId(),
       specialization: "Batting",
       experienceYears: 8,
       availability: [
@@ -28,30 +25,19 @@ async function testModels() {
       assignedSessions: 5
     });
 
-    // 2️⃣ Create a Coaching Program linked to the coach
     const program = await CoachingProgram.create({
       title: "Advanced Batting Techniques",
       description: "Improve batting with advanced drills and techniques.",
       fee: 150,
-      duration: 4, // in weeks
-      coachId: coach.userId,
+      duration: 4,
+      coachId: coach.CoachId, // ✅ Fixed field
       certificateTemplate: "/certificates/batting_template.pdf",
       materials: [
-  {
-    name: 'Batting Guide PDF',
-    type: 'document',
-    url: '/materials/batting_guide.pdf'
-  },
-  {
-    name: 'Batting Video',
-    type: 'video',
-    url: '/materials/batting_video.mp4'
-  }
-]
-
+        { name: 'Batting Guide PDF', type: 'document', url: '/materials/batting_guide.pdf' },
+        { name: 'Batting Video', type: 'video', url: '/materials/batting_video.mp4' }
+      ]
     });
 
-    // 3️⃣ Create an Enrollment linked to the program
     const enrollment = await Enrollment.create({
       customerId: new mongoose.Types.ObjectId(),
       programId: program._id,
@@ -64,8 +50,25 @@ async function testModels() {
       ]
     });
 
-    console.log("✅ Sample data inserted successfully:");
-    console.log({ coach, program, enrollment });
+    const coachingBooking = await Booking.create({
+      customerId: new mongoose.Types.ObjectId(),
+      type: "coaching",
+      enrollmentId: enrollment._id, // ✅ Linked to real enrollment
+      sessionTime: new Date("2025-08-20T14:00:00Z"),
+      paymentId: new mongoose.Types.ObjectId()
+    });
+
+    const groundBooking = await Booking.create({
+      customerId: new mongoose.Types.ObjectId(),
+      type: "ground",
+      groundId: new mongoose.Types.ObjectId(),
+      sessionTime: new Date("2025-08-22T09:00:00Z"),
+      startTime: "09:00 AM",
+      endTime: "11:00 AM",
+      paymentId: new mongoose.Types.ObjectId()
+    });
+
+    console.log("✅ Sample data inserted successfully:", { coach, program, enrollment, coachingBooking, groundBooking });
 
   } catch (error) {
     console.error("❌ Error inserting sample data:", error);
