@@ -2,7 +2,8 @@ const RepairRequest = require('../models/RepairRequest');
 const Technician = require('../models/Technician');
 const User = require('../models/User');
 const { sendEmail } = require('../utils/notification');
-const { pipeRepairReportToResponse } = require('../utils/reportGenerator');
+const { pipeRepairReportToResponse, sendRepairReportEmail } = require('../utils/reportGenerator');
+
 
 /**
  * 1️⃣ Create a new Repair Request (Customer)
@@ -209,48 +210,35 @@ exports.assignTechnician = async (req, res) => {
   }
 };
 
-/**
- * 8️⃣ Update Repair Progress (Technician)
- * - Technician updates progress (% complete) and current stage.
- * - Automatic milestone updates:
- *    - 0–49% → In Repair
- *    - 50–99% → Halfway Completed
- *    - 100% → Ready for Pickup (Stage set to 'Repair Complete')
- * - Customer receives progress email.
- */
 exports.updateProgress = async (req, res) => {
   try {
     const { id } = req.params;
-    const { repairProgress, currentStage } = req.body;
+    const { repairProgress } = req.body;
 
-    // Find request and populate customer email & username
     const request = await RepairRequest.findById(id)
       .populate('customerId', 'email username');
+    if (!request) return res.status(404).json({ error: 'Repair request not found' });
 
-    if (!request) {
-      return res.status(404).json({ error: 'Repair request not found' });
+    if (repairProgress === undefined || repairProgress < 0 || repairProgress > 100) {
+      return res.status(400).json({ error: 'repairProgress must be between 0 and 100' });
     }
 
-    // Update fields only if provided
-    if (repairProgress !== undefined) {
-      if (repairProgress < 0 || repairProgress > 100) {
-        return res.status(400).json({ error: 'Progress must be between 0 and 100' });
-      }
-      request.repairProgress = repairProgress;
+    // Update repairProgress
+    request.repairProgress = repairProgress;
 
-      // Automatic status changes
-      if (repairProgress >= 0 && repairProgress < 50) {
-        request.status = 'In Repair';
-      } else if (repairProgress >= 50 && repairProgress < 100) {
-        request.status = 'Halfway Completed';
-      } else if (repairProgress === 100) {
-        request.status = 'Ready for Pickup';
-        request.currentStage = 'Repair Complete';
-      }
-    }
-
-    if (currentStage) {
-      request.currentStage = currentStage;
+    // Auto-update status & currentStage based on milestones
+    if (repairProgress === 0) {
+      request.status = 'In Repair';
+      request.currentStage = 'Repair Started';
+    } else if (repairProgress > 0 && repairProgress < 50) {
+      request.status = 'In Repair';
+      request.currentStage = 'Repair In Progress';
+    } else if (repairProgress >= 50 && repairProgress < 100) {
+      request.status = 'Halfway Completed';
+      request.currentStage = 'Repair Halfway Completed';
+    } else if (repairProgress === 100) {
+      request.status = 'Ready for Pickup';
+      request.currentStage = 'Repair Complete';
     }
 
     await request.save();
@@ -259,10 +247,10 @@ exports.updateProgress = async (req, res) => {
     await sendEmail(
       request.customerId.email,
       'Repair Progress Updated',
-      `Hello ${request.customerId.username},\n\nYour repair request progress has been updated.\nProgress: ${request.repairProgress}%\nStatus: ${request.status}\nCurrent Stage: ${request.currentStage || 'N/A'}\n\nThank you.`
+      `Hello ${request.customerId.username},\n\nYour repair request progress has been updated:\nProgress: ${request.repairProgress}%\nStatus: ${request.status}\nCurrent Stage: ${request.currentStage}\n\nThank you.`
     );
 
-    res.json({ message: 'Progress updated successfully', request });
+    res.json({ message: 'Progress and current stage updated successfully', request });
 
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -271,9 +259,56 @@ exports.updateProgress = async (req, res) => {
 
 
 /**
- * 9️⃣ Generate Repair Report
- * - Generates PDF report with customer, technician, damage, cost, and timeline details.
+ * 7️⃣ Customer Dashboard
  */
+exports.getCustomerRepairRequests = async (req, res) => {
+  try {
+    const { customerId } = req.params;
+    const requests = await RepairRequest.find({ customerId })
+      .populate('assignedTechnician', 'skills username email')
+      .sort({ createdAt: -1 });
+    res.json(requests);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+};
+
+/**
+ * 8️⃣ Technician Dashboard
+ */
+exports.getTechnicianRepairRequests = async (req, res) => {
+  try {
+    const { technicianId } = req.params;
+    const requests = await RepairRequest.find({ assignedTechnician: technicianId })
+      .populate('customerId', 'username email')
+      .sort({ createdAt: -1 });
+    res.json(requests);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+};
+
+/**
+ * 9️⃣ Service Manager Dashboard
+ */
+exports.getAllRepairRequests = async (req, res) => {
+  try {
+    const requests = await RepairRequest.find()
+      .populate('customerId', 'username email')
+      .populate('assignedTechnician', 'skills username email')
+      .sort({ createdAt: -1 });
+    res.json(requests);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+};
+
+
+/**
+ * Generate Repair Report (PDF) & Send to Customer
+ */
+
+
 exports.generateReport = async (req, res) => {
   try {
     const { id } = req.params;
@@ -283,11 +318,17 @@ exports.generateReport = async (req, res) => {
 
     if (!request) return res.status(404).json({ error: 'Request not found' });
 
+    // ✅ Pipe PDF to Postman
     pipeRepairReportToResponse(res, request);
+
+    // ✅ Send PDF as email to customer
+    await sendRepairReportEmail(request);
+
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
 };
+
 
 /**
  * 🔟 Delete Repair Request

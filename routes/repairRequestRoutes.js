@@ -2,17 +2,17 @@ const express = require('express');
 const router = express.Router();
 const repairController = require('../controllers/repairRequestController');
 
-// Create a new repair request (Customer)
-router.post('/', repairController.createRepairRequest);
+// Customer Dashboard - Get all repair requests for a customer
+router.get('/dashboard/customer/:customerId', repairController.getCustomerRepairRequests);
 
-// Update a repair request (Customer)
-router.put('/:id', repairController.updateRepairGeneral);
+// Technician Dashboard - Get all repair requests for a technician
+router.get('/dashboard/technician/:technicianId', repairController.getTechnicianRepairRequests);
 
-// Get all repair requests (Service Manager)
-router.get('/', repairController.getAllRepairRequests);
+// Service Manager Dashboard - Get all repair requests
+router.get('/dashboard/manager', repairController.getAllRepairRequests);
 
-// Get a single repair request by ID
-router.get('/:id', repairController.getRepairRequestById);
+// Download repair report (PDF)
+router.get('/report/:id', repairController.generateReport);
 
 // Update repair status (Approve/Reject by Service Manager)
 router.put('/status/:id', repairController.updateRequestStatus);
@@ -26,10 +26,20 @@ router.put('/assign/:id', repairController.assignTechnician);
 // Update repair progress (Technician)
 router.put('/progress/:id', repairController.updateProgress);
 
-// Download repair report (PDF)
-router.get('/report/:id', repairController.generateReport);
+// Get a single repair request by ID
+router.get('/:id', repairController.getRepairRequestById);
+
+// Get all repair requests (Service Manager)
+router.get('/', repairController.getAllRepairRequests);
+
+// Create a new repair request (Customer)
+router.post('/', repairController.createRepairRequest);
+
+// Update a repair request (Customer)
+router.put('/:id', repairController.updateRepairGeneral);
 
 // Delete repair request
 router.delete('/:id', repairController.deleteRepairRequest);
+
 
 module.exports = router;
