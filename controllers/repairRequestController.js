@@ -6,7 +6,7 @@ const { pipeRepairReportToResponse, sendRepairReportEmail } = require('../utils/
 
 
 /**
- * 1️⃣ Create a new Repair Request (Customer)
+ * 1️ Create a new Repair Request (Customer)
  * - Customer submits a repair request with damage details.
  * - Status is set to 'Pending'.
  * - Service Manager is notified via email.
@@ -40,7 +40,7 @@ exports.createRepairRequest = async (req, res) => {
 };
 
 /**
- * 2️⃣ Update Repair Request (General)
+ * 2️ Update Repair Request (General)
  * - Allows updating general fields of a repair request.
  * - Service Manager is notified of any changes.
  */
@@ -64,7 +64,7 @@ exports.updateRepairGeneral = async (req, res) => {
 };
 
 /**
- * 3️⃣ Get All Repair Requests (Service Manager)
+ * 3️ Get All Repair Requests (Service Manager)
  * - Returns all repair requests.
  * - Populates customer and assigned technician details.
  */
@@ -80,7 +80,7 @@ exports.getAllRepairRequests = async (req, res) => {
 };
 
 /**
- * 4️⃣ Get Repair Request By ID
+ * 4️ Get Repair Request By ID
  * - Returns a single repair request by ID.
  * - Populates customer and assigned technician details.
  */
@@ -97,7 +97,7 @@ exports.getRepairRequestById = async (req, res) => {
 };
 
 /**
- * 5️⃣ Update Request Status (Service Manager Approve / Reject)
+ * 5️ Update Request Status (Service Manager Approve / Reject)
  * - Service Manager can approve or reject repair requests.
  * - If approved: cost and time estimates can be added.
  * - Status and current stage are updated accordingly.
@@ -142,7 +142,7 @@ exports.updateRequestStatus = async (req, res) => {
 };
 
 /**
- * 6️⃣ Customer Approve / Reject Estimate
+ * 6️ Customer Approve / Reject Estimate
  * - Customer can approve or reject the service estimate.
  * - Updates request status and current stage.
  * - Service Manager is notified.
@@ -180,7 +180,7 @@ exports.customerApproveReject = async (req, res) => {
 };
 
 /**
- * 7️⃣ Assign Technician
+ * 7️ Assign Technician
  * - Only after customer approves.
  * - Technician is notified and status is updated to 'In Repair'.
  */
@@ -210,6 +210,7 @@ exports.assignTechnician = async (req, res) => {
   }
 };
 
+  // Update repairProgress
 exports.updateProgress = async (req, res) => {
   try {
     const { id } = req.params;
@@ -223,7 +224,7 @@ exports.updateProgress = async (req, res) => {
       return res.status(400).json({ error: 'repairProgress must be between 0 and 100' });
     }
 
-    // Update repairProgress
+ 
     request.repairProgress = repairProgress;
 
     // Auto-update status & currentStage based on milestones
@@ -259,7 +260,7 @@ exports.updateProgress = async (req, res) => {
 
 
 /**
- * 7️⃣ Customer Dashboard
+ * 8 Customer Dashboard
  */
 exports.getCustomerRepairRequests = async (req, res) => {
   try {
@@ -274,7 +275,7 @@ exports.getCustomerRepairRequests = async (req, res) => {
 };
 
 /**
- * 8️⃣ Technician Dashboard
+ * 9 Technician Dashboard
  */
 exports.getTechnicianRepairRequests = async (req, res) => {
   try {
@@ -289,7 +290,7 @@ exports.getTechnicianRepairRequests = async (req, res) => {
 };
 
 /**
- * 9️⃣ Service Manager Dashboard
+ * 10 Service Manager Dashboard
  */
 exports.getAllRepairRequests = async (req, res) => {
   try {
@@ -305,7 +306,7 @@ exports.getAllRepairRequests = async (req, res) => {
 
 
 /**
- * Generate Repair Report (PDF) & Send to Customer
+ *11 Generate Repair Report (PDF) & Send to Customer
  */
 
 
@@ -318,10 +319,10 @@ exports.generateReport = async (req, res) => {
 
     if (!request) return res.status(404).json({ error: 'Request not found' });
 
-    // ✅ Pipe PDF to Postman
+    //Pipe PDF to Postman
     pipeRepairReportToResponse(res, request);
 
-    // ✅ Send PDF as email to customer
+    //Send PDF as email to customer
     await sendRepairReportEmail(request);
 
   } catch (err) {
@@ -331,7 +332,7 @@ exports.generateReport = async (req, res) => {
 
 
 /**
- * 🔟 Delete Repair Request
+ * 12 Delete Repair Request
  * - Removes a repair request from the database.
  */
 exports.deleteRepairRequest = async (req, res) => {
