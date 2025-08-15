@@ -2,61 +2,71 @@ const RepairRequest = require('../models/RepairRequest');
 const Technician = require('../models/Technician');
 const User = require('../models/User');
 const { sendEmail } = require('../utils/notification');
-const { generateRepairReport } = require('../utils/reportGenerator');
+const { pipeRepairReportToResponse } = require('../utils/reportGenerator');
 
-// 1️⃣ Create a new repair request (Customer)
+/**
+ * 1️⃣ Create a new Repair Request (Customer)
+ * - Customer submits a repair request with damage details.
+ * - Status is set to 'Pending'.
+ * - Service Manager is notified via email.
+ */
 exports.createRepairRequest = async (req, res) => {
   try {
     const { customerId, damageType } = req.body;
-    if (!customerId || !damageType) {
-      return res.status(400).json({ error: 'customerId and damageType are required' });
-    }
+    if (!customerId || !damageType) return res.status(400).json({ error: 'customerId and damageType are required' });
 
     const repairRequest = await RepairRequest.create({
       customerId,
       damageType,
       status: 'Pending',
+      repairProgress: 0,
+      currentStage: 'Request Submitted'
     });
 
-    // Notify Service Manager
-    const serviceManagerEmail = process.env.SERVICE_MANAGER_EMAIL;
-    if (serviceManagerEmail) {
+    //Notify Service Manager
+    if (process.env.SERVICE_MANAGER_EMAIL) {
       await sendEmail(
-        serviceManagerEmail,
+        process.env.SERVICE_MANAGER_EMAIL,
         'New Repair Request Submitted',
         `A new repair request has been submitted.\n\nCustomer ID: ${customerId}\nDamage Type: ${damageType}`
       );
     }
 
-    res.status(201).json(repairRequest);
+    res.status(201).json({ message: 'Repair request created', repairRequest });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
 };
 
-// 2️⃣ Update a repair request (Customer general update)
+/**
+ * 2️⃣ Update Repair Request (General)
+ * - Allows updating general fields of a repair request.
+ * - Service Manager is notified of any changes.
+ */
 exports.updateRepairGeneral = async (req, res) => {
   try {
     const request = await RepairRequest.findByIdAndUpdate(req.params.id, req.body, { new: true });
     if (!request) return res.status(404).json({ error: 'Repair request not found' });
 
-    // Notify Service Manager about the update
-    const serviceManagerEmail = process.env.SERVICE_MANAGER_EMAIL;
-    if (serviceManagerEmail) {
+    if (process.env.SERVICE_MANAGER_EMAIL) {
       await sendEmail(
-        serviceManagerEmail,
+        process.env.SERVICE_MANAGER_EMAIL,
         'Repair Request Updated',
         `Repair request has been updated.\n\nCustomer ID: ${request.customerId}\nDamage Type: ${request.damageType}`
       );
     }
 
-    res.json(request);
+    res.json({ message: 'Repair request updated', request });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
 };
 
-// 3️⃣ Get all repair requests (Service Manager)
+/**
+ * 3️⃣ Get All Repair Requests (Service Manager)
+ * - Returns all repair requests.
+ * - Populates customer and assigned technician details.
+ */
 exports.getAllRepairRequests = async (req, res) => {
   try {
     const requests = await RepairRequest.find()
@@ -68,7 +78,11 @@ exports.getAllRepairRequests = async (req, res) => {
   }
 };
 
-// 4️⃣ Get single repair request by ID
+/**
+ * 4️⃣ Get Repair Request By ID
+ * - Returns a single repair request by ID.
+ * - Populates customer and assigned technician details.
+ */
 exports.getRepairRequestById = async (req, res) => {
   try {
     const request = await RepairRequest.findById(req.params.id)
@@ -81,119 +95,113 @@ exports.getRepairRequestById = async (req, res) => {
   }
 };
 
-// 5️⃣ Update repair request status (Approve/Reject by Service Manager)
+/**
+ * 5️⃣ Update Request Status (Service Manager Approve / Reject)
+ * - Service Manager can approve or reject repair requests.
+ * - If approved: cost and time estimates can be added.
+ * - Status and current stage are updated accordingly.
+ * - Customer receives email notification.
+ */
 exports.updateRequestStatus = async (req, res) => {
   try {
     const { id } = req.params;
     const { status, costEstimate, timeEstimate, rejectionReason } = req.body;
 
-    const request = await RepairRequest.findById(id).populate('customerId', 'email');
-    if (!request) return res.status(404).json({ error: 'Request not found' });
+    const request = await RepairRequest.findById(id).populate('customerId', 'email username');
+    if (!request) return res.status(404).json({ error: 'Repair request not found' });
 
     request.status = status;
 
     if (status.toLowerCase() === 'approved') {
-      // Only set cost and time if approved
+   // Only set cost and time if approved
       if (costEstimate !== undefined) request.costEstimate = costEstimate;
       if (timeEstimate !== undefined) request.timeEstimate = timeEstimate;
+      request.currentStage = 'Waiting for Customer Approval';
     } else if (status.toLowerCase() === 'rejected') {
       if (rejectionReason) request.rejectionReason = rejectionReason;
+      request.currentStage = 'Request Rejected';
     }
 
     await request.save();
 
-    // Prepare email message
-    let emailBody = `Hello,\n\nYour repair request status is now: ${status}\n`;
-
+    // Send email to customer
+    let emailBody = `Hello ${request.customerId.username},\n\nYour repair request status is: ${status}\n`;
     if (status.toLowerCase() === 'approved') {
-      emailBody += `\nCost Estimate: ${request.costEstimate !== undefined ? request.costEstimate : 'Not provided'}\n`;
-      emailBody += `Time Estimate: ${request.timeEstimate !== undefined ? request.timeEstimate : 'Not provided'}\n`;
-    } else if (status.toLowerCase() === 'rejected' && request.rejectionReason) {
-      emailBody += `\nReason for Rejection: ${request.rejectionReason}\n`;
+      emailBody += `Cost Estimate: ${request.costEstimate || 'Not provided'}\nTime Estimate: ${request.timeEstimate || 'Not provided'}\n`;
+    } else if (status.toLowerCase() === 'rejected') {
+      emailBody += `Reason: ${request.rejectionReason || 'Not provided'}\n`;
     }
+    emailBody += '\nThank you,\nService Team';
+    await sendEmail(request.customerId.email, 'Repair Request Status Updated', emailBody);
 
-    emailBody += `\nThank you,\nService Team`;
-
-    // Notify customer
-    await sendEmail(
-      request.customerId.email,
-      'Repair Request Status Updated',
-      emailBody
-    );
-
-    res.json({ message: 'Repair request status updated successfully', request });
-  } catch (error) {
-    res.status(500).json({ error: error.message });
-  }
-};
-
-
-// 6 Customer approves/rejects estimate
-exports.customerApproveReject = async (req, res) => {
-  try {
-    const { id } = req.params;
-    const { decision } = req.body; // "approve" or "reject"
-
-    const request = await RepairRequest.findById(id).populate('customerId', 'email');
-    if (!request) return res.status(404).json({ error: 'Repair request not found' });
-
-    if (decision === 'approve') {
-      request.status = 'Customer Approved';
-    } else if (decision === 'reject') {
-      request.status = 'Customer Rejected';
-    } else {
-      return res.status(400).json({ error: 'Invalid decision' });
-    }
-
-    await request.save();
-
-    // Notify Service Manager
-    const serviceManagerEmail = process.env.SERVICE_MANAGER_EMAIL;
-    if (serviceManagerEmail) {
-      await sendEmail(
-        serviceManagerEmail,
-        `Customer ${decision === 'approve' ? 'Approved' : 'Rejected'} Estimate`,
-        `Customer ID: ${request.customerId._id}\nRepair Request ID: ${request._id}\nDamage Type: ${request.damageType}\nDecision: ${decision === 'approve' ? 'Approved' : 'Rejected'}`
-      );
-    }
-
-    res.json({ message: `You have ${decision}d the estimate`, request });
+    res.json({ message: 'Repair request status updated sucessfully', request });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
 };
 
-// 7 Assign Technician (only after customer approval)
+/**
+ * 6️⃣ Customer Approve / Reject Estimate
+ * - Customer can approve or reject the service estimate.
+ * - Updates request status and current stage.
+ * - Service Manager is notified.
+ */
+exports.customerApproveReject = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { decision } = req.body;
+
+    const request = await RepairRequest.findById(id).populate('customerId', 'email username');
+    if (!request) return res.status(404).json({ error: 'Repair request not found' });
+
+    if (decision === 'approve') {
+      request.status = 'Customer Approved';
+      request.currentStage = 'Approved by Customer';
+    } else if (decision === 'reject') {
+      request.status = 'Customer Rejected';
+      request.currentStage = 'Rejected by Customer';
+    } else return res.status(400).json({ error: 'Invalid decision' });
+
+    await request.save();
+
+    if (process.env.SERVICE_MANAGER_EMAIL) {
+      await sendEmail(
+        process.env.SERVICE_MANAGER_EMAIL,
+        `Customer ${decision}d Estimate`,
+        `Repair Request ID: ${request._id}\nDecision: ${decision}`
+      );
+    }
+
+    res.json({ message: `Customer has ${decision}d the estimate`, request });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+};
+
+/**
+ * 7️⃣ Assign Technician
+ * - Only after customer approves.
+ * - Technician is notified and status is updated to 'In Repair'.
+ */
 exports.assignTechnician = async (req, res) => {
   try {
     const { id } = req.params;
     const { technicianId } = req.body;
 
-    const request = await RepairRequest.findById(id).populate('customerId', 'email');
+    const request = await RepairRequest.findById(id).populate('customerId', 'email username');
     if (!request) return res.status(404).json({ error: 'Repair request not found' });
+    if (request.status !== 'Customer Approved') return res.status(400).json({ error: 'Cannot assign technician before customer approval' });
 
-    if (request.status !== 'Customer Approved')
-      return res.status(400).json({ error: 'Cannot assign technician before customer approves estimate' });
-
-    const technician = await Technician.findById(technicianId).populate('technicianId', 'email');
+    const technician = await Technician.findById(technicianId).populate('technicianId', 'email username');
     if (!technician) return res.status(404).json({ error: 'Technician not found' });
 
     request.assignedTechnician = technicianId;
     request.status = 'In Repair';
+    request.currentStage = 'Technician Assigned';
     await request.save();
 
-    // Notify Technician and Customer
-    await sendEmail(
-      technician.technicianId.email,
-      'New Repair Assigned',
-      `Repair Request ID: ${request._id}\nDamage Type: ${request.damageType}`
-    );
-
-    await sendEmail(
-      request.customerId.email,
-      'Technician Assigned',
-      `Repair Request ID: ${request._id}\nTechnician has been assigned.`
-    );
+    await sendEmail(technician.technicianId.email, 'New Repair Assigned', `Repair Request ID: ${request._id}\nDamage Type: ${request.damageType}`);
+    await sendEmail(request.customerId.email, 'Technician Assigned', `Repair Request ID: ${request._id}\nTechnician assigned.`);
 
     res.json({ message: 'Technician assigned successfully', request });
   } catch (err) {
@@ -201,34 +209,71 @@ exports.assignTechnician = async (req, res) => {
   }
 };
 
-// 8 Update repair progress (Technician)
+/**
+ * 8️⃣ Update Repair Progress (Technician)
+ * - Technician updates progress (% complete) and current stage.
+ * - Automatic milestone updates:
+ *    - 0–49% → In Repair
+ *    - 50–99% → Halfway Completed
+ *    - 100% → Ready for Pickup (Stage set to 'Repair Complete')
+ * - Customer receives progress email.
+ */
 exports.updateProgress = async (req, res) => {
   try {
     const { id } = req.params;
     const { repairProgress, currentStage } = req.body;
 
-    const request = await RepairRequest.findById(id).populate('customerId', 'email');
-    if (!request) return res.status(404).json({ error: 'Repair request not found' });
+    // Find request and populate customer email & username
+    const request = await RepairRequest.findById(id)
+      .populate('customerId', 'email username');
 
-    if (repairProgress !== undefined) request.repairProgress = repairProgress;
-    if (currentStage) request.currentStage = currentStage;
+    if (!request) {
+      return res.status(404).json({ error: 'Repair request not found' });
+    }
+
+    // Update fields only if provided
+    if (repairProgress !== undefined) {
+      if (repairProgress < 0 || repairProgress > 100) {
+        return res.status(400).json({ error: 'Progress must be between 0 and 100' });
+      }
+      request.repairProgress = repairProgress;
+
+      // Automatic status changes
+      if (repairProgress >= 0 && repairProgress < 50) {
+        request.status = 'In Repair';
+      } else if (repairProgress >= 50 && repairProgress < 100) {
+        request.status = 'Halfway Completed';
+      } else if (repairProgress === 100) {
+        request.status = 'Ready for Pickup';
+        request.currentStage = 'Repair Complete';
+      }
+    }
+
+    if (currentStage) {
+      request.currentStage = currentStage;
+    }
 
     await request.save();
 
-    // Notify customer
+    // Send email notification to customer
     await sendEmail(
       request.customerId.email,
       'Repair Progress Updated',
-      `Repair progress: ${repairProgress || 0}%\nCurrent Stage: ${currentStage || 'N/A'}`
+      `Hello ${request.customerId.username},\n\nYour repair request progress has been updated.\nProgress: ${request.repairProgress}%\nStatus: ${request.status}\nCurrent Stage: ${request.currentStage || 'N/A'}\n\nThank you.`
     );
 
-    res.json(request);
+    res.json({ message: 'Progress updated successfully', request });
+
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
 };
 
-// 9 Generate repair report (PDF)
+
+/**
+ * 9️⃣ Generate Repair Report
+ * - Generates PDF report with customer, technician, damage, cost, and timeline details.
+ */
 exports.generateReport = async (req, res) => {
   try {
     const { id } = req.params;
@@ -238,16 +283,16 @@ exports.generateReport = async (req, res) => {
 
     if (!request) return res.status(404).json({ error: 'Request not found' });
 
-    const pdfBuffer = await generateRepairReport(request);
-    res.setHeader('Content-Type', 'application/pdf');
-    res.setHeader('Content-Disposition', `attachment; filename=repair_report_${id}.pdf`);
-    res.send(pdfBuffer);
+    pipeRepairReportToResponse(res, request);
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
 };
 
-// 10 Delete repair request
+/**
+ * 🔟 Delete Repair Request
+ * - Removes a repair request from the database.
+ */
 exports.deleteRepairRequest = async (req, res) => {
   try {
     const { id } = req.params;
