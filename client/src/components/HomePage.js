@@ -1,11 +1,11 @@
 import React from 'react';
 
 // A simple profile icon component using SVG.
-// You can replace this with an icon from a library like react-icons if you prefer.
 const ProfileIcon = () => (
   <svg
     xmlns="http://www.w3.org/2000/svg"
-    className="h-8 w-8 text-gray-300 hover:text-white transition-colors duration-300"
+    // Updated icon color to work on the new dark navy background
+    className="h-8 w-8 text-[#F1F2F7]/80 group-hover:text-[#F1F2F7] transition-colors duration-300"
     fill="none"
     viewBox="0 0 24 24"
     stroke="currentColor"
@@ -19,54 +19,43 @@ const ProfileIcon = () => (
   </svg>
 );
 
-
 // The main App component which renders the HomePage.
-// In your project, you would import and use this HomePage component within your App.js or router setup.
 export default function App() {
   return <HomePage />;
 }
 
-
-// This is the main component for your home page.
-// It includes the navigation bar and the main content section with buttons.
+// This is the main component for your home page, updated with the new color palette.
 function HomePage() {
   return (
-    <div className="bg-gray-900 min-h-screen text-white font-sans">
-      {/* Navigation Bar Section */}
-      <nav className="bg-gray-800 shadow-lg">
+    // Main background color updated to light gray
+    <div className="bg-[#F1F2F7] min-h-screen font-sans">
+      
+      {/* Navigation Bar Section - Updated with primary brand color */}
+      <nav className="bg-[#072679] shadow-lg">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-20">
-            {/* Logo or Brand Name */}
+            
+            {/* Logo or Brand Name - Text color updated for dark backgrounds */}
             <div className="flex-shrink-0">
-              <h1 className="text-2xl font-bold text-white">CricketExpert</h1>
+              <h1 className="text-2xl font-bold text-[#F1F2F7]">CricketExpert</h1>
             </div>
 
-            {/* Primary Navigation Links */}
+            {/* Primary Navigation Links - Text colors updated */}
             <div className="hidden md:block">
               <div className="ml-10 flex items-baseline space-x-4">
-                {/* Home Page Link */}
-                <a href="#" className="text-gray-300 hover:bg-gray-700 hover:text-white px-3 py-2 rounded-md text-sm font-medium">Home</a>
-                
-                {/* Buy Products Page Link */}
-                <a href="#" className="text-gray-300 hover:bg-gray-700 hover:text-white px-3 py-2 rounded-md text-sm font-medium">Buy Products</a>
-                
-                {/* Bookings Page Link */}
-                <a href="#" className="text-gray-300 hover:bg-gray-700 hover:text-white px-3 py-2 rounded-md text-sm font-medium">Bookings</a>
-                
-                {/* Repairs Page Link */}
-                <a href="#" className="text-gray-300 hover:bg-gray-700 hover:text-white px-3 py-2 rounded-md text-sm font-medium">Repairs</a>
-                
-                {/* Coaching Programs Page Link */}
-                <a href="#" className="text-gray-300 hover:bg-gray-700 hover:text-white px-3 py-2 rounded-md text-sm font-medium">Programs</a>
+                <a href="#" className="text-[#F1F2F7]/80 hover:text-[#F1F2F7] px-3 py-2 rounded-md text-sm font-medium transition-colors">Home</a>
+                <a href="#" className="text-[#F1F2F7]/80 hover:text-[#F1F2F7] px-3 py-2 rounded-md text-sm font-medium transition-colors">Buy Products</a>
+                <a href="#" className="text-[#F1F2F7]/80 hover:text-[#F1F2F7] px-3 py-2 rounded-md text-sm font-medium transition-colors">Bookings</a>
+                <a href="#" className="text-[#F1F2F7]/80 hover:text-[#F1F2F7] px-3 py-2 rounded-md text-sm font-medium transition-colors">Repairs</a>
+                <a href="#" className="text-[#F1F2F7]/80 hover:text-[#F1F2F7] px-3 py-2 rounded-md text-sm font-medium transition-colors">Programs</a>
               </div>
             </div>
 
             {/* Profile Icon */}
             <div className="hidden md:block">
               <div className="ml-4 flex items-center md:ml-6">
-                <button className="p-1 rounded-full text-gray-400 hover:text-white focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-gray-800 focus:ring-white">
+                <button className="group p-1 rounded-full focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-[#072679] focus:ring-white">
                   <span className="sr-only">View profile</span>
-                  {/* This button will navigate to the user's profile page. */}
                   <ProfileIcon />
                 </button>
               </div>
@@ -77,30 +66,34 @@ function HomePage() {
 
       {/* Main Content Section */}
       <main>
-        <div className="max-w-7xl mx-auto py-12 px-4 sm:px-6 lg:px-8 text-center">
-          <h1 className="text-4xl font-extrabold tracking-tight sm:text-5xl md:text-6xl">
-            Welcome to <span className="text-indigo-400">CricketExpert</span>
+        <div className="max-w-7xl mx-auto py-16 px-4 sm:px-6 lg:px-8 text-center">
+          
+          {/* Heading text color updated to black, accent color updated to sky blue */}
+          <h1 className="text-4xl font-extrabold tracking-tight text-[#000000] sm:text-5xl md:text-6xl">
+            This is only for <span className="text-[#42ADF5]">Testing Purposes</span>
           </h1>
-          <p className="mt-3 max-w-md mx-auto text-lg text-gray-400 sm:text-xl md:mt-5 md:max-w-3xl">
-            Your one-stop shop for everything cricket. From gear to coaching, we've got you covered.
+          
+          {/* Body text color updated to steel blue */}
+          <p className="mt-3 max-w-md mx-auto text-lg text-[#36516C] sm:text-xl md:mt-5 md:max-w-3xl">
+            For test Front-End files related to crud operations, till we make our official home page.
           </p>
           
-          {/* Action Buttons Section */}
-          <div className="mt-10 max-w-md mx-auto sm:flex sm:justify-center md:mt-12 space-y-4 sm:space-y-0 sm:space-x-4">
+          {/* Action Buttons Section - Updated with new button colors */}
+          <div className="mt-10 max-w-lg mx-auto sm:flex sm:justify-center md:mt-12 space-y-4 sm:space-y-0 sm:space-x-4">
             
-            {/* Button to browse the product catalog */}
-            <button className="w-full sm:w-auto bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 px-6 rounded-lg shadow-lg transform hover:scale-105 transition-transform duration-300">
-              Explore Our Gear
+            {/* Primary Button: Sky blue with darker hover state */}
+            <button className="w-full sm:w-auto bg-[#42ADF5] hover:bg-[#2C8ED1] text-white font-bold py-3 px-8 rounded-lg shadow-lg transform hover:scale-105 transition-all duration-300">
+              Test 1
             </button>
             
-            {/* Button to book a coaching session */}
-            <button className="w-full sm:w-auto bg-gray-700 hover:bg-gray-600 text-white font-bold py-3 px-6 rounded-lg shadow-lg transform hover:scale-105 transition-transform duration-300">
-              Book a Session
+            {/* Secondary Button: Orange-brown */}
+            <button className="w-full sm:w-auto bg-[#D88717] hover:opacity-90 text-white font-bold py-3 px-8 rounded-lg shadow-lg transform hover:scale-105 transition-all duration-300">
+              Test 2
             </button>
             
-            {/* Button to view repair services */}
-            <button className="w-full sm:w-auto bg-gray-700 hover:bg-gray-600 text-white font-bold py-3 px-6 rounded-lg shadow-lg transform hover:scale-105 transition-transform duration-300">
-              Repair Services
+            {/* Secondary Button: Orange-brown */}
+            <button className="w-full sm:w-auto bg-[#D88717] hover:opacity-90 text-white font-bold py-3 px-8 rounded-lg shadow-lg transform hover:scale-105 transition-all duration-300">
+              Test 3
             </button>
 
           </div>
