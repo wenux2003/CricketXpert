@@ -18,6 +18,9 @@ app.use(express.json());
 // Routes
 const playerRoutes = require('./routes/players');
 app.use('/api/players', playerRoutes);
+// Routes order and product 
+app.use('/api/products', require('./routes/productRoutes'));
+app.use('/api/orders', require('./routes/orderRoutes'));
 
 app.get('/api/test', (req, res) => {
   res.json({ success: true, message: 'Test route working!' });
