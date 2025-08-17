@@ -196,11 +196,18 @@ exports.assignTechnician = async (req, res) => {
     const technician = await Technician.findById(technicianId).populate('technicianId', 'email username');
     if (!technician) return res.status(404).json({ error: 'Technician not found' });
 
+    if (!technician.available) return res.status(400).json({ error: 'Technician is currently unavailable' });
+
     request.assignedTechnician = technicianId;
     request.status = 'In Repair';
     request.currentStage = 'Technician Assigned';
     await request.save();
 
+    // Mark technician unavailable
+    technician.available = false;
+    await technician.save();
+
+    // Send emails
     await sendEmail(technician.technicianId.email, 'New Repair Assigned', `Repair Request ID: ${request._id}\nDamage Type: ${request.damageType}`);
     await sendEmail(request.customerId.email, 'Technician Assigned', `Repair Request ID: ${request._id}\nTechnician assigned.`);
 

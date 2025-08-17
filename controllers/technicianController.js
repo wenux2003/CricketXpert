@@ -3,9 +3,8 @@ const Technician = require('../models/Technician');
 // 1. Create technician
 exports.createTechnician = async (req, res) => {
   try {
-    const { technicianId, skills } = req.body;
-
-    const technician = await Technician.create({ technicianId, skills });
+    const { technicianId, skills, available } = req.body;
+    const technician = await Technician.create({ technicianId, skills, available });
     res.status(201).json(technician);
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -38,12 +37,13 @@ exports.getTechnicianById = async (req, res) => {
 exports.updateTechnician = async (req, res) => {
   try {
     const { id } = req.params;
-    const { skills } = req.body;
+    const { skills, available } = req.body;
 
     const technician = await Technician.findById(id);
     if (!technician) return res.status(404).json({ error: 'Technician not found' });
 
     if (skills) technician.skills = skills;
+    if (available !== undefined) technician.available = available;
 
     await technician.save();
     res.json(technician);
