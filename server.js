@@ -20,6 +20,11 @@ app.use(express.json());
 const coachRoutes = require('./routes/Coaches');
 app.use('/api/coaches', coachRoutes);
 
+const coachProgramRoutes = require('./routes/Coachingprogramroute');
+app.use('/api/Coachingprogramroute',coachProgramRoutes);
+
+const EnrollmentRoute = require('./routes/EnrollmentRoute');
+app.use('/api/EnrollmentRoute',EnrollmentRoute);
 
 
 // Routes

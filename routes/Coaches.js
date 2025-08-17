@@ -10,5 +10,6 @@ router.get("/:id", Coachcontrol.getCoachById);     // Get one coach by ID
 router.post("/", Coachcontrol.addCoach);           // Add a new coach
 router.put("/:id", Coachcontrol.updateCoach);      // Update coach by ID
 router.delete("/:id", Coachcontrol.deleteCoach);   // Delete coach by ID
+router.get("/filter", Coachcontrol.filterCoaches);
 
 module.exports = router;

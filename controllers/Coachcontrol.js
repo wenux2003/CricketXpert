@@ -1,4 +1,5 @@
 const Coach = require('../models/Coach');
+const User = require("../models/User"); // 👈 make sure you have this
 
 // Get all coaches
 const getAllCoaches = async (req, res, next) => {
@@ -107,11 +108,59 @@ const deleteCoach = async (req, res, next) => {
   return res.status(200).json({ message: "Coach deleted successfully", coach });
 };
 
+// 📌 Filter coaches based on query params (specialization, exp, availability, user name)
+const filterCoaches = async (req, res, next) => {
+  const { specialization, minExperience, maxExperience, day, name } = req.query;
+
+  let filter = {};
+
+  // specialization filter
+  if (specialization) {
+    filter.specialization = specialization;
+  }
+
+  // experience range filter
+  if (minExperience || maxExperience) {
+    filter.experienceYears = {};
+    if (minExperience) filter.experienceYears.$gte = Number(minExperience);
+    if (maxExperience) filter.experienceYears.$lte = Number(maxExperience);
+  }
+
+  // availability filter
+  if (day) {
+    filter["availability.day"] = day;
+  }
+
+  try {
+    let query = Coach.find(filter).populate("CoachId"); // 👈 populate User
+
+    let coaches = await query;
+
+    // 🔍 filter by user name if provided
+    if (name) {
+      coaches = coaches.filter((coach) =>
+        coach.CoachId?.name?.toLowerCase().includes(name.toLowerCase())
+      );
+    }
+
+    if (!coaches || coaches.length === 0) {
+      return res.status(404).json({ message: "No coaches found matching filters" });
+    }
+
+    return res.status(200).json({ coaches });
+  } catch (err) {
+    console.error("Error while filtering coaches:", err);
+    return res.status(500).json({ message: "Something went wrong", error: err.message });
+  }
+};
+
 exports.getAllCoaches = getAllCoaches;
 exports.getCoachById = getCoachById;
 exports.addCoach = addCoach;
 exports.updateCoach = updateCoach;
 exports.deleteCoach = deleteCoach;
+exports.filterCoaches = filterCoaches;
+
 
 
 
