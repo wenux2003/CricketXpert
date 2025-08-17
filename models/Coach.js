@@ -1,7 +1,7 @@
 const mongoose = require('mongoose');
 
 const coachSchema = new mongoose.Schema({
-  CoachId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true }, // 👈 Link to User table
+CoachId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true }, // 👈 Link to User table
 
   specialization: { type: String }, // e.g. "Batting", "Bowling"
   experienceYears: { type: Number },

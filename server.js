@@ -15,9 +15,13 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
-// Coach routes
-const coachRoutes = require('./routes/Coaches'); // ✅ Make sure file name matches exactly
-app.use("/Coaches", coachRoutes);
+
+
+const coachRoutes = require('./routes/Coaches');
+app.use('/api/coaches', coachRoutes);
+
+
+
 // Routes
 const playerRoutes = require('./routes/players');
 app.use('/api/players', playerRoutes);

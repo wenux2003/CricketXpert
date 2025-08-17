@@ -1,99 +1,118 @@
-const Coach = require("../models/Coach");
+const Coach = require('../models/Coach');
 
-// @desc    Get all coaches
-// @route   GET /Coaches
-// @access  Public (change to private if needed)
-const getAllCoaches = async (req, res) => {
-    try {
-        const coaches = await Coach.find();
+// Get all coaches
+const getAllCoaches = async (req, res, next) => {
 
-        if (!coaches || coaches.length === 0) {
-            return res.status(404).json({ message: "No coaches found" });
-        }
-
-        res.status(200).json(coaches);
-    } catch (error) {
-        console.error("Error fetching coaches:", error);
-        res.status(500).json({ message: "Server Error" });
+  let coaches;
+  try {
+    coaches = await Coach.find(); // 👈 populates User details
+    } catch (err) {
+        console.log(err);
     }
-};
 
-// @desc    Create a new coach
-// @route   POST /Coaches
-// @access  Public (change to private if needed)
-const createCoach = async (req, res) => {
-    try {
-        const newCoach = new Coach(req.body);
-        const savedCoach = await newCoach.save();
-        res.status(201).json(savedCoach);
-    } catch (error) {
-        console.error("Error creating coach:", error);
-        res.status(500).json({ message: "Server Error" });
+    if (!coaches || coaches.length === 0) {
+        return res.status(404).json({ message: "No coaches found" });
     }
+    //Display all users
+
+    return res.status(200).json({ coaches });
 };
 
-// @desc    Get a single coach by ID
-// @route   GET /Coaches/:id
-// @access  Public
-const getCoachById = async (req, res) => {
-    try {
-        const coach = await Coach.findById(req.params.id);
+// Get one coach by ID
+const getCoachById = async (req, res ,next) => {
+  const id = req.params.id;
+      let coach;
+  
+      try {
+           coach = await Coach.findById(id);
+      } catch (err) {
+          console.log("Error while finding user:", err.message);
+          return res.status(500).json({ message: "Something went wrong", error: err.message });
+      }
+  
+      if (!coach) {
+          return res.status(404).json({ message: "coaches not found" });
+      }
+  
+      return res.status(200).json({ coach });
 
-        if (!coach) {
-            return res.status(404).json({ message: "Coach not found" });
-        }
+    };
 
-        res.status(200).json(coach);
-    } catch (error) {
-        console.error("Error fetching coach:", error);
-        res.status(500).json({ message: "Server Error" });
-    }
+    //data insert
+  const addCoach = async (req, res, next) => {
+  const { CoachId, specialization, experienceYears, availability, progress, assignedSessions } = req.body;
+  let coach;
+
+  try {
+    coach = new Coach({
+      CoachId,
+      specialization,
+      experienceYears,
+      availability,
+      progress,
+      assignedSessions
+    });
+
+    await coach.save();
+  } catch (err) {
+    console.log("Error while saving coach:", err.message);
+    return res.status(500).json({ message: "Unable to add coach", error: err.message });
+  }
+
+  return res.status(201).json({ coach });
 };
 
-// @desc    Update coach
-// @route   PUT /Coaches/:id
-// @access  Public (change to private if needed)
-const updateCoach = async (req, res) => {
-    try {
-        const updatedCoach = await Coach.findByIdAndUpdate(
-            req.params.id,
-            req.body,
-            { new: true }
-        );
+//Update Coach
 
-        if (!updatedCoach) {
-            return res.status(404).json({ message: "Coach not found" });
-        }
+const updateCoach = async (req, res, next) => {
+  const id = req.params.id;
+  const { CoachId, specialization, experienceYears, availability, progress, assignedSessions } = req.body;
 
-        res.status(200).json(updatedCoach);
-    } catch (error) {
-        console.error("Error updating coach:", error);
-        res.status(500).json({ message: "Server Error" });
-    }
+  let coach;
+  try {
+    coach = await Coach.findByIdAndUpdate(
+      id,
+      { CoachId, specialization, experienceYears, availability, progress, assignedSessions },
+      { new: true, runValidators: true } // return updated doc + validate schema
+    );
+  } catch (err) {
+    console.log("Error while updating coach:", err.message);
+    return res.status(500).json({ message: "Something went wrong", error: err.message });
+  }
+
+  if (!coach) {
+    return res.status(404).json({ message: "Unable to update - coach not found" });
+  }
+
+  return res.status(200).json({ message: "Coach updated successfully", coach });
 };
 
-// @desc    Delete coach
-// @route   DELETE /Coaches/:id
-// @access  Public (change to private if needed)
-const deleteCoach = async (req, res) => {
-    try {
-        const deletedCoach = await Coach.findByIdAndDelete(req.params.id);
+//delete Coach
 
-        if (!deletedCoach) {
-            return res.status(404).json({ message: "Coach not found" });
-        }
+const deleteCoach = async (req, res, next) => {
+  const id = req.params.id;
+  let coach;
 
-        res.status(200).json({ message: "Coach deleted successfully" });
-    } catch (error) {
-        console.error("Error deleting coach:", error);
-        res.status(500).json({ message: "Server Error" });
-    }
+  try {
+    coach = await Coach.findByIdAndDelete(id);
+  } catch (err) {
+    console.log("Error while deleting coach:", err.message);
+    return res.status(500).json({ message: "Something went wrong", error: err.message });
+  }
+
+  if (!coach) {
+    return res.status(404).json({ message: "Unable to delete - coach not found" });
+  }
+
+  return res.status(200).json({ message: "Coach deleted successfully", coach });
 };
 
-module.exports = {
-    getAllCoaches,
-    createCoach,
-    getCoachById,
-    updateCoach,
-    deleteCoach 
-};
+exports.getAllCoaches = getAllCoaches;
+exports.getCoachById = getCoachById;
+exports.addCoach = addCoach;
+exports.updateCoach = updateCoach;
+exports.deleteCoach = deleteCoach;
+
+
+
+

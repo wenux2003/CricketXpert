@@ -1,14 +1,14 @@
 const express = require("express");
 const router = express.Router();
 
-// Import Coach controller
-const CoachControl = require("../controllers/Coachcontrol");
+// Insert Controller
+const Coachcontrol = require("../controllers/Coachcontrol");
 
-// Routes
-router.get("/", CoachControl.getAllCoaches);         // Get all coaches
-router.get("/:id", CoachControl.getCoachById);       // Get coach by ID
-router.post("/", CoachControl.createCoach);          // Create new coach
-router.put("/:id", CoachControl.updateCoach);        // Update coach
-router.delete("/:id", CoachControl.deleteCoach);     // Delete coach  
+// CRUD Routes
+router.get("/", Coachcontrol.getAllCoaches);       // Get all coaches
+router.get("/:id", Coachcontrol.getCoachById);     // Get one coach by ID
+router.post("/", Coachcontrol.addCoach);           // Add a new coach
+router.put("/:id", Coachcontrol.updateCoach);      // Update coach by ID
+router.delete("/:id", Coachcontrol.deleteCoach);   // Delete coach by ID
 
 module.exports = router;
