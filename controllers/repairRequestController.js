@@ -196,8 +196,19 @@ exports.assignTechnician = async (req, res) => {
     const technician = await Technician.findById(technicianId).populate('technicianId', 'email username');
     if (!technician) return res.status(404).json({ error: 'Technician not found' });
 
-    if (!technician.available) return res.status(400).json({ error: 'Technician is currently unavailable' });
+   // Count active repairs
+    const activeRepairs = await RepairRequest.countDocuments({
+      assignedTechnician: technicianId,
+      status: { $in: ['In Repair', 'Halfway Completed'] }
+    });
 
+    if (!technician.available || activeRepairs >= 10) {
+      technician.available = false;
+      await technician.save();
+      return res.status(400).json({ error: 'Technician is unavailable or has maximum active repairs' });
+    }
+
+    // Assign technician
     request.assignedTechnician = technicianId;
     request.status = 'In Repair';
     request.currentStage = 'Technician Assigned';
@@ -247,8 +258,23 @@ exports.updateProgress = async (req, res) => {
     } else if (repairProgress === 100) {
       request.status = 'Ready for Pickup';
       request.currentStage = 'Repair Complete';
+    
+      // Mark technician available if <10 active repairs remain
+      if (request.assignedTechnician) {
+        const technician = await Technician.findById(request.assignedTechnician);
+        if (technician) {
+          const activeRepairs = await RepairRequest.countDocuments({
+            assignedTechnician: technician._id,
+            status: { $in: ['In Repair', 'Halfway Completed'] }
+          });
+          if (activeRepairs < 10) {
+            technician.available = true;
+            await technician.save();
+          }
+        }
+      }
     }
-
+    // Save updated repair request
     await request.save();
 
     // Send email notification to customer
