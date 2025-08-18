@@ -31,11 +31,11 @@ const orderSchema = new mongoose.Schema({
     ref: 'User',
     required: true
   },
-  status: {
-    type: String,
-    enum: ['Processing', 'Out for Delivery', 'Delivered', 'Cancelled'],
-    default: 'Processing'
-  },
+status: {
+  type: String,
+  enum: ['created', 'processing', 'completed', 'cancelled'], // example
+  default: 'created'
+},
   date: {
     type: Date,
     default: Date.now

@@ -17,7 +17,6 @@ const productSchema = new mongoose.Schema({
   },
   category: {
     type: String,
-    required: true,
     trim: true
   },
   brand: {
@@ -31,12 +30,13 @@ const productSchema = new mongoose.Schema({
   },
   image_url: {
     type: String,
-    required: true
+    
   },
   stock_quantity: {
     type: Number,
-    required: true,
-    min: 0
+    default: 0
+
+    
   },
   is_active: {
     type: Boolean,

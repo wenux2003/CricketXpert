@@ -2,6 +2,7 @@ const express = require('express');
 const dotenv = require('dotenv');
 const cors = require('cors');
 const connectDB = require('./config/db');
+const userRoutes = require('./routes/userRoutes');
 
 // Load env vars
 dotenv.config();
@@ -21,6 +22,7 @@ app.use('/api/players', playerRoutes);
 // Routes order and product 
 app.use('/api/products', require('./routes/productRoutes'));
 app.use('/api/orders', require('./routes/orderRoutes'));
+app.use('/api/users', userRoutes);
 
 app.get('/api/test', (req, res) => {
   res.json({ success: true, message: 'Test route working!' });
