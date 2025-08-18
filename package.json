@@ -9,7 +9,7 @@
   },
   "author": "",
   "license": "ISC",
-  "description": "Date - 2025/08/12",
+  "description": "",
   "dependencies": {
     "axios": "^1.11.0",
     "body-parser": "^2.2.0",
@@ -24,6 +24,5 @@
   },
   "devDependencies": {
     "nodemon": "^3.1.10"
-  },
-  "keywords": []
+  }
 }
