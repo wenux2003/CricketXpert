@@ -14,8 +14,6 @@ router.get('/dashboard/manager', repairController.getAllRepairRequests);
 // Download repair report (PDF) and also email it
 router.get('/report/download/:id', repairController.downloadAndEmailReport);
 
-// Download repair report (PDF)
-router.get('/report/:id', repairController.generateReport);
 
 // Update repair status (Approve/Reject by Service Manager)
 router.put('/status/:id', repairController.updateRequestStatus);

@@ -328,18 +328,20 @@ exports.getTechnicianRepairRequests = async (req, res) => {
   }
 };
 
-/** 
-10️ Service Manager Dashboard (with filter)
- */
+// 10️ Service Manager Dashboard (with filtering)
 exports.getAllRepairRequests = async (req, res) => {
   try {
-    const { status } = req.query;
+    const { status, customerId, technicianId } = req.query;
+
+    // Build filter object
     let filter = {};
     if (status) filter.status = status;
+    if (customerId) filter.customerId = customerId;
+    if (technicianId) filter.assignedTechnician = technicianId;
 
     const requests = await RepairRequest.find(filter)
       .populate('customerId', 'username email')
-      .populate('assignedTechnician', 'skills username email')
+      .populate({ path: 'assignedTechnician', populate: { path: 'technicianId', select: 'username email skills' } })
       .sort({ createdAt: -1 });
 
     res.json(requests);
@@ -349,30 +351,8 @@ exports.getAllRepairRequests = async (req, res) => {
 };
 
 
-/**
- *11 Generate Repair Report (PDF) & Send to Customer
- */
 
 
-exports.generateReport = async (req, res) => {
-  try {
-    const { id } = req.params;
-    const request = await RepairRequest.findById(id)
-      .populate('customerId', 'username email')
-      .populate({ path: 'assignedTechnician', populate: { path: 'technicianId', select: 'username email' } });
-
-    if (!request) return res.status(404).json({ error: 'Request not found' });
-
-    //Pipe PDF to Postman
-    pipeRepairReportToResponse(res, request);
-
-    //Send PDF as email to customer
-    await sendRepairReportEmail(request);
-
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
-};
 
 /**
  * 11 Download & Email PDF (for frontend download button)
