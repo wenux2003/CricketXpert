@@ -15,6 +15,18 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
+
+
+const coachRoutes = require('./routes/Coaches');
+app.use('/api/coaches', coachRoutes);
+
+const coachProgramRoutes = require('./routes/Coachingprogramroute');
+app.use('/api/Coachingprogramroute',coachProgramRoutes);
+
+const EnrollmentRoute = require('./routes/EnrollmentRoute');
+app.use('/api/EnrollmentRoute',EnrollmentRoute);
+
+
 // Routes
 const playerRoutes = require('./routes/players');
 app.use('/api/players', playerRoutes);
