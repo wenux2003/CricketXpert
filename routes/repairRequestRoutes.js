@@ -5,11 +5,14 @@ const repairController = require('../controllers/repairRequestController');
 // Customer Dashboard - Get all repair requests for a customer
 router.get('/dashboard/customer/:customerId', repairController.getCustomerRepairRequests);
 
-// Technician Dashboard - Get all repair requests for a technician
+// Technician Dashboard - Get all repair requests for a technician (optional status filter)
 router.get('/dashboard/technician/:technicianId', repairController.getTechnicianRepairRequests);
 
 // Service Manager Dashboard - Get all repair requests
 router.get('/dashboard/manager', repairController.getAllRepairRequests);
+
+// Download repair report (PDF) and also email it
+router.get('/report/download/:id', repairController.downloadAndEmailReport);
 
 // Download repair report (PDF)
 router.get('/report/:id', repairController.generateReport);

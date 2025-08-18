@@ -313,24 +313,35 @@ exports.getCustomerRepairRequests = async (req, res) => {
 exports.getTechnicianRepairRequests = async (req, res) => {
   try {
     const { technicianId } = req.params;
-    const requests = await RepairRequest.find({ assignedTechnician: technicianId })
+    const { status } = req.query;
+
+    let filter = { assignedTechnician: technicianId };
+    if (status) filter.status = status;
+
+    const requests = await RepairRequest.find(filter)
       .populate('customerId', 'username email')
       .sort({ createdAt: -1 });
+
     res.json(requests);
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
 };
 
-/**
- * 10 Service Manager Dashboard
+/** 
+10️ Service Manager Dashboard (with filter)
  */
 exports.getAllRepairRequests = async (req, res) => {
   try {
-    const requests = await RepairRequest.find()
+    const { status } = req.query;
+    let filter = {};
+    if (status) filter.status = status;
+
+    const requests = await RepairRequest.find(filter)
       .populate('customerId', 'username email')
       .populate('assignedTechnician', 'skills username email')
       .sort({ createdAt: -1 });
+
     res.json(requests);
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -363,6 +374,27 @@ exports.generateReport = async (req, res) => {
   }
 };
 
+/**
+ * 11 Download & Email PDF (for frontend download button)
+ */
+exports.downloadAndEmailReport = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const request = await RepairRequest.findById(id)
+      .populate('customerId', 'username email')
+      .populate({ path: 'assignedTechnician', populate: { path: 'technicianId', select: 'username email' } });
+
+    if (!request) return res.status(404).json({ error: 'Repair request not found' });
+
+    await sendRepairReportEmail(request); // send email
+    pipeRepairReportToResponse(res, request); // download in browser
+
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+};
+
 
 /**
  * 12 Delete Repair Request
@@ -378,3 +410,4 @@ exports.deleteRepairRequest = async (req, res) => {
     res.status(500).json({ error: err.message });
   }
 };
+ 

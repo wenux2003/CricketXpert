@@ -9,6 +9,10 @@ exports.createFeedback = async (req, res) => {
   try {
     const { requestId, requestType, customerId, description, category } = req.body;
 
+        if (!requestId || !requestType || !customerId || !description) {
+      return res.status(400).json({ error: 'requestId, requestType, customerId, and description are required' });
+    }
+
     // Create feedback
     const feedback = await Feedback.create({
       requestId,
@@ -41,15 +45,16 @@ exports.createFeedback = async (req, res) => {
  */
 exports.getAllFeedback = async (req, res) => {
   try {
-    const feedbacks = await Feedback.find()
+    const feedbacks = await Feedback.find({ requestType: 'RepairRequest' })
       .populate('customerId', 'username email')
-      .populate('requestId', 'damageType status'); // If feedback related to repair
+      .populate('requestId', 'damageType status')
+      .sort({ createdAt: -1 });
+
     res.json(feedbacks);
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
 };
-
 // Get single feedback by ID
 exports.getFeedbackById = async (req, res) => {
   try {
