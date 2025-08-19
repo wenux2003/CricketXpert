@@ -43,7 +43,7 @@ function HomePage() {
             {/* Primary Navigation Links - Text colors updated */}
             <div className="hidden md:block">
               <div className="ml-10 flex items-baseline space-x-4">
-                <a href="#" className="text-[#F1F2F7]/80 hover:text-[#F1F2F7] px-3 py-2 rounded-md text-sm font-medium transition-colors">Home</a>
+                <a href="SignUpMultiStep.js" className="text-[#F1F2F7]/80 hover:text-[#F1F2F7] px-3 py-2 rounded-md text-sm font-medium transition-colors">Home</a>
                 <a href="#" className="text-[#F1F2F7]/80 hover:text-[#F1F2F7] px-3 py-2 rounded-md text-sm font-medium transition-colors">Buy Products</a>
                 <a href="#" className="text-[#F1F2F7]/80 hover:text-[#F1F2F7] px-3 py-2 rounded-md text-sm font-medium transition-colors">Bookings</a>
                 <a href="#" className="text-[#F1F2F7]/80 hover:text-[#F1F2F7] px-3 py-2 rounded-md text-sm font-medium transition-colors">Repairs</a>

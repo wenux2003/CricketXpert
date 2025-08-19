@@ -14,6 +14,7 @@ const userSchema = new mongoose.Schema({
   contactNumber: String,
   address: String,
   profileImageURL: String,
+  dob: Date, // Date of Birth
   status: {
     type: String,
     enum: ['active', 'suspended', 'deactivated'],
