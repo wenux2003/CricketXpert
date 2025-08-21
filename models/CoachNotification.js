@@ -23,4 +23,4 @@ const notificationSchema = new mongoose.Schema({
   isRead: { type: Boolean, default: false }
 }, { timestamps: true });
 
-module.exports = mongoose.model("Notification", notificationSchema);
+module.exports = mongoose.model("CoachNotification", notificationSchema);
