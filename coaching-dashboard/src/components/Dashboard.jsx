@@ -1,6 +1,6 @@
 import Sidebar from "../components/Sidebar";
 import Topbar from "../components/Topbar";
-import { FiPackage, FiBox, FiAlertTriangle, FiCheckCircle } from "react-icons/fi";
+import { FiPackage, FiBox, FiAlertTriangle, FiCheckCircle, FiUsers } from "react-icons/fi";
 import { ResponsiveContainer, Bar, BarChart, XAxis, YAxis, Tooltip } from "recharts";
 
 const chartData = [
@@ -22,10 +22,10 @@ export default function Dashboard() {
         {/* ACTIVITY CARDS */}
         <section className="grid grid-cols-4 gap-6 mb-8">
           <ActivityCard icon={<FiCheckCircle size={26} className="text-indigo-400" />}
-                        label="Delivered"
-                        value="15 New Packages" />
-          <ActivityCard icon={<FiPackage size={26} className="text-purple-400" />}
-                        label="Ordered"
+                        label="Completed"
+                        value="150 Players" />
+          <ActivityCard icon={<FiUsers size={26} className="text-purple-400" />}
+                        label="Users"
                         value="72 New Items" />
           <ActivityCard icon={<FiAlertTriangle size={26} className="text-yellow-400" />}
                         label="Reported"
