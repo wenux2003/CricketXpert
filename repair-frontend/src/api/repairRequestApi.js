@@ -1,6 +1,6 @@
 import axios from "axios";
 
-const BASE_URL = "http://localhost:5000/api/repair-requests"; // ✅ match backend
+const BASE_URL = "http://localhost:5000/api/repairs";
 
 // Submit a new repair request
 export const submitRepairRequest = async (data) => {
@@ -9,10 +9,10 @@ export const submitRepairRequest = async (data) => {
 
 // Get repair requests for a specific customer
 export const getCustomerRequestsById = async (customerId) => {
-  return await axios.get(`${BASE_URL}/customer/${customerId}`);
+  return await axios.get(`${BASE_URL}/dashboard/customer/${customerId}`);
 };
 
-// Update a repair request
+// Update a repair request (general update by customer)
 export const updateRepairRequest = async (id, data) => {
   return await axios.put(`${BASE_URL}/${id}`, data);
 };
