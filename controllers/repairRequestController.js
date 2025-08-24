@@ -13,11 +13,18 @@ const { pipeRepairReportToResponse, sendRepairReportEmail } = require('../utils/
  */
 exports.createRepairRequest = async (req, res) => {
   try {
-    const { customerId, damageType } = req.body;
-    if (!customerId || !damageType) return res.status(400).json({ error: 'customerId and damageType are required' });
+    const { customerId, username, firstName, lastName, contactNumber, address, damageType } = req.body;
+
+    if (!customerId || !damageType) 
+      return res.status(400).json({ error: 'customerId and damageType are required' });
 
     const repairRequest = await RepairRequest.create({
       customerId,
+      username,
+      firstName,
+      lastName,
+      contactNumber,
+      address,
       damageType,
       status: 'Pending',
       repairProgress: 0,
