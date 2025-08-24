@@ -12,7 +12,7 @@ export const getCustomerRequestsById = async (customerId) => {
   return await axios.get(`${BASE_URL}/dashboard/customer/${customerId}`);
 };
 
-// Update a repair request (general update by customer)
+// Update a repair request
 export const updateRepairRequest = async (id, data) => {
   return await axios.put(`${BASE_URL}/${id}`, data);
 };
