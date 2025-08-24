@@ -1,5 +1,84 @@
 const mongoose = require('mongoose');
-const Product = require('./models/product');
+const Product = require('../models/product');
+// Search products
+exports.searchProducts = async (req, res) => {
+  try {
+    const { query, category, brand, minPrice, maxPrice, page = 1, limit = 10 } = req.query;
+    
+    let searchQuery = { is_active: true };
+    
+    if (query) {
+      searchQuery.$or = [
+        { name: { $regex: query, $options: 'i' } },
+        { description: { $regex: query, $options: 'i' } }
+      ];
+    }
+    
+    if (category) {
+      searchQuery.category = category;
+    }
+    
+    if (brand) {
+      searchQuery.brand = brand;
+    }
+    
+    if (minPrice || maxPrice) {
+      searchQuery.price = {};
+      if (minPrice) searchQuery.price.$gte = Number(minPrice);
+      if (maxPrice) searchQuery.price.$lte = Number(maxPrice);
+    }
+    
+    const products = await Product.find(searchQuery)
+      .limit(limit * 1)
+      .skip((page - 1) * limit)
+      .sort({ created_at: -1 });
+    
+    const total = await Product.countDocuments(searchQuery);
+    
+    res.json({
+      products,
+      totalPages: Math.ceil(total / limit),
+      currentPage: page,
+      total
+    });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+// Get products by category
+exports.getProductsByCategory = async (req, res) => {
+  try {
+    const { category } = req.params;
+    const products = await Product.find({ 
+      category: category, 
+      is_active: true 
+    });
+    res.json(products);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+// Get all categories
+exports.getCategories = async (req, res) => {
+  try {
+    const categories = await Product.distinct('category', { is_active: true });
+    res.json(categories);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+// Get all brands
+exports.getBrands = async (req, res) => {
+  try {
+    const brands = await Product.distinct('brand', { is_active: true });
+    res.json(brands);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
 
 // Create product
 exports.createProduct = async (req, res) => {

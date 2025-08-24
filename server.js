@@ -22,7 +22,9 @@ app.use('/api/players', playerRoutes);
 // Routes order and product 
 app.use('/api/products', require('./routes/productRoutes'));
 app.use('/api/orders', require('./routes/orderRoutes'));
-app.use('/api/users', userRoutes);
+app.use('/api/users', require('./routes/userRoutes'));
+app.use('/api/Payments', require('./routes/paymentRoutes'));
+
 
 app.get('/api/test', (req, res) => {
   res.json({ success: true, message: 'Test route working!' });

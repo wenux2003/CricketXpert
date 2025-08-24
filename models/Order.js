@@ -31,11 +31,7 @@ const orderSchema = new mongoose.Schema({
     ref: 'User',
     required: true
   },
-status: {
-  type: String,
-  enum: ['created', 'processing', 'completed', 'cancelled'], // example
-  default: 'created'
-},
+
   date: {
     type: Date,
     default: Date.now
@@ -43,8 +39,14 @@ status: {
   paymentId: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Payment',
-    required: true
-  }
+    default: null
+  },
+  status: {
+  type: String,
+  enum: ['created', 'processing', 'completed', 'cancelled'], // example
+  default: 'created',
+  required: true
+},
 });
 
 module.exports = mongoose.model('Order', orderSchema);
