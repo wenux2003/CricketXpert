@@ -1,17 +1,19 @@
-import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
+import { BrowserRouter as Router, Routes, Route, useParams } from "react-router-dom";
 import RepairRequestForm from "./pages/RepairRequestForm";
 import CustomerDashboard from "./pages/CustomerDashboard";
 
-// Wrapper component is optional, can directly use useParams in CustomerDashboard
+// Wrapper to pass URL param
+function CustomerDashboardWrapper() {
+  const { customerId } = useParams();
+  return <CustomerDashboard customerId={customerId} />;
+}
+
 function App() {
   return (
     <Router>
       <Routes>
-        {/* Route for repair request form */}
         <Route path="/" element={<RepairRequestForm />} />
-
-        {/* Route for customer dashboard */}
-        <Route path="/dashboard/:customerId" element={<CustomerDashboard />} />
+        <Route path="/dashboard/:customerId" element={<CustomerDashboardWrapper />} />
       </Routes>
     </Router>
   );

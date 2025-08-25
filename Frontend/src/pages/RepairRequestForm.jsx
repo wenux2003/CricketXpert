@@ -3,32 +3,34 @@ import { useNavigate } from "react-router-dom";
 import { getUserByUsername } from "../api/userApi";
 import { submitRepairRequest } from "../api/repairRequestApi";
 
+// Updated damage types matching backend enum
+const DAMAGE_TYPES = [
+  "Bat Handle Damage",
+  "Bat Surface Crack",
+  "Ball Stitch Damage",
+  "Gloves Tear",
+  "Pads Crack",
+  "Helmet Damage",
+  "Other"
+];
+
 const RepairRequestForm = () => {
   const [usernameInput, setUsernameInput] = useState("");
   const [user, setUser] = useState(null);
-  const [firstName, setFirstName] = useState("");
-  const [lastName, setLastName] = useState("");
-  const [contactNumber, setContactNumber] = useState("");
-  const [address, setAddress] = useState("");
   const [damageType, setDamageType] = useState("");
+  const [description, setDescription] = useState("");
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState("");
-
   const navigate = useNavigate();
 
-  // Check if username exists
   const handleUsernameCheck = async () => {
     if (!usernameInput.trim()) return setMessage("Enter a username");
     setLoading(true);
     setMessage("");
     try {
       const res = await getUserByUsername(usernameInput.trim());
-      setUser(res); // user object returned
-      setFirstName(res.firstName || "");
-      setLastName(res.lastName || "");
-      setContactNumber(res.contactNumber || "");
-      setAddress(res.address || "");
-    } catch (err) {
+      setUser(res);
+    } catch {
       setMessage("User not found! Please register first.");
       setUser(null);
     } finally {
@@ -36,21 +38,30 @@ const RepairRequestForm = () => {
     }
   };
 
-  // Submit repair request
+  const handleDescriptionChange = (e) => {
+    setDescription(e.target.value);
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!user) return setMessage("Enter a valid registered username first.");
+    if (!damageType) return setMessage("Select a damage type.");
+    if (!description.trim()) return setMessage("Enter a valid description.");
+
     setLoading(true);
     setMessage("");
 
     try {
-      // Only send fields expected by schema
-      const data = {
+      await submitRepairRequest({
         customerId: user._id,
+        username: user.username,
+        firstName: user.firstName,
+        lastName: user.lastName,
+        contactNumber: user.contactNumber,
+        address: user.address,
         damageType,
-      };
-
-      await submitRepairRequest(data);
+        description,
+      });
       setMessage("Repair request submitted successfully!");
       navigate(`/dashboard/${user._id}`);
     } catch (err) {
@@ -61,8 +72,10 @@ const RepairRequestForm = () => {
   };
 
   return (
-    <div className="max-w-md mx-auto bg-lightBg p-6 rounded-xl shadow-md mt-10">
-      <h2 className="text-2xl font-bold text-primary mb-4">Submit Repair Request</h2>
+    <div className="max-w-md mx-auto bg-[#F1F2F7] p-6 rounded-xl shadow-md mt-10 border-2 border-[#42ADF5]">
+      <h2 className="text-2xl font-bold text-[#072679] mb-4 text-center">
+        Cricket Equipment Repair
+      </h2>
 
       {!user ? (
         <div className="space-y-4">
@@ -71,78 +84,63 @@ const RepairRequestForm = () => {
             placeholder="Enter your registered username"
             value={usernameInput}
             onChange={(e) => setUsernameInput(e.target.value)}
-            className="w-full p-2 border border-body rounded-md"
+            className="w-full p-3 border border-[#36516C] rounded-md focus:outline-none focus:ring-2 focus:ring-[#42ADF5]"
           />
           <button
             onClick={handleUsernameCheck}
             disabled={loading}
-            className="w-full bg-secondary text-white py-2 rounded-xl font-medium hover:bg-primaryHover transition"
+            className="w-full bg-[#42ADF5] text-white py-2 rounded-xl font-medium hover:bg-[#2C8ED1] transition"
           >
             {loading ? "Checking..." : "Check Username"}
           </button>
-          {message && <p className="text-body mt-2">{message}</p>}
+          {message && <p className="text-[#36516C] mt-2">{message}</p>}
         </div>
       ) : (
         <form onSubmit={handleSubmit} className="space-y-4">
+          {/* User Info */}
+          <input type="text" value={user.firstName} disabled className="w-full p-2 border border-[#36516C] rounded-md bg-gray-100" />
+          <input type="text" value={user.lastName} disabled className="w-full p-2 border border-[#36516C] rounded-md bg-gray-100" />
+          <input type="text" value={user.contactNumber} disabled className="w-full p-2 border border-[#36516C] rounded-md bg-gray-100" />
+          <input type="text" value={user.address} disabled className="w-full p-2 border border-[#36516C] rounded-md bg-gray-100" />
+
+          {/* Damage Type Dropdown */}
           <div>
-            <label className="block text-heading font-medium mb-1">First Name</label>
-            <input
-              type="text"
-              value={firstName}
-              onChange={(e) => setFirstName(e.target.value)}
-              className="w-full p-2 border border-body rounded-md"
-              disabled
-            />
-          </div>
-          <div>
-            <label className="block text-heading font-medium mb-1">Last Name</label>
-            <input
-              type="text"
-              value={lastName}
-              onChange={(e) => setLastName(e.target.value)}
-              className="w-full p-2 border border-body rounded-md"
-              disabled
-            />
-          </div>
-          <div>
-            <label className="block text-heading font-medium mb-1">Contact Number</label>
-            <input
-              type="text"
-              value={contactNumber}
-              onChange={(e) => setContactNumber(e.target.value)}
-              className="w-full p-2 border border-body rounded-md"
-              disabled
-            />
-          </div>
-          <div>
-            <label className="block text-heading font-medium mb-1">Address</label>
-            <input
-              type="text"
-              value={address}
-              onChange={(e) => setAddress(e.target.value)}
-              className="w-full p-2 border border-body rounded-md"
-              disabled
-            />
-          </div>
-          <div>
-            <label className="block text-heading font-medium mb-1">Damage Type</label>
-            <input
-              type="text"
+            <label className="block text-[#072679] font-semibold mb-1">Damage Type</label>
+            <select
               value={damageType}
               onChange={(e) => setDamageType(e.target.value)}
-              className="w-full p-2 border border-body rounded-md"
-              placeholder="Enter damage type"
+              className="w-full p-3 border border-[#36516C] rounded-md focus:outline-none focus:ring-2 focus:ring-[#42ADF5]"
+              required
+            >
+              <option value="">-- Select Damage Type --</option>
+              {DAMAGE_TYPES.map((type) => (
+                <option key={type} value={type}>{type}</option>
+              ))}
+            </select>
+          </div>
+
+          {/* Description Field */}
+          <div>
+            <label className="block text-[#072679] font-semibold mb-1">Description</label>
+            <textarea
+              value={description}
+              onChange={handleDescriptionChange}
+              className="w-full p-3 border border-[#36516C] rounded-md focus:outline-none focus:ring-2 focus:ring-[#42ADF5]"
+              placeholder="Describe the damage"
+              rows={4}
               required
             />
           </div>
+
           <button
             type="submit"
             disabled={loading}
-            className="w-full bg-secondary text-white py-2 rounded-xl font-medium hover:bg-primaryHover transition"
+            className="w-full bg-[#D88717] text-white py-2 rounded-xl font-medium hover:bg-[#B56D13] transition"
           >
             {loading ? "Submitting..." : "Submit Request"}
           </button>
-          {message && <p className="mt-3 text-body">{message}</p>}
+
+          {message && <p className="mt-3 text-[#36516C]">{message}</p>}
         </form>
       )}
     </div>

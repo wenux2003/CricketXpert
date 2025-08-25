@@ -2,7 +2,35 @@ const mongoose = require('mongoose');
 
 const repairRequestSchema = new mongoose.Schema({
   customerId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
-  damageType: { type: String, required: true },
+ damageType: { 
+    type: String,
+    required: true,
+    enum: [
+      "Bat Handle Damage",
+      "Bat Surface Crack",
+      "Ball Stitch Damage",
+      "Gloves Tear",
+      "Pads Crack",
+      "Helmet Damage",
+      "Other"
+    ] 
+  },
+
+  description: { 
+    type: String,
+    required: true,
+    trim: true,
+    minlength: 5,
+    maxlength: 500,
+    validate: {
+      validator: function(v) {
+        // No numbers and repeated single character sequences allowed
+        return !/\d/.test(v) && !/(.)\1{3,}/.test(v);
+      },
+      message: props => `Description cannot contain numbers or repeated characters.`
+    }
+  },
+
   status: {
     type: String,
     enum: [

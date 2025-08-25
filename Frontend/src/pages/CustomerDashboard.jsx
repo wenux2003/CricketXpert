@@ -1,80 +1,89 @@
 import { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
-import {
-  getCustomerRequestsById,
-  updateRepairRequest,
-  deleteRepairRequest,
-  downloadRepairPDF,
-} from "../api/repairRequestApi";
+import RepairRequestCard from "../components/RepairRequestCard";
+import { getCustomerRequestsById, updateRepairRequest, deleteRepairRequest, downloadRepairPDF } from "../api/repairRequestApi";
 
-const RepairRequestCard = ({ request, onUpdate, onDelete, onDownload }) => (
-  <div className="bg-lightBg p-4 rounded-xl shadow mb-4">
-    <h3 className="text-xl font-bold text-primary mb-2">{request.damageType || "N/A"}</h3>
-    <p><strong>Status:</strong> {request.status || "Pending"}</p>
-    <p><strong>Progress:</strong> {request.repairProgress ?? 0}%</p>
-    <p><strong>Current Stage:</strong> {request.currentStage || "Not started"}</p>
-    {request.costEstimate && <p><strong>Cost:</strong> {request.costEstimate}</p>}
-    {request.timeEstimate && <p><strong>Time Estimate:</strong> {request.timeEstimate}</p>}
-    <div className="mt-2 flex gap-2">
-      <button
-        onClick={() => onUpdate(request)}
-        className="bg-secondaryBtn text-white py-1 px-3 rounded hover:bg-secondaryBtnHover transition"
-      >
-        Update
-      </button>
-      <button
-        onClick={() => onDelete(request._id)}
-        className="bg-primary text-white py-1 px-3 rounded hover:bg-primaryHover transition"
-      >
-        Delete
-      </button>
-      <button
-        onClick={() => onDownload(request._id)}
-        className="bg-secondary text-white py-1 px-3 rounded hover:bg-primaryHover transition"
-      >
-        Download PDF
-      </button>
-    </div>
-  </div>
-);
+const STATUS_GROUPS = ["Pending", "Approved", "Rejected", "Estimate Sent", "Customer Approved", "Customer Rejected"];
+const DAMAGE_TYPES = [
+  "Bat Handle Damage",
+  "Bat Surface Crack",
+  "Ball Stitch Damage",
+  "Gloves Tear",
+  "Pads Crack",
+  "Helmet Damage",
+  "Other"
+];
+const ITEMS_PER_PAGE = 5;
 
 const CustomerDashboard = () => {
   const { customerId } = useParams();
   const [requests, setRequests] = useState([]);
   const [loading, setLoading] = useState(true);
   const [message, setMessage] = useState("");
+  const [searchTerm, setSearchTerm] = useState("");
+  const [statusFilter, setStatusFilter] = useState("All");
+  const [currentPage, setCurrentPage] = useState(1);
 
-  // Fetch customer requests
+  // Modal state
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [editingRequest, setEditingRequest] = useState(null);
+  const [newDamageType, setNewDamageType] = useState("");
+  const [newDescription, setNewDescription] = useState("");
+
   const fetchRequests = async () => {
     setLoading(true);
     setMessage("");
     try {
-      if (!customerId) {
-        setMessage("Customer ID not found in URL.");
-        return;
-      }
-
       const res = await getCustomerRequestsById(customerId);
-      setRequests(res.data || []);
-      if (!res.data || res.data.length === 0) {
-        setMessage("No repair requests submitted yet.");
-      }
-    } catch (err) {
-      console.error(err);
+      setRequests(res.data);
+      if (res.data.length === 0) setMessage("No repair requests submitted yet.");
+    } catch {
       setMessage("Error fetching requests");
     } finally {
       setLoading(false);
     }
   };
 
-  const handleUpdate = async (request) => {
-    const newDamageType = prompt("Enter new damage type:", request.damageType);
-    if (!newDamageType) return;
+  useEffect(() => {
+    fetchRequests();
+  }, [customerId]);
+
+  // Filter & search
+  const filteredRequests = requests.filter((r) => {
+    const damageType = r.damageType || "";
+    const description = r.description || "";
+    const matchesSearch =
+      damageType.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      description.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesStatus = statusFilter === "All" || r.status === statusFilter;
+    return matchesSearch && matchesStatus;
+  });
+
+  // Pagination
+  const totalPages = Math.ceil(filteredRequests.length / ITEMS_PER_PAGE);
+  const displayedRequests = filteredRequests.slice(
+    (currentPage - 1) * ITEMS_PER_PAGE,
+    currentPage * ITEMS_PER_PAGE
+  );
+
+  const openEditModal = (request) => {
+    setEditingRequest(request);
+    setNewDamageType(request.damageType);
+    setNewDescription(request.description);
+    setIsModalOpen(true);
+  };
+
+  const handleUpdate = async () => {
+    if (!newDamageType || !newDescription.trim()) return alert("Both fields are required.");
     try {
-      await updateRepairRequest(request._id, { damageType: newDamageType });
+      await updateRepairRequest(editingRequest._id, {
+        damageType: newDamageType,
+        description: newDescription,
+      });
+      setIsModalOpen(false);
+      setEditingRequest(null);
       fetchRequests();
-    } catch (err) {
-      console.error(err);
+    } catch {
       alert("Error updating request");
     }
   };
@@ -84,8 +93,7 @@ const CustomerDashboard = () => {
     try {
       await deleteRepairRequest(id);
       fetchRequests();
-    } catch (err) {
-      console.error(err);
+    } catch {
       alert("Error deleting request");
     }
   };
@@ -99,34 +107,133 @@ const CustomerDashboard = () => {
       link.setAttribute("download", `repair_report_${id}.pdf`);
       document.body.appendChild(link);
       link.click();
-      link.remove();
-    } catch (err) {
-      console.error(err);
+    } catch {
       alert("Error downloading PDF");
     }
   };
 
-  useEffect(() => {
-    fetchRequests();
-  }, [customerId]);
-
   return (
-    <div className="max-w-3xl mx-auto mt-10 px-4">
-      <h2 className="text-2xl font-bold text-primary mb-6">My Repair Requests</h2>
+    <div className="max-w-5xl mx-auto mt-10">
+      <h2 className="text-3xl font-bold text-[#072679] mb-6 text-center">My Repair Requests</h2>
 
-      {loading && <p className="text-body">Loading...</p>}
-
-      {!loading && message && <p className="text-body">{message}</p>}
-
-      {!loading && !message && requests.length > 0 && requests.map((req) => (
-        <RepairRequestCard
-          key={req._id}
-          request={req}
-          onUpdate={handleUpdate}
-          onDelete={handleDelete}
-          onDownload={handleDownload}
+      {/* Search & Filter */}
+      <div className="flex flex-col md:flex-row gap-4 mb-6">
+        <input
+          type="text"
+          placeholder="Search by damage type or description"
+          value={searchTerm}
+          onChange={(e) => { setSearchTerm(e.target.value); setCurrentPage(1); }}
+          className="flex-1 p-3 border border-[#36516C] rounded-md focus:outline-none focus:ring-2 focus:ring-[#42ADF5]"
         />
-      ))}
+        <select
+          value={statusFilter}
+          onChange={(e) => { setStatusFilter(e.target.value); setCurrentPage(1); }}
+          className="p-3 border border-[#36516C] rounded-md focus:outline-none focus:ring-2 focus:ring-[#42ADF5]"
+        >
+          <option value="All">All Statuses</option>
+          {STATUS_GROUPS.map((status) => (
+            <option key={status} value={status}>{status}</option>
+          ))}
+        </select>
+      </div>
+
+      {loading ? (
+        <p className="text-[#36516C]">Loading...</p>
+      ) : message ? (
+        <p className="text-[#36516C]">{message}</p>
+      ) : filteredRequests.length === 0 ? (
+        <p className="text-[#36516C]">No requests match your search/filter criteria.</p>
+      ) : (
+        <>
+          {STATUS_GROUPS.map((status) => {
+            const groupRequests = filteredRequests.filter(r => r.status === status);
+            if (groupRequests.length === 0) return null;
+            return (
+              <div key={status} className="mb-8">
+                <h3 className="text-xl font-semibold text-[#42ADF5] mb-3">{status} Requests</h3>
+                {groupRequests.map((req) => (
+                  <RepairRequestCard
+                    key={req._id}
+                    request={req}
+                    onUpdate={() => openEditModal(req)}
+                    onDelete={() => handleDelete(req._id)}
+                    onDownload={() => handleDownload(req._id)}
+                  />
+                ))}
+              </div>
+            );
+          })}
+
+          {/* Pagination */}
+          {totalPages > 1 && (
+            <div className="flex justify-center items-center gap-2 mt-4">
+              <button
+                onClick={() => setCurrentPage((p) => Math.max(p - 1, 1))}
+                disabled={currentPage === 1}
+                className="px-3 py-1 bg-[#42ADF5] text-white rounded hover:bg-[#2C8ED1] transition"
+              >
+                Previous
+              </button>
+              <span className="text-[#072679] font-medium">
+                Page {currentPage} of {totalPages}
+              </span>
+              <button
+                onClick={() => setCurrentPage((p) => Math.min(p + 1, totalPages))}
+                disabled={currentPage === totalPages}
+                className="px-3 py-1 bg-[#42ADF5] text-white rounded hover:bg-[#2C8ED1] transition"
+              >
+                Next
+              </button>
+            </div>
+          )}
+        </>
+      )}
+
+      {/* Edit Modal */}
+      {isModalOpen && (
+        <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50">
+          <div className="bg-white p-6 rounded-xl shadow-lg w-full max-w-md">
+            <h3 className="text-xl font-semibold text-[#072679] mb-4">Edit Repair Request</h3>
+            <div className="space-y-3">
+              <div>
+                <label className="block mb-1 font-medium text-[#072679]">Damage Type</label>
+                <select
+                  value={newDamageType}
+                  onChange={(e) => setNewDamageType(e.target.value)}
+                  className="w-full p-2 border border-[#36516C] rounded-md focus:outline-none focus:ring-2 focus:ring-[#42ADF5]"
+                >
+                  {DAMAGE_TYPES.map((type) => (
+                    <option key={type} value={type}>{type}</option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label className="block mb-1 font-medium text-[#072679]">Description</label>
+                <textarea
+                  value={newDescription}
+                  onChange={(e) => setNewDescription(e.target.value)}
+                  className="w-full p-2 border border-[#36516C] rounded-md focus:outline-none focus:ring-2 focus:ring-[#42ADF5]"
+                  rows={4}
+                />
+              </div>
+              <div className="flex justify-end gap-2 mt-4">
+                <button
+                  onClick={handleUpdate}
+                  className="px-4 py-2 bg-[#42ADF5] text-white rounded hover:bg-[#2C8ED1] transition"
+                >
+                  Save
+                </button>
+                <button
+                  onClick={() => setIsModalOpen(false)}
+                  className="px-4 py-2 bg-gray-400 text-white rounded hover:bg-gray-500 transition"
+                >
+                  Cancel
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
