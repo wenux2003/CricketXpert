@@ -1,22 +1,28 @@
-const mongoose = require('mongoose');
+// models/Enrollment.js
+const mongoose = require("mongoose");
 
 const enrollmentSchema = new mongoose.Schema({
-  customerId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
-  programId: { type: mongoose.Schema.Types.ObjectId, ref: 'CoachingProgram', required: true },
-  selectedSlot: { type: Date },
-  status: {
-    type: String,
-    enum: ['pending', 'confirmed', 'cancelled', 'completed'],
-    default: 'pending'
+  player: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true },
+  program: { type: mongoose.Schema.Types.ObjectId, ref: "MCoachingProgram", required: true },
+  selectedSlot: {
+    date: Date,
+    startTime: String,
+    endTime: String
   },
-  paymentId: { type: mongoose.Schema.Types.ObjectId, ref: 'Payments' },// 👈 Reference to Payment
+  status: { type: String, enum: ["pending", "confirmed", "cancelled"], default: "pending" },
 
-  progress: [{
-    partName: String,       // e.g. "Lesson 1", "Module 2"
-    completed: Boolean,     // true/false
-    completedAt: Date
-  }]
+  // progress tracking
+  totalSessions: { type: Number, default: 0 },
+  completedSessions: { type: Number, default: 0 },
+  progress: { type: Number, default: 0 },
+  certificateIssued: { type: Boolean, default: false },
 
+  // 🆕 Payment details
+  paymentStatus: { type: String, enum: ["pending", "paid", "failed"], default: "pending" },
+  paymentMethod: { type: String, enum: ["card", "paypal", "upi", "stripe"], default: "card" },
+  transactionId: { type: String }, // reference from Stripe/PayPal/etc.
+  amountPaid: { type: Number },
+  paidAt: { type: Date }
 }, { timestamps: true });
 
-module.exports = mongoose.model('Enrollment', enrollmentSchema)
+module.exports = mongoose.model("Enrollment", enrollmentSchema);
