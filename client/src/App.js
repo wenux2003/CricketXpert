@@ -21,18 +21,24 @@ function App() {
       });
   }, []);
 
-  if (loading) return <p>Loading players...</p>;
-  if (error) return <p>Error: {error}</p>;
+  if (loading) return <p className="text-center mt-10 text-gray-500">Loading players...</p>;
+  if (error) return <p className="text-center mt-10 text-red-500">Error: {error}</p>;
 
   return (
-    <div style={{ padding: '20px', fontFamily: 'Arial' }}>
-      <h1>CricketXpert Players</h1>
+    <div className="min-h-screen bg-gray-100 p-6 font-sans">
+      <h1 className="text-3xl font-bold text-center text-blue-700 mb-6">CricketXpert Players</h1>
+
       {players.length === 0 ? (
-        <p>No players found.</p>
+        <p className="text-center text-gray-600">No players found.</p>
       ) : (
-        <ul>
+        <ul className="max-w-md mx-auto space-y-4">
           {players.map(player => (
-            <li key={player._id}>{player.name}</li>
+            <li
+              key={player._id}
+              className="bg-white p-4 rounded shadow hover:bg-blue-50 transition"
+            >
+              {player.name}
+            </li>
           ))}
         </ul>
       )}
