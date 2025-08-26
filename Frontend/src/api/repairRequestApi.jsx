@@ -20,3 +20,12 @@ export const deleteRepairRequest = (id) =>
 // Download repair report PDF
 export const downloadRepairPDF = (id) =>
   axios.get(`${BASE_URL}/report/download/${id}`, { responseType: "blob" });
+
+
+export const getAllRepairRequests = (params) => API.get('/repairs/dashboard/manager', { params });
+export const updateRequestStatus = (id, payload) => API.put(`/repairs/status/${id}`, payload);
+export const assignTechnician = (id, payload) => API.put(`/repairs/assign/${id}`, payload);
+export const customerDecision = (id, payload) => API.put(`/repairs/customer-decision/${id}`, payload);
+export const updateProgress = (id, payload) => API.put(`/repairs/progress/${id}`, payload);
+export const getTechnicianRequests = (technicianId) => API.get(`/repairs/dashboard/technician/${technicianId}`);
+
