@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import axios from 'axios';
+import bat1 from '../assets/merch1.png';
 
 const Home = () => {
   const [categories, setCategories] = useState([]);
@@ -9,13 +10,13 @@ const Home = () => {
 
   // Static map for category images (using public folder)
   const categoryImages = {
-    Accessories: '/bat1.png',
+    Bat: bat1,
     Ball: '/bat1.png',
-    Electronics: '/bat1.png',
-    Gaming: '/bat1.png',
+    Gloves: '/bat1.png',
+    Pads: '/bat1.png',
     Helmet: '/bat1.png',
-    Sports: '/bat1.png',
-    Wearables: '/bat1.png',
+    Accessories: '/bat1.png',
+    Clothing: '/bat1.png',
   };
 
   useEffect(() => {
@@ -32,7 +33,7 @@ const Home = () => {
       setCategories(res.data);
     } catch (err) {
       console.error('Error fetching categories:', err.response ? err.response.data : err.message);
-      setCategories(['Accessories', 'Ball', 'Electronics', 'Gaming', 'Helmet', 'Sports', 'Wearables']); // Fallback categories
+      setCategories(['Bat', 'Ball', 'Gloves', 'Pads', 'Helmet', 'Accessories', 'Clothing']); // Fallback categories
     }
   };
 
