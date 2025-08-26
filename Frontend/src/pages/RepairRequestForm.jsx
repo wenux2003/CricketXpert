@@ -11,16 +11,6 @@ const Brand = {
   accent: '#D88717',
 };
 
-const BACKEND_DAMAGE_TYPES = [
-  'Bat Handle Damage',
-  'Bat Surface Crack',
-  'Ball Stitch Damage',
-  'Gloves Tear',
-  'Pads Crack',
-  'Helmet Damage',
-  'Other'
-];
-
 const RepairRequestForm = () => {
   const navigate = useNavigate();
 
@@ -38,9 +28,16 @@ const RepairRequestForm = () => {
   const [apiError, setApiError] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // =========================
-  // USER LOOKUP
-  // =========================
+  const BACKEND_DAMAGE_TYPES = [
+    'Bat Handle Damage',
+    'Bat Surface Crack',
+    'Ball Stitch Damage',
+    'Gloves Tear',
+    'Pads Crack',
+    'Helmet Damage',
+    'Other'
+  ];
+
   const handleUsernameCheck = async () => {
     setLookupError('');
     setApiError('');
@@ -53,15 +50,16 @@ const RepairRequestForm = () => {
     try {
       const data = await fetchUserByUsername(username);
       const user = data.user || data || {};
-      const id = user.id || user._id || user.customerId || null;
+      const id = user.id || user._id || user.userId || user.customerId || null;
       const name = user.name || `${user.firstName || ''} ${user.lastName || ''}`.trim() || user.username || '';
-      const email = user.email || '';
-      const phone = user.phone || '';
-      const address = user.address || '';
+      const email = user.email || user.mail || '';
+      const phone = user.phone || user.contactNumber || user.mobile || '';
+      const address = user.address || user.location || '';
 
       if (!id || !email) throw new Error('notfound');
 
-      setCurrentUser({ id, name, email, phone, address, username });
+      const normalized = { id, name, email, phone, address, username };
+      setCurrentUser(normalized);
     } catch (err) {
       setLookupError('No user found with that username or name. Please check and try again.');
       setCurrentUser(null);
@@ -70,9 +68,6 @@ const RepairRequestForm = () => {
     }
   };
 
-  // =========================
-  // FORM HANDLERS
-  // =========================
   const handleInputChange = (e) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
@@ -86,6 +81,7 @@ const RepairRequestForm = () => {
   const validateForm = () => {
     const next = {};
     if (!currentUser) next.currentUser = 'Please validate your username first.';
+
     if (!formData.damageType) next.damageType = 'Please select damage type';
 
     const desc = (formData.damageDescription || '').trim();
@@ -99,9 +95,6 @@ const RepairRequestForm = () => {
     return Object.keys(next).length === 0;
   };
 
-  // =========================
-  // SUBMIT HANDLER
-  // =========================
   const handleSubmit = async (e) => {
     e.preventDefault();
     setApiError('');
@@ -125,16 +118,10 @@ const RepairRequestForm = () => {
 
       const response = await submitRepairRequest(payload);
 
-      // 🔥 Robust response handling
-      let responseData;
-      if (response?.data) responseData = response.data;
-      else responseData = response;
-
-      // check common success patterns
-      if (responseData._id || responseData.customerId || (responseData.success && responseData.success === true)) {
+      if (response.data?.success) {
         navigate(`/dashboard/${currentUser.id}`);
       } else {
-        setApiError(responseData.error || responseData.message || 'Failed to submit repair request.');
+        setApiError(response.data?.error || 'Failed to submit repair request.');
       }
     } catch (error) {
       const msg = error?.response?.data?.error || error?.response?.data?.message || error?.message || 'Submission failed.';
@@ -144,11 +131,11 @@ const RepairRequestForm = () => {
     }
   };
 
-  const closeModal = () => navigate(-1);
+  // Modal close handler
+  const closeModal = () => {
+    navigate(-1);
+  };
 
-  // =========================
-  // RENDER
-  // =========================
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
       <div className="w-full max-w-3xl max-h-[90vh] overflow-y-auto bg-white rounded-xl shadow-xl" style={{ border: `2px solid ${Brand.secondary}` }}>
@@ -187,31 +174,29 @@ const RepairRequestForm = () => {
           )}
 
           <form onSubmit={handleSubmit} className="space-y-6">
-            {/* Customer Info */}
             <div className="bg-gray-50 rounded-lg p-4">
               <h2 className="text-lg font-semibold mb-3" style={{ color: Brand.primary }}>Customer Information</h2>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-medium mb-1" style={{ color: Brand.body }}>Full Name</label>
-                  <input type="text" value={currentUser?.name || ''} readOnly className="w-full px-3 py-2 border rounded-lg bg-gray-100 border-gray-300" />
+                  <input type="text" value={currentUser?.name || ''} readOnly disabled className={`w-full px-3 py-2 border rounded-lg bg-gray-100 ${errors.customerName ? 'border-red-500' : 'border-gray-300'}`} />
                 </div>
                 <div>
                   <label className="block text-sm font-medium mb-1" style={{ color: Brand.body }}>Email Address</label>
-                  <input type="email" value={currentUser?.email || ''} readOnly className="w-full px-3 py-2 border rounded-lg bg-gray-100 border-gray-300" />
+                  <input type="email" value={currentUser?.email || ''} readOnly disabled className={`w-full px-3 py-2 border rounded-lg bg-gray-100 ${errors.email ? 'border-red-500' : 'border-gray-300'}`} />
                 </div>
                 <div>
                   <label className="block text-sm font-medium mb-1" style={{ color: Brand.body }}>Phone Number</label>
-                  <input type="tel" value={currentUser?.phone || ''} readOnly className="w-full px-3 py-2 border rounded-lg bg-gray-100 border-gray-300" />
+                  <input type="tel" value={currentUser?.phone || ''} readOnly disabled className={`w-full px-3 py-2 border rounded-lg bg-gray-100 ${errors.phone ? 'border-red-500' : 'border-gray-300'}`} />
                 </div>
                 <div>
                   <label className="block text-sm font-medium mb-1" style={{ color: Brand.body }}>Customer ID</label>
-                  <input type="text" value={currentUser?.id || ''} readOnly className="w-full px-3 py-2 border rounded-lg bg-gray-100 border-gray-300" />
+                  <input type="text" value={currentUser?.id || ''} readOnly disabled className="w-full px-3 py-2 border rounded-lg bg-gray-100 border-gray-300" />
                 </div>
               </div>
               {errors.currentUser && <p className="text-red-500 text-sm mt-2">{errors.currentUser}</p>}
             </div>
 
-            {/* Equipment & Damage */}
             <div className="bg-gray-50 rounded-lg p-4">
               <h2 className="text-lg font-semibold mb-3" style={{ color: Brand.primary }}>Equipment & Damage Details</h2>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -228,7 +213,7 @@ const RepairRequestForm = () => {
 
                 <div>
                   <label className="block text-sm font-medium mb-1" style={{ color: Brand.body }}>Damage Type *</label>
-                  <select name="damageType" value={formData.damageType} onChange={handleInputChange} className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 ${errors.damageType ? 'border-red-500' : 'border-gray-300'}`}>
+                  <select name="damageType" value={formData.damageType} onChange={handleInputChange} className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 ${errors.damageType ? 'border-red-500' : 'border-gray-300'}`} aria-invalid={!!errors.damageType}>
                     <option value="">Select damage type (must match)</option>
                     {BACKEND_DAMAGE_TYPES.map((type) => (
                       <option key={type} value={type}>{type}</option>
@@ -246,6 +231,7 @@ const RepairRequestForm = () => {
                     rows="4"
                     className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 ${errors.damageDescription ? 'border-red-500' : 'border-gray-300'}`}
                     placeholder="Describe the damage (10-300 chars, no numbers, avoid aaa, bbb, etc.)"
+                    aria-invalid={!!errors.damageDescription}
                   />
                   {errors.damageDescription && <p className="text-red-500 text-sm mt-1">{errors.damageDescription}</p>}
                 </div>
