@@ -1,5 +1,5 @@
 const mongoose = require('mongoose');
-const Product = require('./models/product');
+const Product = require('../models/product');
 // Search products
 exports.searchProducts = async (req, res) => {
   try {
