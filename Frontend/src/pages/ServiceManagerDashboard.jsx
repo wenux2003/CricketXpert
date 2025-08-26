@@ -1,162 +1,374 @@
-import { useEffect, useState } from "react";
-import { getAllRepairRequests, updateRepairRequest, getAllTechnicians, assignTechnician } from "../api/repairRequestApi";
+import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { getAllRepairRequests, updateRepairStatus, assignTechnician, sendEstimate } from '../api/repairRequestApi';
+import { getAllTechnicians } from '../api/repairRequestApi';
 
-const STATUS_GROUPS = ["Pending", "Approved", "Rejected", "Estimate Sent", "Customer Approved", "Customer Rejected"];
+const Brand = {
+  primary: '#072679',
+  secondary: '#42ADF5',
+  heading: '#000000',
+  body: '#36516C',
+  light: '#F1F2F7',
+  accent: '#D88717',
+};
 
 const ServiceManagerDashboard = () => {
-  const [requests, setRequests] = useState([]);
+  const navigate = useNavigate();
+  const [repairRequests, setRepairRequests] = useState([]);
   const [technicians, setTechnicians] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [message, setMessage] = useState("");
-
-  const [searchTerm, setSearchTerm] = useState("");
-
-  // Modal state for cost & time
-  const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedRequest, setSelectedRequest] = useState(null);
-  const [cost, setCost] = useState("");
-  const [duration, setDuration] = useState("");
+  const [showEstimateModal, setShowEstimateModal] = useState(false);
+  const [showAssignmentModal, setShowAssignmentModal] = useState(false);
+  const [estimateData, setEstimateData] = useState({
+    cost: '',
+    timeEstimate: '',
+    notes: ''
+  });
+  const [assignmentData, setAssignmentData] = useState({
+    technicianId: '',
+    notes: ''
+  });
+  const [filter, setFilter] = useState('all');
 
-  const fetchData = async () => {
-    setLoading(true);
+  useEffect(() => {
+    loadData();
+  }, []);
+
+  const loadData = async () => {
     try {
-      const resRequests = await getAllRepairRequests();
-      const resTechnicians = await getAllTechnicians();
-      setRequests(resRequests.data);
-      setTechnicians(resTechnicians.data);
-      if (resRequests.data.length === 0) setMessage("No repair requests available.");
-    } catch {
-      setMessage("Error fetching data");
+      const [requestsRes, techniciansRes] = await Promise.all([
+        getAllRepairRequests(),
+        getAllTechnicians()
+      ]);
+      setRepairRequests(requestsRes.data);
+      setTechnicians(techniciansRes.data);
+    } catch (error) {
+      console.error('Error loading data:', error);
     } finally {
       setLoading(false);
     }
   };
 
-  useEffect(() => {
-    fetchData();
-  }, []);
-
-  // Filter requests by search term
-  const filteredRequests = requests.filter(req => 
-    req.customerId.username.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    req.damageType.toLowerCase().includes(searchTerm.toLowerCase())
-  );
-
-  const handleApprove = async (request) => {
-    setSelectedRequest(request);
-    setCost("");
-    setDuration("");
-    setIsModalOpen(true);
+  const handleStatusUpdate = async (requestId, newStatus) => {
+    try {
+      await updateRepairStatus(requestId, { status: newStatus });
+      await loadData(); // Reload data
+      alert(`Request ${newStatus} successfully`);
+    } catch (error) {
+      console.error('Error updating status:', error);
+      alert('Failed to update status');
+    }
   };
 
-  const handleReject = async (requestId) => {
-    await updateRepairRequest(requestId, { status: "Rejected" });
-    fetchData();
+  const handleSendEstimate = async () => {
+    try {
+      await sendEstimate(selectedRequest._id, estimateData);
+      setShowEstimateModal(false);
+      setEstimateData({ cost: '', timeEstimate: '', notes: '' });
+      await loadData();
+      alert('Estimate sent successfully');
+    } catch (error) {
+      console.error('Error sending estimate:', error);
+      alert('Failed to send estimate');
+    }
   };
 
-  const submitEstimate = async () => {
-    if (!cost || !duration) return alert("Please enter both cost and duration.");
-    await updateRepairRequest(selectedRequest._id, {
-      status: "Estimate Sent",
-      cost,
-      duration,
-    });
-    setIsModalOpen(false);
-    setSelectedRequest(null);
-    fetchData();
+  const handleAssignTechnician = async () => {
+    try {
+      await assignTechnician(selectedRequest._id, assignmentData);
+      setShowAssignmentModal(false);
+      setAssignmentData({ technicianId: '', notes: '' });
+      await loadData();
+      alert('Technician assigned successfully');
+    } catch (error) {
+      console.error('Error assigning technician:', error);
+      alert('Failed to assign technician');
+    }
   };
 
-  const handleAssignTechnician = async (requestId, techId) => {
-    await assignTechnician(requestId, techId);
-    fetchData();
+  const getStatusColor = (status) => {
+    switch (status) {
+      case 'pending': return 'bg-yellow-100 text-yellow-800';
+      case 'approved': return 'bg-green-100 text-green-800';
+      case 'rejected': return 'bg-red-100 text-red-800';
+      case 'in_progress': return 'bg-blue-100 text-blue-800';
+      case 'completed': return 'bg-gray-100 text-gray-800';
+      default: return 'bg-gray-100 text-gray-800';
+    }
   };
+
+  const filteredRequests = repairRequests.filter(request => {
+    if (filter === 'all') return true;
+    return request.status === filter;
+  });
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center" style={{ backgroundColor: Brand.light }}>
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 mx-auto" style={{ borderColor: Brand.secondary }}></div>
+          <p className="mt-4" style={{ color: Brand.body }}>Loading...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
-    <div className="max-w-6xl mx-auto mt-10">
-      <h2 className="text-3xl font-bold text-center text-[#072679] mb-6">Service Manager Dashboard</h2>
+    <div className="min-h-screen" style={{ backgroundColor: Brand.light }}>
+      <div className="max-w-7xl mx-auto px-4 py-8">
+        {/* Header */}
+        <div className="bg-white rounded-xl shadow-md p-6 mb-6">
+          <div className="flex justify-between items-center">
+            <div>
+              <h1 className="text-3xl font-bold" style={{ color: Brand.primary }}>Service Manager Dashboard</h1>
+              <p className="mt-1" style={{ color: Brand.body }}>Manage repair requests and technician assignments</p>
+            </div>
+            <div className="flex space-x-3">
+              <button
+                onClick={() => navigate('/repair')}
+                className="px-4 py-2 rounded-lg text-white font-semibold"
+                style={{ backgroundColor: Brand.secondary }}
+              >
+                New Request
+              </button>
+              <button
+                onClick={() => navigate('/')}
+                className="px-4 py-2 rounded-lg text-white font-semibold"
+                style={{ backgroundColor: Brand.accent }}
+              >
+                Main Dashboard
+              </button>
+            </div>
+          </div>
+        </div>
 
-      <div className="mb-6">
-        <input
-          type="text"
-          placeholder="Search by customer or damage type"
-          value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
-          className="w-full md:w-1/2 p-3 border border-[#36516C] rounded-md focus:outline-none focus:ring-2 focus:ring-[#42ADF5]"
-        />
-      </div>
+        {/* Stats */}
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+          {[
+            { label: 'Total Requests', value: repairRequests.length, color: Brand.primary },
+            { label: 'Pending', value: repairRequests.filter(r => r.status === 'pending').length, color: Brand.accent },
+            { label: 'In Progress', value: repairRequests.filter(r => r.status === 'in_progress').length, color: Brand.secondary },
+            { label: 'Completed', value: repairRequests.filter(r => r.status === 'completed').length, color: '#10B981' }
+          ].map((stat, index) => (
+            <div key={index} className="bg-white rounded-xl shadow-md p-6">
+              <div className="text-3xl font-bold" style={{ color: stat.color }}>{stat.value}</div>
+              <div className="text-sm" style={{ color: Brand.body }}>{stat.label}</div>
+            </div>
+          ))}
+        </div>
 
-      {loading ? (
-        <p className="text-[#36516C]">Loading...</p>
-      ) : message ? (
-        <p className="text-[#36516C]">{message}</p>
-      ) : (
-        STATUS_GROUPS.map((status) => {
-          const groupRequests = filteredRequests.filter(r => r.status === status);
-          if (groupRequests.length === 0) return null;
+        {/* Filters */}
+        <div className="bg-white rounded-xl shadow-md p-4 mb-6">
+          <div className="flex flex-wrap gap-2">
+            {['all', 'pending', 'approved', 'in_progress', 'completed', 'rejected'].map(status => (
+              <button
+                key={status}
+                onClick={() => setFilter(status)}
+                className={`px-4 py-2 rounded-lg text-sm font-medium ${
+                  filter === status ? 'text-white' : 'text-gray-700'
+                }`}
+                style={{
+                  backgroundColor: filter === status ? Brand.secondary : 'transparent',
+                  border: filter === status ? 'none' : `1px solid ${Brand.secondary}`
+                }}
+              >
+                {status.charAt(0).toUpperCase() + status.slice(1).replace('_', ' ')}
+              </button>
+            ))}
+          </div>
+        </div>
 
-          return (
-            <div key={status} className="mb-8">
-              <h3 className="text-xl font-semibold text-[#42ADF5] mb-3">{status} Requests</h3>
-              {groupRequests.map((req) => (
-                <div key={req._id} className="p-4 border rounded-md mb-3 bg-white shadow-md">
-                  <p><strong>Customer:</strong> {req.customerId.username} ({req.customerId.email})</p>
-                  <p><strong>Damage Type:</strong> {req.damageType}</p>
-                  <p><strong>Description:</strong> {req.description}</p>
-                  {req.status === "Estimate Sent" && (
-                    <>
-                      <p><strong>Cost:</strong> ${req.cost}</p>
-                      <p><strong>Duration:</strong> {req.duration} days</p>
-                      <div className="mt-2">
-                        <select
-                          value={req.technicianId?._id || ""}
-                          onChange={(e) => handleAssignTechnician(req._id, e.target.value)}
-                          className="px-2 py-1 border rounded"
-                        >
-                          <option value="">Assign Technician</option>
-                          {technicians.map(t => (
-                            <option key={t._id} value={t._id}>{t.technicianId.username}</option>
-                          ))}
-                        </select>
+        {/* Requests Table */}
+        <div className="bg-white rounded-xl shadow-md overflow-hidden">
+          <div className="px-6 py-4 border-b" style={{ borderColor: Brand.light }}>
+            <h2 className="text-xl font-semibold" style={{ color: Brand.primary }}>
+              Repair Requests ({filteredRequests.length})
+            </h2>
+          </div>
+          <div className="overflow-x-auto">
+            <table className="min-w-full">
+              <thead>
+                <tr className="text-left text-sm" style={{ backgroundColor: Brand.light }}>
+                  <th className="px-6 py-3" style={{ color: Brand.body }}>Customer</th>
+                  <th className="px-6 py-3" style={{ color: Brand.body }}>Equipment</th>
+                  <th className="px-6 py-3" style={{ color: Brand.body }}>Damage</th>
+                  <th className="px-6 py-3" style={{ color: Brand.body }}>Status</th>
+                  <th className="px-6 py-3" style={{ color: Brand.body }}>Date</th>
+                  <th className="px-6 py-3" style={{ color: Brand.body }}>Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {filteredRequests.map((request) => (
+                  <tr key={request._id} className="border-t" style={{ borderColor: Brand.light }}>
+                    <td className="px-6 py-4">
+                      <div>
+                        <div className="font-medium" style={{ color: Brand.body }}>{request.customerName}</div>
+                        <div className="text-sm" style={{ color: Brand.secondary }}>{request.email}</div>
                       </div>
-                    </>
-                  )}
-                  <div className="mt-2 flex gap-2">
-                    {status === "Pending" && (
-                      <>
-                        <button onClick={() => handleApprove(req)} className="px-3 py-1 bg-green-500 text-white rounded hover:bg-green-600">
+                    </td>
+                    <td className="px-6 py-4" style={{ color: Brand.body }}>
+                      {request.equipmentType?.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase())}
+                    </td>
+                    <td className="px-6 py-4" style={{ color: Brand.body }}>
+                      {request.damageType}
+                    </td>
+                    <td className="px-6 py-4">
+                      <span className={`px-3 py-1 rounded-full text-xs font-semibold ${getStatusColor(request.status)}`}>
+                        {request.status?.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase())}
+                      </span>
+                    </td>
+                    <td className="px-6 py-4" style={{ color: Brand.body }}>
+                      {new Date(request.createdAt).toLocaleDateString()}
+                    </td>
+                    <td className="px-6 py-4">
+                      <div className="flex space-x-2">
+                        <button
+                          onClick={() => {
+                            setSelectedRequest(request);
+                            setShowEstimateModal(true);
+                          }}
+                          className="px-3 py-1 rounded text-white text-sm"
+                          style={{ backgroundColor: Brand.secondary }}
+                        >
+                          Estimate
+                        </button>
+                        <button
+                          onClick={() => {
+                            setSelectedRequest(request);
+                            setShowAssignmentModal(true);
+                          }}
+                          className="px-3 py-1 rounded text-white text-sm"
+                          style={{ backgroundColor: Brand.accent }}
+                        >
+                          Assign
+                        </button>
+                        <button
+                          onClick={() => handleStatusUpdate(request._id, 'approved')}
+                          className="px-3 py-1 rounded text-white text-sm"
+                          style={{ backgroundColor: '#10B981' }}
+                        >
                           Approve
                         </button>
-                        <button onClick={() => handleReject(req._id)} className="px-3 py-1 bg-red-500 text-white rounded hover:bg-red-600">
+                        <button
+                          onClick={() => handleStatusUpdate(request._id, 'rejected')}
+                          className="px-3 py-1 rounded text-white text-sm"
+                          style={{ backgroundColor: '#EF4444' }}
+                        >
                           Reject
                         </button>
-                      </>
-                    )}
-                  </div>
-                </div>
-              ))}
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      {/* Estimate Modal */}
+      {showEstimateModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-xl p-6 w-full max-w-md">
+            <h3 className="text-xl font-semibold mb-4" style={{ color: Brand.primary }}>Send Cost Estimate</h3>
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium mb-2" style={{ color: Brand.body }}>Estimated Cost ($)</label>
+                <input
+                  type="number"
+                  value={estimateData.cost}
+                  onChange={(e) => setEstimateData({...estimateData, cost: e.target.value})}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+                  placeholder="Enter estimated cost"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium mb-2" style={{ color: Brand.body }}>Time Estimate</label>
+                <input
+                  type="text"
+                  value={estimateData.timeEstimate}
+                  onChange={(e) => setEstimateData({...estimateData, timeEstimate: e.target.value})}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+                  placeholder="e.g., 3-5 business days"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium mb-2" style={{ color: Brand.body }}>Notes</label>
+                <textarea
+                  value={estimateData.notes}
+                  onChange={(e) => setEstimateData({...estimateData, notes: e.target.value})}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+                  rows="3"
+                  placeholder="Additional notes for customer"
+                />
+              </div>
             </div>
-          );
-        })
+            <div className="flex space-x-3 mt-6">
+              <button
+                onClick={() => setShowEstimateModal(false)}
+                className="flex-1 px-4 py-2 border border-gray-300 rounded-lg"
+                style={{ color: Brand.body }}
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleSendEstimate}
+                className="flex-1 px-4 py-2 rounded-lg text-white"
+                style={{ backgroundColor: Brand.secondary }}
+              >
+                Send Estimate
+              </button>
+            </div>
+          </div>
+        </div>
       )}
 
-      {/* Modal for cost & time */}
-      {isModalOpen && (
-        <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50">
-          <div className="bg-white p-6 rounded-xl shadow-lg w-full max-w-md">
-            <h3 className="text-xl font-semibold text-[#072679] mb-4">Enter Cost & Duration</h3>
-            <div className="space-y-3">
+      {/* Assignment Modal */}
+      {showAssignmentModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-xl p-6 w-full max-w-md">
+            <h3 className="text-xl font-semibold mb-4" style={{ color: Brand.primary }}>Assign Technician</h3>
+            <div className="space-y-4">
               <div>
-                <label className="block mb-1 font-medium text-[#072679]">Cost ($)</label>
-                <input type="number" value={cost} onChange={(e) => setCost(e.target.value)} className="w-full p-2 border border-[#36516C] rounded-md focus:outline-none focus:ring-2 focus:ring-[#42ADF5]" />
+                <label className="block text-sm font-medium mb-2" style={{ color: Brand.body }}>Select Technician</label>
+                <select
+                  value={assignmentData.technicianId}
+                  onChange={(e) => setAssignmentData({...assignmentData, technicianId: e.target.value})}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+                >
+                  <option value="">Choose a technician</option>
+                  {technicians.map(tech => (
+                    <option key={tech._id} value={tech._id}>{tech.name} - {tech.specialization}</option>
+                  ))}
+                </select>
               </div>
               <div>
-                <label className="block mb-1 font-medium text-[#072679]">Duration (days)</label>
-                <input type="number" value={duration} onChange={(e) => setDuration(e.target.value)} className="w-full p-2 border border-[#36516C] rounded-md focus:outline-none focus:ring-2 focus:ring-[#42ADF5]" />
+                <label className="block text-sm font-medium mb-2" style={{ color: Brand.body }}>Assignment Notes</label>
+                <textarea
+                  value={assignmentData.notes}
+                  onChange={(e) => setAssignmentData({...assignmentData, notes: e.target.value})}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+                  rows="3"
+                  placeholder="Special instructions for technician"
+                />
               </div>
-              <div className="flex justify-end gap-2 mt-4">
-                <button onClick={submitEstimate} className="px-4 py-2 bg-[#42ADF5] text-white rounded hover:bg-[#2C8ED1] transition">Submit</button>
-                <button onClick={() => setIsModalOpen(false)} className="px-4 py-2 bg-gray-400 text-white rounded hover:bg-gray-500 transition">Cancel</button>
-              </div>
+            </div>
+            <div className="flex space-x-3 mt-6">
+              <button
+                onClick={() => setShowAssignmentModal(false)}
+                className="flex-1 px-4 py-2 border border-gray-300 rounded-lg"
+                style={{ color: Brand.body }}
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleAssignTechnician}
+                className="flex-1 px-4 py-2 rounded-lg text-white"
+                style={{ backgroundColor: Brand.accent }}
+              >
+                Assign Technician
+              </button>
             </div>
           </div>
         </div>

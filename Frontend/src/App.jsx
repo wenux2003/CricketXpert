@@ -1,9 +1,13 @@
-import { BrowserRouter as Router, Routes, Route, useParams } from "react-router-dom";
-import RepairRequestForm from "./pages/RepairRequestForm";
-import CustomerDashboard from "./pages/CustomerDashboard";
-import ServiceManagerDashboard from "./pages/ServiceManagerDashboard"; // Optional: if you have this
+import React from 'react';
+import { BrowserRouter as Router, Routes, Route, useParams } from 'react-router-dom';
+import RepairRequestForm from './pages/RepairRequestForm';
+import CustomerDashboard from './pages/CustomerDashboard';
+import ServiceManagerDashboard from './pages/ServiceManagerDashboard';
+import TechnicianDashboard from './pages/TechnicianDashboard';
+import Dashboard from './pages/Dashboard';
+import Navigation from './components/Navigation';
 
-// Wrapper to pass URL param to CustomerDashboard
+// Wrapper to pass URL param
 function CustomerDashboardWrapper() {
   const { customerId } = useParams();
   return <CustomerDashboard customerId={customerId} />;
@@ -12,15 +16,16 @@ function CustomerDashboardWrapper() {
 function App() {
   return (
     <Router>
-      <Routes>
-        {/* Customer routes */}
-        <Route path="/" element={<RepairRequestForm />} />
-        <Route path="/customer/:customerId" element={<CustomerDashboardWrapper />} />
-        <Route path="/customer/:customerId/new-request" element={<RepairRequestForm />} />
-
-        {/* Service Manager route */}
-        <Route path="/manager" element={<ServiceManagerDashboard />} />
-      </Routes>
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-blue-100">
+        <Navigation />
+        <Routes>
+          <Route path="/" element={<Dashboard />} />
+          <Route path="/repair" element={<RepairRequestForm />} />
+          <Route path="/dashboard/:customerId" element={<CustomerDashboardWrapper />} />
+          <Route path="/manager" element={<ServiceManagerDashboard />} />
+          <Route path="/technician" element={<TechnicianDashboard />} />
+        </Routes>
+      </div>
     </Router>
   );
 }

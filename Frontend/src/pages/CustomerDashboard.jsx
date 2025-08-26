@@ -1,309 +1,408 @@
-import { useEffect, useState } from "react";
-import { useParams } from "react-router-dom";
-import RepairRequestCard from "../components/RepairRequestCard";
-import {
-  getCustomerRequestsById,
-  updateRepairRequest,
-  deleteRepairRequest,
-  downloadRepairPDF,
-  customerDecision, // ✅ new
-} from "../api/repairRequestApi";
+import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { getCustomerRequests, submitFeedback } from '../api/repairRequestApi';
 
-const STATUS_GROUPS = [
-  "Pending",
-  "Approved",
-  "Rejected",
-  "Estimate Sent",
-  "Customer Approved",
-  "Customer Rejected",
-  "In Progress",
-  "Completed",
-];
-const DAMAGE_TYPES = [
-  "Bat Handle Damage",
-  "Bat Surface Crack",
-  "Ball Stitch Damage",
-  "Gloves Tear",
-  "Pads Crack",
-  "Helmet Damage",
-  "Other",
-];
-const ITEMS_PER_PAGE = 5;
+const Brand = {
+  primary: '#072679',
+  secondary: '#42ADF5',
+  heading: '#000000',
+  body: '#36516C',
+  light: '#F1F2F7',
+  accent: '#D88717',
+};
 
-const CustomerDashboard = () => {
-  const { customerId } = useParams();
-  const [requests, setRequests] = useState([]);
+const CustomerDashboard = ({ customerId }) => {
+  const navigate = useNavigate();
+  const [repairRequests, setRepairRequests] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [message, setMessage] = useState("");
-  const [searchTerm, setSearchTerm] = useState("");
-  const [statusFilter, setStatusFilter] = useState("All");
-  const [currentPage, setCurrentPage] = useState(1);
+  const [selectedRequest, setSelectedRequest] = useState(null);
+  const [showFeedbackModal, setShowFeedbackModal] = useState(false);
+  const [feedbackData, setFeedbackData] = useState({
+    rating: 5,
+    comment: '',
+    category: 'general'
+  });
 
-  // Modal state
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const [editingRequest, setEditingRequest] = useState(null);
-  const [newDamageType, setNewDamageType] = useState("");
-  const [newDescription, setNewDescription] = useState("");
+  useEffect(() => {
+    loadCustomerRequests();
+  }, [customerId]);
 
-  const fetchRequests = async () => {
-    setLoading(true);
-    setMessage("");
+  const loadCustomerRequests = async () => {
     try {
-      const res = await getCustomerRequestsById(customerId);
-      setRequests(res.data);
-      if (res.data.length === 0) setMessage("No repair requests submitted yet.");
-    } catch {
-      setMessage("Error fetching requests");
+      // For demo purposes, we'll use mock data
+      const mockRequests = [
+        {
+          _id: '1',
+          customerName: 'John Smith',
+          email: 'john@example.com',
+          phone: '+1234567890',
+          equipmentType: 'cricket_bat',
+          damageType: 'Handle Damage',
+          damageDescription: 'Bat handle is loose and needs re-gripping',
+          status: 'in_progress',
+          progress: 75,
+          cost: 45.00,
+          timeEstimate: '3-5 business days',
+          assignedTechnician: 'Alex Johnson',
+          createdAt: '2024-01-15',
+          estimatedCompletion: '2024-01-20',
+          notes: 'Handle repair in progress, new grip installed',
+          milestones: [
+            { stage: 'Request Submitted', date: '2024-01-15', completed: true },
+            { stage: 'Request Approved', date: '2024-01-16', completed: true },
+            { stage: 'Estimate Sent', date: '2024-01-16', completed: true },
+            { stage: 'Repair Started', date: '2024-01-17', completed: true },
+            { stage: 'Halfway Completed', date: '2024-01-18', completed: true },
+            { stage: 'Ready for Pickup', date: '2024-01-20', completed: false }
+          ]
+        },
+        {
+          _id: '2',
+          customerName: 'John Smith',
+          email: 'john@example.com',
+          phone: '+1234567890',
+          equipmentType: 'cricket_gloves',
+          damageType: 'Palm Wear',
+          damageDescription: 'Palm area is worn out and needs replacement',
+          status: 'pending',
+          progress: 0,
+          cost: null,
+          timeEstimate: null,
+          assignedTechnician: null,
+          createdAt: '2024-01-16',
+          estimatedCompletion: null,
+          notes: 'Request under review',
+          milestones: [
+            { stage: 'Request Submitted', date: '2024-01-16', completed: true },
+            { stage: 'Request Approved', date: null, completed: false },
+            { stage: 'Estimate Sent', date: null, completed: false },
+            { stage: 'Repair Started', date: null, completed: false },
+            { stage: 'Halfway Completed', date: null, completed: false },
+            { stage: 'Ready for Pickup', date: null, completed: false }
+          ]
+        }
+      ];
+      setRepairRequests(mockRequests);
+    } catch (error) {
+      console.error('Error loading customer requests:', error);
     } finally {
       setLoading(false);
     }
   };
 
-  useEffect(() => {
-    fetchRequests();
-  }, [customerId]);
-
-  // Filter & search
-  const filteredRequests = requests.filter((r) => {
-    const damageType = r.damageType || "";
-    const description = r.description || "";
-    const matchesSearch =
-      damageType.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      description.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesStatus = statusFilter === "All" || r.status === statusFilter;
-    return matchesSearch && matchesStatus;
-  });
-
-  // Pagination
-  const totalPages = Math.ceil(filteredRequests.length / ITEMS_PER_PAGE);
-  const displayedRequests = filteredRequests.slice(
-    (currentPage - 1) * ITEMS_PER_PAGE,
-    currentPage * ITEMS_PER_PAGE
-  );
-
-  const openEditModal = (request) => {
-    setEditingRequest(request);
-    setNewDamageType(request.damageType);
-    setNewDescription(request.description);
-    setIsModalOpen(true);
-  };
-
-  const handleUpdate = async () => {
-    if (!newDamageType || !newDescription.trim())
-      return alert("Both fields are required.");
+  const handleSubmitFeedback = async () => {
     try {
-      await updateRepairRequest(editingRequest._id, {
-        damageType: newDamageType,
-        description: newDescription,
-      });
-      setIsModalOpen(false);
-      setEditingRequest(null);
-      fetchRequests();
-    } catch {
-      alert("Error updating request");
+      await submitFeedback(selectedRequest._id, feedbackData);
+      setShowFeedbackModal(false);
+      setFeedbackData({ rating: 5, comment: '', category: 'general' });
+      alert('Feedback submitted successfully!');
+    } catch (error) {
+      console.error('Error submitting feedback:', error);
+      alert('Failed to submit feedback');
     }
   };
 
-  const handleDelete = async (id) => {
-    if (!window.confirm("Are you sure you want to delete this request?")) return;
-    try {
-      await deleteRepairRequest(id);
-      fetchRequests();
-    } catch {
-      alert("Error deleting request");
+  const getStatusColor = (status) => {
+    switch (status) {
+      case 'pending': return 'bg-yellow-100 text-yellow-800';
+      case 'approved': return 'bg-green-100 text-green-800';
+      case 'rejected': return 'bg-red-100 text-red-800';
+      case 'in_progress': return 'bg-blue-100 text-blue-800';
+      case 'completed': return 'bg-gray-100 text-gray-800';
+      default: return 'bg-gray-100 text-gray-800';
     }
   };
 
-  const handleDownload = async (id) => {
-    try {
-      const res = await downloadRepairPDF(id);
-      const url = window.URL.createObjectURL(new Blob([res.data]));
-      const link = document.createElement("a");
-      link.href = url;
-      link.setAttribute("download", `repair_report_${id}.pdf`);
-      document.body.appendChild(link);
-      link.click();
-    } catch {
-      alert("Error downloading PDF");
-    }
+  const getProgressColor = (progress) => {
+    if (progress >= 80) return '#10B981';
+    if (progress >= 50) return '#F59E0B';
+    return '#EF4444';
   };
 
-  // ✅ New: customer decision (accept/reject estimate)
-  const handleDecision = async (id, decision) => {
-    try {
-      await customerDecision(id, decision);
-      fetchRequests();
-    } catch {
-      alert("Error sending decision");
-    }
-  };
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center" style={{ backgroundColor: Brand.light }}>
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 mx-auto" style={{ borderColor: Brand.secondary }}></div>
+          <p className="mt-4" style={{ color: Brand.body }}>Loading...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
-    <div className="max-w-5xl mx-auto mt-10">
-      <h2 className="text-3xl font-bold text-[#072679] mb-6 text-center">
-        My Repair Requests
-      </h2>
-
-      {/* Search & Filter */}
-      <div className="flex flex-col md:flex-row gap-4 mb-6">
-        <input
-          type="text"
-          placeholder="Search by damage type or description"
-          value={searchTerm}
-          onChange={(e) => {
-            setSearchTerm(e.target.value);
-            setCurrentPage(1);
-          }}
-          className="flex-1 p-3 border border-[#36516C] rounded-md focus:outline-none focus:ring-2 focus:ring-[#42ADF5]"
-        />
-        <select
-          value={statusFilter}
-          onChange={(e) => {
-            setStatusFilter(e.target.value);
-            setCurrentPage(1);
-          }}
-          className="p-3 border border-[#36516C] rounded-md focus:outline-none focus:ring-2 focus:ring-[#42ADF5]"
-        >
-          <option value="All">All Statuses</option>
-          {STATUS_GROUPS.map((status) => (
-            <option key={status} value={status}>
-              {status}
-            </option>
-          ))}
-        </select>
-      </div>
-
-      {loading ? (
-        <p className="text-[#36516C]">Loading...</p>
-      ) : message ? (
-        <p className="text-[#36516C]">{message}</p>
-      ) : filteredRequests.length === 0 ? (
-        <p className="text-[#36516C]">
-          No requests match your search/filter criteria.
-        </p>
-      ) : (
-        <>
-          {STATUS_GROUPS.map((status) => {
-            const groupRequests = filteredRequests.filter(
-              (r) => r.status === status
-            );
-            if (groupRequests.length === 0) return null;
-            return (
-              <div key={status} className="mb-8">
-                <h3 className="text-xl font-semibold text-[#42ADF5] mb-3">
-                  {status} Requests
-                </h3>
-                {groupRequests.map((req) => (
-                  <div key={req._id} className="mb-4">
-                    <RepairRequestCard
-                      request={req}
-                      onUpdate={() => openEditModal(req)}
-                      onDelete={() => handleDelete(req._id)}
-                      onDownload={() => handleDownload(req._id)}
-                    />
-
-                    {/* ✅ Show Accept/Reject if estimate was sent */}
-                    {req.status === "Estimate Sent" && (
-                      <div className="mt-2 flex gap-2">
-                        <button
-                          onClick={() => handleDecision(req._id, "approve")}
-                          className="px-3 py-1 bg-green-500 text-white rounded hover:bg-green-600"
-                        >
-                          Accept Estimate
-                        </button>
-                        <button
-                          onClick={() => handleDecision(req._id, "reject")}
-                          className="px-3 py-1 bg-red-500 text-white rounded hover:bg-red-600"
-                        >
-                          Reject Estimate
-                        </button>
-                      </div>
-                    )}
-                  </div>
-                ))}
-              </div>
-            );
-          })}
-
-          {/* Pagination */}
-          {totalPages > 1 && (
-            <div className="flex justify-center items-center gap-2 mt-4">
-              <button
-                onClick={() => setCurrentPage((p) => Math.max(p - 1, 1))}
-                disabled={currentPage === 1}
-                className="px-3 py-1 bg-[#42ADF5] text-white rounded hover:bg-[#2C8ED1] transition"
-              >
-                Previous
-              </button>
-              <span className="text-[#072679] font-medium">
-                Page {currentPage} of {totalPages}
-              </span>
-              <button
-                onClick={() => setCurrentPage((p) => Math.min(p + 1, totalPages))}
-                disabled={currentPage === totalPages}
-                className="px-3 py-1 bg-[#42ADF5] text-white rounded hover:bg-[#2C8ED1] transition"
-              >
-                Next
-              </button>
+    <div className="min-h-screen" style={{ backgroundColor: Brand.light }}>
+      <div className="max-w-7xl mx-auto px-4 py-8">
+        {/* Header */}
+        <div className="bg-white rounded-xl shadow-md p-6 mb-6">
+          <div className="flex justify-between items-center">
+            <div>
+              <h1 className="text-3xl font-bold" style={{ color: Brand.primary }}>Customer Dashboard</h1>
+              <p className="mt-1" style={{ color: Brand.body }}>
+                Track your repair requests and stay updated on progress
+              </p>
             </div>
-          )}
-        </>
-      )}
-
-      {/* Edit Modal */}
-      {isModalOpen && (
-        <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50">
-          <div className="bg-white p-6 rounded-xl shadow-lg w-full max-w-md">
-            <h3 className="text-xl font-semibold text-[#072679] mb-4">
-              Edit Repair Request
-            </h3>
-            <div className="space-y-3">
-              <div>
-                <label className="block mb-1 font-medium text-[#072679]">
-                  Damage Type
-                </label>
-                <select
-                  value={newDamageType}
-                  onChange={(e) => setNewDamageType(e.target.value)}
-                  className="w-full p-2 border border-[#36516C] rounded-md focus:outline-none focus:ring-2 focus:ring-[#42ADF5]"
-                >
-                  {DAMAGE_TYPES.map((type) => (
-                    <option key={type} value={type}>
-                      {type}
-                    </option>
-                  ))}
-                </select>
-              </div>
-              <div>
-                <label className="block mb-1 font-medium text-[#072679]">
-                  Description
-                </label>
-                <textarea
-                  value={newDescription}
-                  onChange={(e) => setNewDescription(e.target.value)}
-                  className="w-full p-2 border border-[#36516C] rounded-md focus:outline-none focus:ring-2 focus:ring-[#42ADF5]"
-                  rows={4}
-                />
-              </div>
-              <div className="flex justify-end gap-2 mt-4">
-                <button
-                  onClick={handleUpdate}
-                  className="px-4 py-2 bg-[#42ADF5] text-white rounded hover:bg-[#2C8ED1] transition"
-                >
-                  Save
-                </button>
-                <button
-                  onClick={() => setIsModalOpen(false)}
-                  className="px-4 py-2 bg-gray-400 text-white rounded hover:bg-gray-500 transition"
-                >
-                  Cancel
-                </button>
-              </div>
+            <div className="flex space-x-3">
+              <button
+                onClick={() => navigate('/repair')}
+                className="px-4 py-2 rounded-lg text-white font-semibold"
+                style={{ backgroundColor: Brand.secondary }}
+              >
+                New Repair Request
+              </button>
+              <button
+                onClick={() => navigate('/')}
+                className="px-4 py-2 rounded-lg text-white font-semibold"
+                style={{ backgroundColor: Brand.accent }}
+              >
+                Main Dashboard
+              </button>
             </div>
           </div>
         </div>
-      )}
-    </div>
+
+        {/* Stats */}
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+          {[
+            { label: 'Total Requests', value: repairRequests.length, color: Brand.primary },
+            { label: 'Pending', value: repairRequests.filter(r => r.status === 'pending').length, color: Brand.accent },
+            { label: 'In Progress', value: repairRequests.filter(r => r.status === 'in_progress').length, color: Brand.secondary },
+            { label: 'Completed', value: repairRequests.filter(r => r.status === 'completed').length, color: '#10B981' }
+          ].map((stat, index) => (
+            <div key={index} className="bg-white rounded-xl shadow-md p-6">
+              <div className="text-3xl font-bold" style={{ color: stat.color }}>{stat.value}</div>
+              <div className="text-sm" style={{ color: Brand.body }}>{stat.label}</div>
+            </div>
+          ))}
+        </div>
+
+        {/* Repair Requests */}
+        <div className="space-y-6">
+          {repairRequests.map((request) => (
+            <div key={request._id} className="bg-white rounded-xl shadow-md p-6">
+              {/* Request Header */}
+              <div className="flex justify-between items-start mb-6">
+                <div>
+                  <h3 className="text-xl font-semibold" style={{ color: Brand.primary }}>
+                    {request.equipmentType?.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase())} - {request.damageType}
+                  </h3>
+                  <p className="text-sm" style={{ color: Brand.body }}>
+                    Request ID: {request._id} • Submitted: {new Date(request.createdAt).toLocaleDateString()}
+                  </p>
+                </div>
+                <span className={`px-3 py-1 rounded-full text-sm font-semibold ${getStatusColor(request.status)}`}>
+                  {request.status?.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase())}
+                </span>
+              </div>
+
+              {/* Request Details */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                <div>
+                  <h4 className="font-semibold mb-3" style={{ color: Brand.primary }}>Request Details</h4>
+                  <div className="space-y-2 text-sm">
+                    <p><span className="font-medium" style={{ color: Brand.body }}>Equipment:</span> {request.equipmentType?.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase())}</p>
+                    <p><span className="font-medium" style={{ color: Brand.body }}>Damage Type:</span> {request.damageType}</p>
+                    <p><span className="font-medium" style={{ color: Brand.body }}>Description:</span> {request.damageDescription}</p>
+                    {request.assignedTechnician && (
+                      <p><span className="font-medium" style={{ color: Brand.body }}>Technician:</span> {request.assignedTechnician}</p>
+                    )}
+                  </div>
+                </div>
+
+                <div>
+                  <h4 className="font-semibold mb-3" style={{ color: Brand.primary }}>Cost & Timeline</h4>
+                  <div className="space-y-2 text-sm">
+                    {request.cost ? (
+                      <p><span className="font-medium" style={{ color: Brand.body }}>Estimated Cost:</span> ${request.cost}</p>
+                    ) : (
+                      <p><span className="font-medium" style={{ color: Brand.body }}>Estimated Cost:</span> <span style={{ color: Brand.accent }}>Pending</span></p>
+                    )}
+                    {request.timeEstimate ? (
+                      <p><span className="font-medium" style={{ color: Brand.body }}>Time Estimate:</span> {request.timeEstimate}</p>
+                    ) : (
+                      <p><span className="font-medium" style={{ color: Brand.body }}>Time Estimate:</span> <span style={{ color: Brand.accent }}>Pending</span></p>
+                    )}
+                    {request.estimatedCompletion && (
+                      <p><span className="font-medium" style={{ color: Brand.body }}>Expected Completion:</span> {new Date(request.estimatedCompletion).toLocaleDateString()}</p>
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              {/* Progress Bar */}
+              {request.status === 'in_progress' && (
+                <div className="mb-6">
+                  <div className="flex justify-between items-center mb-2">
+                    <span className="font-medium" style={{ color: Brand.body }}>Repair Progress</span>
+                    <span className="font-bold" style={{ color: getProgressColor(request.progress) }}>
+                      {request.progress}%
+                    </span>
+                  </div>
+                  <div className="w-full bg-gray-200 rounded-full h-3">
+                    <div
+                      className="h-3 rounded-full transition-all duration-300"
+                      style={{
+                        width: `${request.progress}%`,
+                        backgroundColor: getProgressColor(request.progress)
+                      }}
+                    ></div>
+                  </div>
+                </div>
+              )}
+
+              {/* Milestones */}
+              <div className="mb-6">
+                <h4 className="font-semibold mb-3" style={{ color: Brand.primary }}>Repair Timeline</h4>
+                <div className="space-y-3">
+                  {request.milestones.map((milestone, index) => (
+                    <div key={index} className="flex items-center">
+                      <div className={`w-6 h-6 rounded-full flex items-center justify-center mr-3 ${
+                        milestone.completed ? 'bg-green-500' : 'bg-gray-300'
+                      }`}>
+                        {milestone.completed ? (
+                          <span className="text-white text-xs">✓</span>
+                        ) : (
+                          <span className="text-gray-500 text-xs">{index + 1}</span>
+                        )}
+                      </div>
+                      <div className="flex-1">
+                        <p className={`text-sm ${milestone.completed ? 'font-medium' : ''}`} style={{ color: milestone.completed ? Brand.primary : Brand.body }}>
+                          {milestone.stage}
+                        </p>
+                        {milestone.date && (
+                          <p className="text-xs" style={{ color: Brand.secondary }}>
+                            {new Date(milestone.date).toLocaleDateString()}
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+        </div>
+
+              {/* Notes */}
+              {request.notes && (
+                <div className="mb-6 p-4 rounded-lg" style={{ backgroundColor: Brand.light }}>
+                  <h4 className="font-semibold mb-2" style={{ color: Brand.primary }}>Latest Update</h4>
+                  <p className="text-sm" style={{ color: Brand.body }}>{request.notes}</p>
+                </div>
+              )}
+
+              {/* Actions */}
+              <div className="flex space-x-3">
+                {request.status === 'completed' && (
+                          <button
+                    onClick={() => {
+                      setSelectedRequest(request);
+                      setShowFeedbackModal(true);
+                    }}
+                    className="px-4 py-2 rounded-lg text-white text-sm font-medium"
+                    style={{ backgroundColor: Brand.accent }}
+                  >
+                    Submit Feedback
+                          </button>
+                )}
+                          <button
+                  onClick={() => window.print()}
+                  className="px-4 py-2 rounded-lg text-white text-sm font-medium"
+                  style={{ backgroundColor: Brand.secondary }}
+                          >
+                  Download Report
+                          </button>
+                        </div>
+                    </div>
+                  ))}
+                </div>
+
+        {repairRequests.length === 0 && (
+          <div className="text-center py-12">
+            <div className="text-6xl mb-4">📋</div>
+            <h3 className="text-xl font-semibold mb-2" style={{ color: Brand.primary }}>No Repair Requests</h3>
+            <p className="mb-4" style={{ color: Brand.body }}>You haven't submitted any repair requests yet.</p>
+                <button
+              onClick={() => navigate('/repair')}
+              className="px-6 py-3 rounded-lg text-white font-semibold"
+              style={{ backgroundColor: Brand.secondary }}
+            >
+              Submit Your First Request
+                </button>
+              </div>
+            )}
+      </div>
+
+      {/* Feedback Modal */}
+      {showFeedbackModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-xl p-6 w-full max-w-md">
+            <h3 className="text-xl font-semibold mb-4" style={{ color: Brand.primary }}>
+              Submit Feedback
+              </h3>
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium mb-2" style={{ color: Brand.body }}>
+                  Rating
+                </label>
+                <div className="flex space-x-2">
+                  {[1, 2, 3, 4, 5].map((star) => (
+                    <button
+                      key={star}
+                      onClick={() => setFeedbackData({...feedbackData, rating: star})}
+                      className={`text-2xl ${feedbackData.rating >= star ? 'text-yellow-400' : 'text-gray-300'}`}
+                    >
+                      ★
+                    </button>
+                  ))}
+                </div>
+              </div>
+                <div>
+                <label className="block text-sm font-medium mb-2" style={{ color: Brand.body }}>
+                  Feedback Category
+                  </label>
+                  <select
+                  value={feedbackData.category}
+                  onChange={(e) => setFeedbackData({...feedbackData, category: e.target.value})}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+                >
+                  <option value="general">General Feedback</option>
+                  <option value="quality">Repair Quality</option>
+                  <option value="service">Customer Service</option>
+                  <option value="timing">Timing</option>
+                  <option value="communication">Communication</option>
+                  </select>
+                </div>
+                <div>
+                <label className="block text-sm font-medium mb-2" style={{ color: Brand.body }}>
+                  Comments
+                  </label>
+                  <textarea
+                  value={feedbackData.comment}
+                  onChange={(e) => setFeedbackData({...feedbackData, comment: e.target.value})}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+                  rows="4"
+                  placeholder="Share your experience with the repair service..."
+                  />
+                </div>
+            </div>
+            <div className="flex space-x-3 mt-6">
+                  <button
+                onClick={() => setShowFeedbackModal(false)}
+                className="flex-1 px-4 py-2 border border-gray-300 rounded-lg"
+                style={{ color: Brand.body }}
+                  >
+                    Cancel
+                  </button>
+              <button
+                onClick={handleSubmitFeedback}
+                className="flex-1 px-4 py-2 rounded-lg text-white"
+                style={{ backgroundColor: Brand.accent }}
+              >
+                Submit Feedback
+              </button>
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
   );
 };
 

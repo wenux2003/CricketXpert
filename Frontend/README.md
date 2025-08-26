@@ -1,12 +1,85 @@
-# React + Vite
+# CricketXpert Frontend
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+A React-based frontend for the Cricket Equipment Repair System.
 
-Currently, two official plugins are available:
+## Features
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+- **Customer Repair Request Form**: Submit new repair requests with damage details
+- **Customer Dashboard**: View repair status and track progress
+- **Service Manager Dashboard**: Manage and approve repair requests
+- **Technician Dashboard**: Update repair progress in real-time
+- **Real-time Status Updates**: Live progress tracking for all stakeholders
 
-## Expanding the ESLint configuration
+## Setup Instructions
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+### Prerequisites
+- Node.js (v16 or higher)
+- npm or yarn
+- Backend server running on port 5000
+
+### Installation
+
+1. Install dependencies:
+```bash
+npm install
+```
+
+2. Start the development server:
+```bash
+npm run dev
+```
+
+3. Open your browser and navigate to `http://localhost:5173`
+
+### Backend Setup
+
+Make sure your backend server is running:
+
+1. Navigate to the project root directory
+2. Install backend dependencies:
+```bash
+npm install
+```
+
+3. Start the backend server:
+```bash
+npm start
+```
+
+The backend should be running on `http://localhost:5000`
+
+## Available Scripts
+
+- `npm run dev` - Start development server
+- `npm run build` - Build for production
+- `npm run preview` - Preview production build
+- `npm run lint` - Run ESLint
+
+## Project Structure
+
+```
+src/
+├── components/     # Reusable UI components
+├── pages/         # Page components
+├── api/           # API service functions
+├── assets/        # Static assets
+├── App.jsx        # Main app component
+└── main.jsx       # App entry point
+```
+
+## Troubleshooting
+
+If you see a blank page or connection errors:
+
+1. **Check if backend is running**: Ensure the backend server is started on port 5000
+2. **Check console errors**: Open browser dev tools to see any JavaScript errors
+3. **Clear browser cache**: Hard refresh the page (Ctrl+F5)
+4. **Check network tab**: Verify API calls are reaching the backend
+
+## API Endpoints
+
+The frontend connects to these backend endpoints:
+- `http://localhost:5000/api/users` - User management
+- `http://localhost:5000/api/repairs` - Repair request management
+- `http://localhost:5000/api/technicians` - Technician management
+- `http://localhost:5000/api/feedbacks` - Feedback management
