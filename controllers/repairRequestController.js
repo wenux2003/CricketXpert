@@ -185,48 +185,114 @@ exports.customerApproveReject = async (req, res) => {
 /**
  * 7️ Assign Technician
  * - Only after customer approves.
+ * - Validates technician availability and skills.
  * - Technician is notified and status is updated to 'In Repair'.
  */
 exports.assignTechnician = async (req, res) => {
   try {
     const { id } = req.params;
-    const { technicianId } = req.body;
+    const { technicianId, assignmentNotes } = req.body;
 
+    // Validate request exists and is in correct status
     const request = await RepairRequest.findById(id).populate('customerId', 'email username');
-    if (!request) return res.status(404).json({ error: 'Repair request not found' });
-    if (request.status !== 'Customer Approved') return res.status(400).json({ error: 'Cannot assign technician before customer approval' });
+    if (!request) {
+      return res.status(404).json({ error: 'Repair request not found' });
+    }
+    
+    if (request.status !== 'Customer Approved') {
+      return res.status(400).json({ 
+        error: 'Cannot assign technician. Request must be approved by customer first.' 
+      });
+    }
 
+    // Validate technician exists
     const technician = await Technician.findById(technicianId).populate('technicianId', 'email username');
-    if (!technician) return res.status(404).json({ error: 'Technician not found' });
+    if (!technician) {
+      return res.status(404).json({ error: 'Technician not found' });
+    }
 
-   // Count active repairs
+    // Validate technician availability
+    if (!technician.available) {
+      return res.status(400).json({ 
+        error: 'Technician is currently unavailable for new assignments' 
+      });
+    }
+
+    // Count active repairs for this technician
     const activeRepairs = await RepairRequest.countDocuments({
       assignedTechnician: technicianId,
       status: { $in: ['In Repair', 'Halfway Completed'] }
     });
 
-    if (!technician.available || activeRepairs >= 10) {
-      technician.available = false;
-      await technician.save();
-      return res.status(400).json({ error: 'Technician is unavailable or has maximum active repairs' });
+    if (activeRepairs >= 10) {
+      return res.status(400).json({ 
+        error: 'Technician has reached maximum capacity (10 active repairs). Please assign to another technician.' 
+      });
     }
 
-    // Assign technician
+    // Validate technician skills match equipment type (optional enhancement)
+    const equipmentType = request.equipmentType;
+    const technicianSkills = technician.skills || [];
+    
+    // Check if technician has skills for this equipment type
+    const hasRelevantSkill = technicianSkills.some(skill => 
+      skill.toLowerCase().includes(equipmentType.replace('_', ' ').toLowerCase()) ||
+      skill.toLowerCase().includes('general') ||
+      skill.toLowerCase().includes('all')
+    );
+
+    if (!hasRelevantSkill && technicianSkills.length > 0) {
+      return res.status(400).json({ 
+        error: `Technician does not have skills for ${equipmentType.replace('_', ' ')} repairs. Please assign to a qualified technician.` 
+      });
+    }
+
+    // Assign technician to request
     request.assignedTechnician = technicianId;
     request.status = 'In Repair';
     request.currentStage = 'Technician Assigned';
+    if (assignmentNotes) {
+      request.notes = assignmentNotes;
+    }
     await request.save();
 
-    // Mark technician unavailable
-    technician.available = false;
-    await technician.save();
+    // Update technician availability if they reach capacity
+    if (activeRepairs + 1 >= 10) {
+      technician.available = false;
+      await technician.save();
+    }
 
-    // Send emails
-    await sendEmail(technician.technicianId.email, 'New Repair Assigned', `Repair Request ID: ${request._id}\nDamage Type: ${request.damageType}`);
-    await sendEmail(request.customerId.email, 'Technician Assigned', `Repair Request ID: ${request._id}\nTechnician assigned.`);
+    // Send notification emails
+    try {
+      await sendEmail(
+        technician.technicianId.email, 
+        'New Repair Assignment', 
+        `You have been assigned a new repair request:\n\nRequest ID: ${request._id}\nEquipment: ${equipmentType.replace('_', ' ')}\nDamage Type: ${request.damageType}\nCustomer: ${request.customerId.username}\n\nPlease begin work on this repair.`
+      );
+      
+      await sendEmail(
+        request.customerId.email, 
+        'Technician Assigned', 
+        `Your repair request has been assigned to a technician:\n\nRequest ID: ${request._id}\nEquipment: ${equipmentType.replace('_', ' ')}\nDamage Type: ${request.damageType}\nStatus: In Repair\n\nYour repair is now in progress.`
+      );
+    } catch (emailError) {
+      console.error('Email notification failed:', emailError);
+      // Don't fail the assignment if email fails
+    }
 
-    res.json({ message: 'Technician assigned successfully', request });
+    res.json({ 
+      message: 'Technician assigned successfully', 
+      request: {
+        _id: request._id,
+        status: request.status,
+        currentStage: request.currentStage,
+        assignedTechnician: technician.technicianId.username,
+        equipmentType: request.equipmentType,
+        damageType: request.damageType
+      }
+    });
   } catch (err) {
+    console.error('Technician assignment error:', err);
     res.status(500).json({ error: err.message });
   }
 };
@@ -302,8 +368,9 @@ exports.getCustomerRepairRequests = async (req, res) => {
   try {
     const { customerId } = req.params;
     const requests = await RepairRequest.find({ customerId })
-      .populate('assignedTechnician', 'skills username email')
+      .populate('assignedTechnician')
       .sort({ createdAt: -1 });
+    
     res.json(requests);
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -331,10 +398,10 @@ exports.getTechnicianRepairRequests = async (req, res) => {
   }
 };
 
-// 10️ Service Manager Dashboard (with filtering)
+// 10️ Service Manager Dashboard (with filtering & sorting)
 exports.getAllRepairRequests = async (req, res) => {
   try {
-    const { status, customerId, technicianId } = req.query;
+    const { status, customerId, technicianId, sortBy, sortOrder } = req.query;
 
     // Build filter object
     let filter = {};
@@ -342,10 +409,19 @@ exports.getAllRepairRequests = async (req, res) => {
     if (customerId) filter.customerId = customerId;
     if (technicianId) filter.assignedTechnician = technicianId;
 
+    // Build sort order
+    let sort = { createdAt: -1 };
+    const order = String(sortOrder || 'desc').toLowerCase() === 'asc' ? 1 : -1;
+    if ((sortBy || '').toLowerCase() === 'status') {
+      sort = { status: order, createdAt: -1 };
+    } else if ((sortBy || '').toLowerCase() === 'date') {
+      sort = { createdAt: order };
+    }
+
     const requests = await RepairRequest.find(filter)
       .populate('customerId', 'username email')
       .populate({ path: 'assignedTechnician', populate: { path: 'technicianId', select: 'username email skills' } })
-      .sort({ createdAt: -1 });
+      .sort(sort);
 
     res.json(requests);
   } catch (err) {

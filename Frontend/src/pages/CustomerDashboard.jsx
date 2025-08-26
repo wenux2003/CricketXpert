@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { getCustomerRequests, submitFeedback, downloadRepairReport, updateRepairRequest, deleteRepairRequest } from '../api/repairRequestApi';
+import { getCustomerRequests, submitFeedback, downloadRepairReport, updateRepairRequest, deleteRepairRequest, customerDecision } from '../api/repairRequestApi';
 import Brand from '../brand';
+import axios from 'axios';
 
 // Using shared Brand from ../brand
 
@@ -25,6 +26,10 @@ const CustomerDashboard = ({ customerId }) => {
   const [editData, setEditData] = useState({ damageType: '', description: '' });
   const [query, setQuery] = useState('');
   const [allRequests, setAllRequests] = useState([]);
+  const [technicianDetails, setTechnicianDetails] = useState({});
+  const [statusFilter, setStatusFilter] = useState('All Statuses');
+  const [equipmentFilter, setEquipmentFilter] = useState('All Equipment Types');
+  const [damageTypeFilter, setDamageTypeFilter] = useState('All Damage Types');
   const [feedbackData, setFeedbackData] = useState({
     rating: 5,
     comment: '',
@@ -41,6 +46,37 @@ const CustomerDashboard = ({ customerId }) => {
       const list = Array.isArray(res?.data) ? res.data : [];
       setAllRequests(list);
       setRepairRequests(list);
+      
+      // Fetch technician details for assigned technicians
+      const technicianIds = list
+        .filter(request => request.assignedTechnician?.technicianId)
+        .map(request => request.assignedTechnician.technicianId);
+      
+      if (technicianIds.length > 0) {
+        try {
+          const uniqueIds = [...new Set(technicianIds)];
+          const technicianPromises = uniqueIds.map(async (id) => {
+            try {
+              const response = await axios.get(`http://localhost:5000/api/users/${id}`);
+              return { id, data: response.data };
+            } catch (error) {
+              console.error(`Error fetching technician ${id}:`, error);
+              return { id, data: null };
+            }
+          });
+          
+          const technicianResults = await Promise.all(technicianPromises);
+          const technicianMap = {};
+          technicianResults.forEach(({ id, data }) => {
+            if (data) {
+              technicianMap[id] = data;
+            }
+          });
+          setTechnicianDetails(technicianMap);
+        } catch (error) {
+          console.error('Error fetching technician details:', error);
+        }
+      }
     } catch (error) {
       console.error('Error loading customer requests:', error);
     } finally {
@@ -108,11 +144,13 @@ const CustomerDashboard = ({ customerId }) => {
 
   const getStatusColor = (status) => {
     switch (status) {
-      case 'pending': return 'bg-yellow-100 text-yellow-800';
-      case 'approved': return 'bg-green-100 text-green-800';
-      case 'rejected': return 'bg-red-100 text-red-800';
-      case 'in_progress': return 'bg-blue-100 text-blue-800';
-      case 'completed': return 'bg-gray-100 text-gray-800';
+      case 'Pending': return 'bg-yellow-100 text-yellow-800';
+      case 'Approved': return 'bg-blue-100 text-blue-800';
+      case 'Rejected': return 'bg-red-100 text-red-800';
+      case 'Customer Approved': return 'bg-green-100 text-green-800';
+      case 'Customer Rejected': return 'bg-orange-100 text-orange-800';
+      case 'In Repair': return 'bg-blue-100 text-blue-800';
+      case 'Completed': return 'bg-gray-100 text-gray-800';
       default: return 'bg-gray-100 text-gray-800';
     }
   };
@@ -154,12 +192,13 @@ const CustomerDashboard = ({ customerId }) => {
         </div>
 
         {/* Stats */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+        <div className="grid grid-cols-1 md:grid-cols-5 gap-4 mb-6">
           {[
             { label: 'Total Requests', value: repairRequests.length, color: Brand.primary },
-            { label: 'Pending', value: repairRequests.filter(r => r.status === 'pending').length, color: Brand.accent },
-            { label: 'In Progress', value: repairRequests.filter(r => r.status === 'in_progress').length, color: Brand.secondary },
-            { label: 'Completed', value: repairRequests.filter(r => r.status === 'completed').length, color: '#10B981' }
+            { label: 'Pending', value: repairRequests.filter(r => r.status === 'Pending').length, color: Brand.accent },
+            { label: 'In Progress', value: repairRequests.filter(r => r.status === 'In Repair').length, color: Brand.secondary },
+            { label: 'Rejected', value: repairRequests.filter(r => r.status === 'Rejected' || r.status === 'Customer Rejected').length, color: '#EF4444' },
+            { label: 'Completed', value: repairRequests.filter(r => r.status === 'Completed').length, color: '#10B981' }
           ].map((stat, index) => (
             <div key={index} className="bg-white rounded-xl shadow-md p-6">
               <div className="text-3xl font-bold" style={{ color: stat.color }}>{stat.value}</div>
@@ -168,36 +207,117 @@ const CustomerDashboard = ({ customerId }) => {
           ))}
         </div>
 
-        {/* Search */}
-        <div className="bg-white rounded-xl shadow-md p-4 mb-6">
-          <div className="flex items-center gap-3">
-            <input
-              type="text"
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
-              className="flex-1 px-4 py-2 rounded-lg border"
-              style={{ borderColor: Brand.secondary, color: Brand.body }}
-              placeholder="Search by equipment, damage type, status, or description..."
-            />
+        {/* Filters */}
+        <div className="bg-white rounded-xl shadow-md p-6 mb-6">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+            {/* Status Filter */}
+            <div>
+              <label className="block text-sm font-semibold mb-2" style={{ color: Brand.primary }}>Status Filter</label>
+              <select
+                value={statusFilter}
+                onChange={(e) => setStatusFilter(e.target.value)}
+                className="w-full px-4 py-2 rounded-lg border text-sm"
+                style={{ borderColor: Brand.secondary, color: Brand.body }}
+              >
+                <option value="All Statuses">All Statuses</option>
+                <option value="Pending">Pending</option>
+                <option value="Approved">Approved</option>
+                <option value="Customer Approved">Customer Approved</option>
+                <option value="Customer Rejected">Customer Rejected</option>
+                <option value="In Repair">In Repair</option>
+                <option value="Rejected">Rejected</option>
+                <option value="Completed">Completed</option>
+              </select>
+            </div>
+
+            {/* Equipment Type Filter */}
+            <div>
+              <label className="block text-sm font-semibold mb-2" style={{ color: Brand.primary }}>Equipment Type</label>
+              <select
+                value={equipmentFilter}
+                onChange={(e) => setEquipmentFilter(e.target.value)}
+                className="w-full px-4 py-2 rounded-lg border text-sm"
+                style={{ borderColor: Brand.secondary, color: Brand.body }}
+              >
+                <option value="All Equipment Types">All Equipment Types</option>
+                <option value="cricket_bat">Cricket Bat</option>
+                <option value="cricket_ball">Cricket Ball</option>
+                <option value="cricket_gloves">Cricket Gloves</option>
+                <option value="cricket_pads">Cricket Pads</option>
+                <option value="cricket_helmet">Cricket Helmet</option>
+              </select>
+            </div>
+
+            {/* Damage Type Filter */}
+            <div>
+              <label className="block text-sm font-semibold mb-2" style={{ color: Brand.primary }}>Damage Type</label>
+              <select
+                value={damageTypeFilter}
+                onChange={(e) => setDamageTypeFilter(e.target.value)}
+                className="w-full px-4 py-2 rounded-lg border text-sm"
+                style={{ borderColor: Brand.secondary, color: Brand.body }}
+              >
+                <option value="All Damage Types">All Damage Types</option>
+                <option value="Bat Handle Damage">Bat Handle Damage</option>
+                <option value="Bat Surface Crack">Bat Surface Crack</option>
+                <option value="Ball Stitch Damage">Ball Stitch Damage</option>
+                <option value="Gloves Tear">Gloves Tear</option>
+                <option value="Pads Crack">Pads Crack</option>
+                <option value="Helmet Damage">Helmet Damage</option>
+                <option value="Other">Other</option>
+              </select>
+            </div>
+          </div>
+
+          {/* Clear All Filters Button */}
+          <div className="flex justify-start">
             <button
-              className="px-4 py-2 rounded-lg text-white font-semibold"
-              style={{ backgroundColor: Brand.secondary }}
+              onClick={() => {
+                setStatusFilter('All Statuses');
+                setEquipmentFilter('All Equipment Types');
+                setDamageTypeFilter('All Damage Types');
+                setQuery('');
+              }}
+              className="px-6 py-2 rounded-lg text-white font-semibold"
+              style={{ backgroundColor: Brand.accent }}
               onMouseOver={(e) => { e.currentTarget.style.backgroundColor = Brand.primaryHover; }}
-              onMouseOut={(e) => { e.currentTarget.style.backgroundColor = Brand.secondary; }}
-              onClick={() => setQuery('')}
+              onMouseOut={(e) => { e.currentTarget.style.backgroundColor = Brand.accent; }}
             >
-              Clear
+              Clear All Filters
             </button>
           </div>
         </div>
 
         {/* Repair Requests */}
         <div className="space-y-6">
-          {(query ? allRequests.filter(r => {
-            const q = query.toLowerCase();
-            const fields = [r.equipmentType, r.damageType, r.status, r.description || r.damageDescription, r.assignedTechnician?.username || r.assignedTechnician?.name || ''].map(x => String(x || '').toLowerCase());
-            return fields.some(f => f.includes(q));
-          }) : allRequests).map((request) => (
+          {allRequests.filter(r => {
+            // Status filter
+            if (statusFilter !== 'All Statuses' && r.status !== statusFilter) {
+              return false;
+            }
+            
+            // Equipment type filter
+            if (equipmentFilter !== 'All Equipment Types' && r.equipmentType !== equipmentFilter) {
+              return false;
+            }
+            
+            // Damage type filter
+            if (damageTypeFilter !== 'All Damage Types' && r.damageType !== damageTypeFilter) {
+              return false;
+            }
+            
+            // Text search (if query exists)
+            if (query) {
+              const q = query.toLowerCase();
+              const technicianName = r.assignedTechnician?.technicianId?.username || 
+                                    r.assignedTechnician?.technicianId?.firstName + ' ' + r.assignedTechnician?.technicianId?.lastName ||
+                                    r.assignedTechnician?.technicianId?.email || '';
+              const fields = [r.equipmentType, r.damageType, r.status, r.description || r.damageDescription, technicianName].map(x => String(x || '').toLowerCase());
+              return fields.some(f => f.includes(q));
+            }
+            
+            return true;
+          }).map((request) => (
             <div key={request._id} className="bg-white rounded-xl shadow-md p-6">
               {/* Request Header */}
               <div className="flex justify-between items-start mb-6">
@@ -207,6 +327,9 @@ const CustomerDashboard = ({ customerId }) => {
                   </h3>
                   <p className="text-sm" style={{ color: Brand.body }}>
                     Request ID: {request._id} • Submitted: {new Date(request.createdAt).toLocaleDateString()}
+                  </p>
+                  <p className="text-sm mt-1" style={{ color: Brand.secondary }}>
+                    <strong>Current Status:</strong> {request.status}
                   </p>
                 </div>
                 <span className={`px-3 py-1 rounded-full text-sm font-semibold ${getStatusColor(request.status)}`}>
@@ -223,7 +346,23 @@ const CustomerDashboard = ({ customerId }) => {
                     <p><span className="font-medium" style={{ color: Brand.body }}>Damage Type:</span> {request.damageType}</p>
                     <p><span className="font-medium" style={{ color: Brand.body }}>Description:</span> {request.description || request.damageDescription}</p>
                     {request.assignedTechnician && (
-                      <p><span className="font-medium" style={{ color: Brand.body }}>Technician:</span> {request.assignedTechnician.username || request.assignedTechnician.name || String(request.assignedTechnician)}</p>
+                      <p><span className="font-medium" style={{ color: Brand.body }}>Technician:</span> {
+                        (() => {
+                          const technicianId = request.assignedTechnician.technicianId;
+                          if (technicianId && technicianDetails[technicianId]) {
+                            const tech = technicianDetails[technicianId];
+                            return tech.username || `${tech.firstName || ''} ${tech.lastName || ''}`.trim() || tech.email || 'Technician Assigned';
+                          }
+                          // Fallback to direct properties
+                          if (request.assignedTechnician.technicianId?.username) {
+                            return request.assignedTechnician.technicianId.username;
+                          }
+                          if (request.assignedTechnician.username) {
+                            return request.assignedTechnician.username;
+                          }
+                          return 'Technician Assigned';
+                        })()
+                      }</p>
                     )}
                   </div>
                 </div>
@@ -299,6 +438,32 @@ const CustomerDashboard = ({ customerId }) => {
                 </div>
         </div>
 
+              {/* Cost & Time Estimate Notification */}
+              {request.status === 'Approved' && (request.costEstimate || request.timeEstimate) && (
+                <div className="mb-6 p-4 rounded-lg" style={{ backgroundColor: '#FEF3C7', border: '1px solid #F59E0B' }}>
+                  <h4 className="font-semibold mb-2" style={{ color: '#92400E' }}>📋 Service Estimate Received</h4>
+                  <div className="space-y-2 text-sm" style={{ color: '#92400E' }}>
+                    {request.costEstimate && (
+                      <p><strong>Estimated Cost:</strong> ${request.costEstimate}</p>
+                    )}
+                    {request.timeEstimate && (
+                      <p><strong>Time Estimate:</strong> {request.timeEstimate}</p>
+                    )}
+                    <p className="mt-2 font-medium">Please review and approve or reject this estimate to proceed with your repair.</p>
+                  </div>
+                </div>
+              )}
+
+              {/* Rejection Reason */}
+              {request.status === 'Rejected' && request.rejectionReason && (
+                <div className="mb-6 p-4 rounded-lg" style={{ backgroundColor: '#FEE2E2', border: '1px solid #EF4444' }}>
+                  <h4 className="font-semibold mb-2" style={{ color: '#991B1B' }}>❌ Request Rejected</h4>
+                  <p className="text-sm" style={{ color: '#991B1B' }}>
+                    <strong>Reason:</strong> {request.rejectionReason}
+                  </p>
+                </div>
+              )}
+
               {/* Notes */}
               {request.notes && (
                 <div className="mb-6 p-4 rounded-lg" style={{ backgroundColor: Brand.light }}>
@@ -309,7 +474,69 @@ const CustomerDashboard = ({ customerId }) => {
 
               {/* Actions */}
               <div className="flex flex-wrap gap-3">
-                {request.status === 'completed' && (
+                {/* Customer Approval/Rejection for Approved Requests */}
+                {request.status === 'Approved' && (
+                  <>
+                    <button
+                      onClick={async () => {
+                        try {
+                          console.log('Approving estimate for request:', request._id);
+                          const response = await customerDecision(request._id, 'approve');
+                          console.log('Approval response:', response.data);
+                          await loadCustomerRequests();
+                          alert('Estimate approved successfully!');
+                        } catch (error) {
+                          console.error('Error approving estimate:', error);
+                          console.error('Error response:', error.response?.data);
+                          alert(`Failed to approve estimate: ${error.response?.data?.error || error.message}`);
+                        }
+                      }}
+                      className="px-4 py-2 rounded-lg text-white text-sm font-medium"
+                      style={{ backgroundColor: '#10B981' }}
+                    >
+                      Approve Estimate
+                    </button>
+                    <button
+                      onClick={async () => {
+                        try {
+                          console.log('Rejecting estimate for request:', request._id);
+                          const response = await customerDecision(request._id, 'reject');
+                          console.log('Rejection response:', response.data);
+                          await loadCustomerRequests();
+                          alert('Estimate rejected successfully!');
+                        } catch (error) {
+                          console.error('Error rejecting estimate:', error);
+                          console.error('Error response:', error.response?.data);
+                          alert(`Failed to reject estimate: ${error.response?.data?.error || error.message}`);
+                        }
+                      }}
+                      className="px-4 py-2 rounded-lg text-white text-sm font-medium"
+                      style={{ backgroundColor: '#EF4444' }}
+                    >
+                      Reject Estimate
+                    </button>
+                  </>
+                )}
+
+                {/* Customer Rejected Status - Show different actions */}
+                {request.status === 'Customer Rejected' && (
+                  <div className="w-full p-3 rounded-lg" style={{ backgroundColor: '#FEF3C7', border: '1px solid #F59E0B' }}>
+                    <p className="text-sm" style={{ color: '#92400E' }}>
+                      <strong>Status:</strong> You have rejected the estimate. The service manager will review and may revise the estimate or cancel the request.
+                    </p>
+                  </div>
+                )}
+
+                {/* Customer Approved Status - Show progress */}
+                {request.status === 'Customer Approved' && (
+                  <div className="w-full p-3 rounded-lg" style={{ backgroundColor: '#D1FAE5', border: '1px solid #10B981' }}>
+                    <p className="text-sm" style={{ color: '#065F46' }}>
+                      <strong>Status:</strong> Estimate approved! Your repair request is now being processed.
+                    </p>
+                  </div>
+                )}
+                
+                {request.status === 'Completed' && (
                           <button
                     onClick={() => {
                       setSelectedRequest(request);

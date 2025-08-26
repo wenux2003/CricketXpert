@@ -38,8 +38,9 @@ export const submitRepairRequest = (requestData) => {
 };
 
 // Get all repair requests (for service manager)
-export const getAllRepairRequests = () => {
-  return axios.get(`${BASE_URL}/all`);
+export const getAllRepairRequests = (params = {}) => {
+  const query = new URLSearchParams(params).toString();
+  return axios.get(`${BASE_URL}${query ? `?${query}` : ''}`);
 };
 
 // Get customer-specific requests
@@ -55,7 +56,7 @@ export const getTechnicianTasks = (technicianId) => {
 
 // Update repair status
 export const updateRepairStatus = (requestId, statusData) => {
-  return axios.put(`${BASE_URL}/${requestId}/status`, statusData);
+  return axios.put(`${BASE_URL}/status/${requestId}`, statusData);
 };
 
 // Update task progress (for technicians)
@@ -70,7 +71,7 @@ export const completeTask = (requestId) => {
 
 // Assign technician to a repair
 export const assignTechnician = (requestId, assignmentData) => {
-  return axios.put(`${BASE_URL}/${requestId}/assign`, assignmentData);
+  return axios.put(`${BASE_URL}/assign/${requestId}`, assignmentData);
 };
 
 // Send cost estimate to customer
@@ -193,7 +194,7 @@ export const downloadRepairReport = (requestId) => {
 
 // Customer decision on estimate
 export const customerDecision = (requestId, decision) => {
-  return axios.post(`${BASE_URL}/${requestId}/decision`, { decision });
+  return axios.put(`${BASE_URL}/customer-decision/${requestId}`, { decision });
 };
 
 // Get repair statistics
