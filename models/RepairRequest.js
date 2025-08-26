@@ -2,7 +2,18 @@ const mongoose = require('mongoose');
 
 const repairRequestSchema = new mongoose.Schema({
   customerId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
- damageType: { 
+  equipmentType: {
+    type: String,
+    enum: [
+      'cricket_bat',
+      'cricket_ball',
+      'cricket_gloves',
+      'cricket_pads',
+      'cricket_helmet'
+    ],
+    required: true
+  },
+  damageType: { 
     type: String,
     required: true,
     enum: [

@@ -99,6 +99,7 @@ const RepairRequestForm = () => {
       const lastName = rest.join(' ').trim();
       const payload = {
         customerId: currentUser?.id,
+        equipmentType: formData.equipmentType,
         username: currentUser?.username,
         firstName: firstName || currentUser?.name || '',
         lastName: lastName || '',
