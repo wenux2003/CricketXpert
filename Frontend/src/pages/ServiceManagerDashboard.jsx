@@ -2,15 +2,9 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { getAllRepairRequests, updateRepairStatus, assignTechnician, sendEstimate } from '../api/repairRequestApi';
 import { getAllTechnicians } from '../api/repairRequestApi';
+import Brand from '../brand';
 
-const Brand = {
-  primary: '#072679',
-  secondary: '#42ADF5',
-  heading: '#000000',
-  body: '#36516C',
-  light: '#F1F2F7',
-  accent: '#D88717',
-};
+// Using shared Brand from ../brand
 
 const ServiceManagerDashboard = () => {
   const navigate = useNavigate();
@@ -125,13 +119,6 @@ const ServiceManagerDashboard = () => {
               <p className="mt-1" style={{ color: Brand.body }}>Manage repair requests and technician assignments</p>
             </div>
             <div className="flex space-x-3">
-              <button
-                onClick={() => navigate('/repair')}
-                className="px-4 py-2 rounded-lg text-white font-semibold"
-                style={{ backgroundColor: Brand.secondary }}
-              >
-                New Request
-              </button>
               <button
                 onClick={() => navigate('/')}
                 className="px-4 py-2 rounded-lg text-white font-semibold"

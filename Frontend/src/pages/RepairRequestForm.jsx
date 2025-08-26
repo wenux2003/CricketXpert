@@ -1,15 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { submitRepairRequest, fetchUserByUsername } from '../api/repairRequestApi';
-
-const Brand = {
-  primary: '#072679',
-  secondary: '#42ADF5',
-  heading: '#000000',
-  body: '#36516C',
-  light: '#F1F2F7',
-  accent: '#D88717',
-};
+import Brand from '../brand';
 
 const RepairRequestForm = () => {
   const navigate = useNavigate();
@@ -60,6 +52,7 @@ const RepairRequestForm = () => {
 
       const normalized = { id, name, email, phone, address, username };
       setCurrentUser(normalized);
+      try { localStorage.setItem('cx_current_user', JSON.stringify(normalized)); } catch {}
     } catch (err) {
       setLookupError('No user found with that username or name. Please check and try again.');
       setCurrentUser(null);
@@ -118,10 +111,12 @@ const RepairRequestForm = () => {
 
       const response = await submitRepairRequest(payload);
 
-      if (response.data?.success) {
+      const created = response?.data?.repairRequest;
+      const ok = (response?.status === 201) || !!created;
+      if (ok) {
         navigate(`/dashboard/${currentUser.id}`);
       } else {
-        setApiError(response.data?.error || 'Failed to submit repair request.');
+        setApiError(response?.data?.error || response?.data?.message || 'Failed to submit repair request.');
       }
     } catch (error) {
       const msg = error?.response?.data?.error || error?.response?.data?.message || error?.message || 'Submission failed.';
@@ -141,7 +136,21 @@ const RepairRequestForm = () => {
       <div className="w-full max-w-3xl max-h-[90vh] overflow-y-auto bg-white rounded-xl shadow-xl" style={{ border: `2px solid ${Brand.secondary}` }}>
         <div className="flex items-center justify-between px-6 py-4 border-b" style={{ borderColor: Brand.light }}>
           <h1 className="text-xl font-bold" style={{ color: Brand.primary }}>🏏 Cricket Equipment Repair Request</h1>
-          <button onClick={closeModal} className="text-gray-500 hover:text-gray-700 text-2xl leading-none">×</button>
+          <div className="flex items-center gap-3">
+            {currentUser?.id && (
+              <button
+                type="button"
+                onClick={() => navigate(`/dashboard/${currentUser.id}`)}
+                className="px-3 py-1 rounded-lg text-white text-sm"
+                style={{ backgroundColor: Brand.secondary }}
+                onMouseOver={(e) => { e.currentTarget.style.backgroundColor = Brand.primaryHover; }}
+                onMouseOut={(e) => { e.currentTarget.style.backgroundColor = Brand.secondary; }}
+              >
+                My Requests
+              </button>
+            )}
+            <button onClick={closeModal} className="text-gray-500 hover:text-gray-700 text-2xl leading-none">×</button>
+          </div>
         </div>
 
         <div className="px-6 py-4">
@@ -246,7 +255,7 @@ const RepairRequestForm = () => {
 
             <div className="flex items-center justify-end gap-3 px-1 pb-4">
               <button type="button" onClick={closeModal} className="px-4 py-2 rounded-lg border" style={{ borderColor: Brand.secondary, color: Brand.body }}>Cancel</button>
-              <button type="submit" disabled={isSubmitting || !currentUser} className={`px-6 py-2 rounded-lg font-semibold text-white transition-colors ${isSubmitting || !currentUser ? 'opacity-50 cursor-not-allowed' : 'hover:opacity-90'}`} style={{ backgroundColor: Brand.secondary }}>
+              <button type="submit" disabled={isSubmitting || !currentUser} className={`px-6 py-2 rounded-lg font-semibold text-white transition-colors ${isSubmitting || !currentUser ? 'opacity-50 cursor-not-allowed' : ''}`} style={{ backgroundColor: Brand.secondary }} onMouseOver={(e) => { if(!(isSubmitting || !currentUser)) e.currentTarget.style.backgroundColor = Brand.primaryHover; }} onMouseOut={(e) => { e.currentTarget.style.backgroundColor = Brand.secondary; }}>
                 {isSubmitting ? 'Submitting...' : 'Submit Repair Request'}
               </button>
             </div>

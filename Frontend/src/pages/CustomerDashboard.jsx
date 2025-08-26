@@ -1,15 +1,19 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { getCustomerRequests, submitFeedback } from '../api/repairRequestApi';
+import { getCustomerRequests, submitFeedback, downloadRepairReport, updateRepairRequest, deleteRepairRequest } from '../api/repairRequestApi';
+import Brand from '../brand';
 
-const Brand = {
-  primary: '#072679',
-  secondary: '#42ADF5',
-  heading: '#000000',
-  body: '#36516C',
-  light: '#F1F2F7',
-  accent: '#D88717',
-};
+// Using shared Brand from ../brand
+
+const DAMAGE_TYPES = [
+  'Bat Handle Damage',
+  'Bat Surface Crack',
+  'Ball Stitch Damage',
+  'Gloves Tear',
+  'Pads Crack',
+  'Helmet Damage',
+  'Other'
+];
 
 const CustomerDashboard = ({ customerId }) => {
   const navigate = useNavigate();
@@ -17,6 +21,10 @@ const CustomerDashboard = ({ customerId }) => {
   const [loading, setLoading] = useState(true);
   const [selectedRequest, setSelectedRequest] = useState(null);
   const [showFeedbackModal, setShowFeedbackModal] = useState(false);
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [editData, setEditData] = useState({ damageType: '', description: '' });
+  const [query, setQuery] = useState('');
+  const [allRequests, setAllRequests] = useState([]);
   const [feedbackData, setFeedbackData] = useState({
     rating: 5,
     comment: '',
@@ -28,65 +36,61 @@ const CustomerDashboard = ({ customerId }) => {
   }, [customerId]);
 
   const loadCustomerRequests = async () => {
-    try {
-      // For demo purposes, we'll use mock data
-      const mockRequests = [
-        {
-          _id: '1',
-          customerName: 'John Smith',
-          email: 'john@example.com',
-          phone: '+1234567890',
-          equipmentType: 'cricket_bat',
-          damageType: 'Handle Damage',
-          damageDescription: 'Bat handle is loose and needs re-gripping',
-          status: 'in_progress',
-          progress: 75,
-          cost: 45.00,
-          timeEstimate: '3-5 business days',
-          assignedTechnician: 'Alex Johnson',
-          createdAt: '2024-01-15',
-          estimatedCompletion: '2024-01-20',
-          notes: 'Handle repair in progress, new grip installed',
-          milestones: [
-            { stage: 'Request Submitted', date: '2024-01-15', completed: true },
-            { stage: 'Request Approved', date: '2024-01-16', completed: true },
-            { stage: 'Estimate Sent', date: '2024-01-16', completed: true },
-            { stage: 'Repair Started', date: '2024-01-17', completed: true },
-            { stage: 'Halfway Completed', date: '2024-01-18', completed: true },
-            { stage: 'Ready for Pickup', date: '2024-01-20', completed: false }
-          ]
-        },
-        {
-          _id: '2',
-          customerName: 'John Smith',
-          email: 'john@example.com',
-          phone: '+1234567890',
-          equipmentType: 'cricket_gloves',
-          damageType: 'Palm Wear',
-          damageDescription: 'Palm area is worn out and needs replacement',
-          status: 'pending',
-          progress: 0,
-          cost: null,
-          timeEstimate: null,
-          assignedTechnician: null,
-          createdAt: '2024-01-16',
-          estimatedCompletion: null,
-          notes: 'Request under review',
-          milestones: [
-            { stage: 'Request Submitted', date: '2024-01-16', completed: true },
-            { stage: 'Request Approved', date: null, completed: false },
-            { stage: 'Estimate Sent', date: null, completed: false },
-            { stage: 'Repair Started', date: null, completed: false },
-            { stage: 'Halfway Completed', date: null, completed: false },
-            { stage: 'Ready for Pickup', date: null, completed: false }
-          ]
-        }
-      ];
-      setRepairRequests(mockRequests);
+      try {
+        const res = await getCustomerRequests(customerId);
+      const list = Array.isArray(res?.data) ? res.data : [];
+      setAllRequests(list);
+      setRepairRequests(list);
     } catch (error) {
       console.error('Error loading customer requests:', error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleOpenEdit = (request) => {
+    setSelectedRequest(request);
+    setEditData({ damageType: request.damageType || '', description: request.description || request.damageDescription || '' });
+    setShowEditModal(true);
+  };
+
+  const handleSaveEdit = async () => {
+    try {
+      await updateRepairRequest(selectedRequest._id, {
+        damageType: editData.damageType,
+        description: editData.description
+      });
+      setShowEditModal(false);
+      await loadCustomerRequests();
+      alert('Request updated');
+    } catch (e) {
+      alert('Failed to update request');
+    }
+  };
+
+  const handleDeleteRequest = async (id) => {
+    if (!window.confirm('Delete this repair request?')) return;
+    try {
+      await deleteRepairRequest(id);
+      await loadCustomerRequests();
+      alert('Request deleted');
+    } catch (e) {
+      alert('Failed to delete request');
+    }
+  };
+
+  const handleDownload = async (requestId) => {
+    try {
+      const res = await downloadRepairReport(requestId);
+      const url = window.URL.createObjectURL(new Blob([res] && res.data ? [res.data] : []));
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', `repair_report_${requestId}.pdf`);
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      } catch (e) {
+      alert('Failed to download report');
     }
   };
 
@@ -133,30 +137,18 @@ const CustomerDashboard = ({ customerId }) => {
   return (
     <div className="min-h-screen" style={{ backgroundColor: Brand.light }}>
       <div className="max-w-7xl mx-auto px-4 py-8">
-        {/* Header */}
+        {/* Header with actions */}
         <div className="bg-white rounded-xl shadow-md p-6 mb-6">
-          <div className="flex justify-between items-center">
+          <div className="flex items-center justify-between">
             <div>
               <h1 className="text-3xl font-bold" style={{ color: Brand.primary }}>Customer Dashboard</h1>
               <p className="mt-1" style={{ color: Brand.body }}>
                 Track your repair requests and stay updated on progress
               </p>
             </div>
-            <div className="flex space-x-3">
-              <button
-                onClick={() => navigate('/repair')}
-                className="px-4 py-2 rounded-lg text-white font-semibold"
-                style={{ backgroundColor: Brand.secondary }}
-              >
-                New Repair Request
-              </button>
-              <button
-                onClick={() => navigate('/')}
-                className="px-4 py-2 rounded-lg text-white font-semibold"
-                style={{ backgroundColor: Brand.accent }}
-              >
-                Main Dashboard
-              </button>
+            <div className="flex gap-3">
+              <button onClick={() => navigate('/repair')} className="px-4 py-2 rounded-lg text-white font-semibold" style={{ backgroundColor: Brand.secondary }} onMouseOver={(e) => { e.currentTarget.style.backgroundColor = Brand.primaryHover; }} onMouseOut={(e) => { e.currentTarget.style.backgroundColor = Brand.secondary; }}>New Repair</button>
+              <button onClick={() => navigate('/')} className="px-4 py-2 rounded-lg text-white font-semibold" style={{ backgroundColor: Brand.accent }}>Main Dashboard</button>
             </div>
           </div>
         </div>
@@ -176,9 +168,36 @@ const CustomerDashboard = ({ customerId }) => {
           ))}
         </div>
 
+        {/* Search */}
+        <div className="bg-white rounded-xl shadow-md p-4 mb-6">
+          <div className="flex items-center gap-3">
+            <input
+              type="text"
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              className="flex-1 px-4 py-2 rounded-lg border"
+              style={{ borderColor: Brand.secondary, color: Brand.body }}
+              placeholder="Search by equipment, damage type, status, or description..."
+            />
+            <button
+              className="px-4 py-2 rounded-lg text-white font-semibold"
+              style={{ backgroundColor: Brand.secondary }}
+              onMouseOver={(e) => { e.currentTarget.style.backgroundColor = Brand.primaryHover; }}
+              onMouseOut={(e) => { e.currentTarget.style.backgroundColor = Brand.secondary; }}
+              onClick={() => setQuery('')}
+            >
+              Clear
+            </button>
+          </div>
+        </div>
+
         {/* Repair Requests */}
         <div className="space-y-6">
-          {repairRequests.map((request) => (
+          {(query ? allRequests.filter(r => {
+            const q = query.toLowerCase();
+            const fields = [r.equipmentType, r.damageType, r.status, r.description || r.damageDescription, r.assignedTechnician?.username || r.assignedTechnician?.name || ''].map(x => String(x || '').toLowerCase());
+            return fields.some(f => f.includes(q));
+          }) : allRequests).map((request) => (
             <div key={request._id} className="bg-white rounded-xl shadow-md p-6">
               {/* Request Header */}
               <div className="flex justify-between items-start mb-6">
@@ -202,9 +221,9 @@ const CustomerDashboard = ({ customerId }) => {
                   <div className="space-y-2 text-sm">
                     <p><span className="font-medium" style={{ color: Brand.body }}>Equipment:</span> {request.equipmentType?.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase())}</p>
                     <p><span className="font-medium" style={{ color: Brand.body }}>Damage Type:</span> {request.damageType}</p>
-                    <p><span className="font-medium" style={{ color: Brand.body }}>Description:</span> {request.damageDescription}</p>
+                    <p><span className="font-medium" style={{ color: Brand.body }}>Description:</span> {request.description || request.damageDescription}</p>
                     {request.assignedTechnician && (
-                      <p><span className="font-medium" style={{ color: Brand.body }}>Technician:</span> {request.assignedTechnician}</p>
+                      <p><span className="font-medium" style={{ color: Brand.body }}>Technician:</span> {request.assignedTechnician.username || request.assignedTechnician.name || String(request.assignedTechnician)}</p>
                     )}
                   </div>
                 </div>
@@ -212,8 +231,8 @@ const CustomerDashboard = ({ customerId }) => {
                 <div>
                   <h4 className="font-semibold mb-3" style={{ color: Brand.primary }}>Cost & Timeline</h4>
                   <div className="space-y-2 text-sm">
-                    {request.cost ? (
-                      <p><span className="font-medium" style={{ color: Brand.body }}>Estimated Cost:</span> ${request.cost}</p>
+                    {request.costEstimate || request.cost ? (
+                      <p><span className="font-medium" style={{ color: Brand.body }}>Estimated Cost:</span> ${request.costEstimate ?? request.cost}</p>
                     ) : (
                       <p><span className="font-medium" style={{ color: Brand.body }}>Estimated Cost:</span> <span style={{ color: Brand.accent }}>Pending</span></p>
                     )}
@@ -254,7 +273,7 @@ const CustomerDashboard = ({ customerId }) => {
               <div className="mb-6">
                 <h4 className="font-semibold mb-3" style={{ color: Brand.primary }}>Repair Timeline</h4>
                 <div className="space-y-3">
-                  {request.milestones.map((milestone, index) => (
+                  {(request.milestones || []).map((milestone, index) => (
                     <div key={index} className="flex items-center">
                       <div className={`w-6 h-6 rounded-full flex items-center justify-center mr-3 ${
                         milestone.completed ? 'bg-green-500' : 'bg-gray-300'
@@ -289,7 +308,7 @@ const CustomerDashboard = ({ customerId }) => {
               )}
 
               {/* Actions */}
-              <div className="flex space-x-3">
+              <div className="flex flex-wrap gap-3">
                 {request.status === 'completed' && (
                           <button
                     onClick={() => {
@@ -303,12 +322,28 @@ const CustomerDashboard = ({ customerId }) => {
                           </button>
                 )}
                           <button
-                  onClick={() => window.print()}
+                  onClick={() => handleDownload(request._id)}
                   className="px-4 py-2 rounded-lg text-white text-sm font-medium"
                   style={{ backgroundColor: Brand.secondary }}
+                  onMouseOver={(e) => { e.currentTarget.style.backgroundColor = Brand.primaryHover; }}
+                  onMouseOut={(e) => { e.currentTarget.style.backgroundColor = Brand.secondary; }}
                           >
                   Download Report
                           </button>
+                <button
+                  onClick={() => handleOpenEdit(request)}
+                  className="px-4 py-2 rounded-lg text-white text-sm font-medium"
+                  style={{ backgroundColor: Brand.primary }}
+                >
+                  Edit
+                </button>
+                <button
+                  onClick={() => handleDeleteRequest(request._id)}
+                  className="px-4 py-2 rounded-lg text-white text-sm font-medium"
+                  style={{ backgroundColor: Brand.accent }}
+                >
+                  Delete
+                </button>
                         </div>
                     </div>
                   ))}
@@ -330,6 +365,56 @@ const CustomerDashboard = ({ customerId }) => {
             )}
       </div>
 
+      {/* Edit Request Modal */}
+      {showEditModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-xl p-6 w-full max-w-md">
+            <h3 className="text-xl font-semibold mb-4" style={{ color: Brand.primary }}>Edit Repair Request</h3>
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium mb-2" style={{ color: Brand.body }}>Damage Type</label>
+                <select
+                  value={editData.damageType}
+                  onChange={(e) => setEditData({ ...editData, damageType: e.target.value })}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+                >
+                  <option value="">Select damage type</option>
+                  {DAMAGE_TYPES.map((t) => (
+                    <option key={t} value={t}>{t}</option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label className="block text-sm font-medium mb-2" style={{ color: Brand.body }}>Description</label>
+                <textarea
+                  value={editData.description}
+                  onChange={(e) => setEditData({ ...editData, description: e.target.value })}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+                  rows="4"
+                  placeholder="Describe the damage"
+                />
+              </div>
+            </div>
+            <div className="flex space-x-3 mt-6">
+              <button
+                onClick={() => setShowEditModal(false)}
+                className="flex-1 px-4 py-2 border border-gray-300 rounded-lg"
+                style={{ color: Brand.body }}
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleSaveEdit}
+                className="flex-1 px-4 py-2 rounded-lg text-white"
+                style={{ backgroundColor: Brand.secondary }}
+              >
+                Save Changes
+              </button>
+            </div>
+          </div>
+          </div>
+        )}
+
       {/* Feedback Modal */}
       {showFeedbackModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
@@ -338,7 +423,7 @@ const CustomerDashboard = ({ customerId }) => {
               Submit Feedback
               </h3>
             <div className="space-y-4">
-              <div>
+                  <div>
                 <label className="block text-sm font-medium mb-2" style={{ color: Brand.body }}>
                   Rating
                 </label>
@@ -353,7 +438,7 @@ const CustomerDashboard = ({ customerId }) => {
                     </button>
                   ))}
                 </div>
-              </div>
+                  </div>
                 <div>
                 <label className="block text-sm font-medium mb-2" style={{ color: Brand.body }}>
                   Feedback Category
@@ -400,9 +485,9 @@ const CustomerDashboard = ({ customerId }) => {
               </button>
               </div>
             </div>
-          </div>
+        </div>
         )}
-      </div>
+    </div>
   );
 };
 

@@ -149,7 +149,7 @@ const TechnicianDashboard = () => {
               <button
                 onClick={() => navigate('/')}
                 className="px-4 py-2 rounded-lg text-white font-semibold"
-                style={{ backgroundColor: Brand.secondary }}
+                style={{ backgroundColor: Brand.accent }}
               >
                 Main Dashboard
               </button>

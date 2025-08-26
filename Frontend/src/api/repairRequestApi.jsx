@@ -44,7 +44,8 @@ export const getAllRepairRequests = () => {
 
 // Get customer-specific requests
 export const getCustomerRequests = (customerId) => {
-  return axios.get(`${BASE_URL}/customer/${customerId}`);
+  // Backend route: /api/repairs/dashboard/customer/:customerId
+  return axios.get(`${BASE_URL}/dashboard/customer/${customerId}`);
 };
 
 // Get technician tasks
@@ -85,6 +86,16 @@ export const submitFeedback = (requestId, feedbackData) => {
 // Get all technicians
 export const getAllTechnicians = () => {
   return axios.get('http://localhost:5000/api/technicians');
+};
+
+// Update a repair request (general fields)
+export const updateRepairRequest = (requestId, data) => {
+  return axios.put(`${BASE_URL}/${requestId}`, data);
+};
+
+// Delete a repair request
+export const deleteRepairRequest = (requestId) => {
+  return axios.delete(`${BASE_URL}/${requestId}`);
 };
 
 // Normalize various backend user shapes into a single object
@@ -174,7 +185,8 @@ export const checkUsername = (username) => {
 
 // Download repair report
 export const downloadRepairReport = (requestId) => {
-  return axios.get(`${BASE_URL}/${requestId}/report`, {
+  // Backend route: /api/repairs/report/download/:id
+  return axios.get(`${BASE_URL}/report/download/${requestId}`, {
     responseType: 'blob'
   });
 };
