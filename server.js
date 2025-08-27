@@ -1,6 +1,7 @@
 const express = require('express');
 const dotenv = require('dotenv');
 const cors = require('cors');
+const path = require('path'); // Import the path module
 const connectDB = require('./config/db');
 const userRoutes = require('./routes/userRoutes');
 
@@ -15,6 +16,10 @@ const app = express();
 // Middleware
 app.use(cors());
 app.use(express.json());
+
+// --- ADD THIS LINE ---
+// Make the 'uploads' folder public so images can be accessed by their URL
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 // Routes
 const playerRoutes = require('./routes/players');
