@@ -27,6 +27,7 @@ const TechnicianDashboard = () => {
     notes: ''
   });
   const [updatingProgress, setUpdatingProgress] = useState(false);
+  const [progressNotesError, setProgressNotesError] = useState('');
 
   const SKILL_OPTIONS = [
     'Cricket Bat Repair',
@@ -224,17 +225,43 @@ const TechnicianDashboard = () => {
   }, [assignedRepairRequests]);
 
   // Handle progress update
+  // Validate progress notes for repeated characters
+  const validateProgressNotes = (notes) => {
+    if (!notes || notes.length < 4) return '';
+    
+    // Check for repeated letters (3 or more same letters in a row)
+    const letterPattern = /(.)\1{2,}/;
+    if (letterPattern.test(notes)) {
+      return 'Progress notes cannot contain 3 or more repeated letters in a row (e.g., "aaa", "bbb")';
+    }
+    
+    // Check for repeated numbers (3 or more same numbers in a row)
+    const numberPattern = /(\d)\1{2,}/;
+    if (numberPattern.test(notes)) {
+      return 'Progress notes cannot contain 3 or more repeated numbers in a row (e.g., "111", "222")';
+    }
+    
+    return '';
+  };
+
   const handleProgressUpdate = (request) => {
     setSelectedRequest(request);
     setProgressData({
       repairProgress: request.repairProgress || 0,
       notes: ''
     });
+    setProgressNotesError('');
     setShowProgressModal(true);
   };
 
   const handleSaveProgress = async () => {
     if (!selectedRequest) return;
+    
+    // Validate progress notes before saving
+    if (progressNotesError) {
+      alert('Please fix the progress notes errors before saving.');
+      return;
+    }
     
     setUpdatingProgress(true);
     try {
@@ -888,11 +915,21 @@ const TechnicianDashboard = () => {
                   </label>
                   <textarea
                     value={progressData.notes}
-                    onChange={(e) => setProgressData(prev => ({ ...prev, notes: e.target.value }))}
+                    onChange={(e) => {
+                      const newNotes = e.target.value;
+                      setProgressData(prev => ({ ...prev, notes: newNotes }));
+                      const error = validateProgressNotes(newNotes);
+                      setProgressNotesError(error);
+                    }}
+                    className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+                      progressNotesError ? 'border-red-500' : 'border-gray-300'
+                    }`}
                     placeholder="Add any notes about the repair progress..."
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                     rows="3"
                   />
+                  {progressNotesError && (
+                    <p className="text-red-500 text-sm mt-1">{progressNotesError}</p>
+                  )}
                 </div>
 
                 <div className="bg-blue-50 p-3 rounded-lg">
@@ -912,6 +949,7 @@ const TechnicianDashboard = () => {
                   onClick={() => {
                     setShowProgressModal(false);
                     setSelectedRequest(null);
+                    setProgressNotesError('');
                   }}
                   className="flex-1 px-4 py-2 border border-gray-300 rounded-lg"
                   style={{ color: Brand.body }}

@@ -34,6 +34,7 @@ const ServiceManagerDashboard = () => {
     technicianId: '',
     notes: ''
   });
+  const [assignmentNotesError, setAssignmentNotesError] = useState('');
   const [filter, setFilter] = useState('all');
   const [searchFilter, setSearchFilter] = useState('all');
   const [requestSearchTerm, setRequestSearchTerm] = useState('');
@@ -208,7 +209,32 @@ const ServiceManagerDashboard = () => {
     return Object.keys(errors).length === 0;
   };
 
+  // Validate assignment notes for repeated characters
+  const validateAssignmentNotes = (notes) => {
+    if (!notes || notes.length < 4) return '';
+    
+    // Check for repeated letters (3 or more same letters in a row)
+    const letterPattern = /(.)\1{2,}/;
+    if (letterPattern.test(notes)) {
+      return 'Assignment notes cannot contain 3 or more repeated letters in a row (e.g., "aaa", "bbb")';
+    }
+    
+    // Check for repeated numbers (3 or more same numbers in a row)
+    const numberPattern = /(\d)\1{2,}/;
+    if (numberPattern.test(notes)) {
+      return 'Assignment notes cannot contain 3 or more repeated numbers in a row (e.g., "111", "222")';
+    }
+    
+    return '';
+  };
+
   const handleAssignTechnician = async () => {
+    // Validate assignment notes before saving
+    if (assignmentNotesError) {
+      alert('Please fix the assignment notes errors before saving.');
+      return;
+    }
+
     try {
       if (!assignmentData.technicianId) {
         alert('Please select a technician');
@@ -221,6 +247,7 @@ const ServiceManagerDashboard = () => {
       
       setShowAssignmentModal(false);
       setAssignmentData({ technicianId: '', notes: '' });
+      setAssignmentNotesError('');
       await loadData();
       alert('Technician assigned successfully');
     } catch (error) {
@@ -286,7 +313,7 @@ const ServiceManagerDashboard = () => {
       case 'Rejected': return 'bg-red-100 text-red-800';
       case 'In Repair': return 'bg-blue-100 text-blue-800';
       case 'Halfway Completed': return 'bg-yellow-100 text-yellow-800';
-      case 'Completed': return 'bg-gray-100 text-gray-800';
+      case 'Ready for Pickup': return 'bg-green-100 text-green-800';
       default: return 'bg-gray-100 text-gray-800';
     }
   };
@@ -419,7 +446,7 @@ const ServiceManagerDashboard = () => {
                  <option value="Customer Rejected">Customer Rejected</option>
                  <option value="In Repair">In Repair</option>
                  <option value="Halfway Completed">Halfway Completed</option>
-                 <option value="Completed">Completed</option>
+                 <option value="Ready for Pickup">Ready for Pickup</option>
                  <option value="Rejected">Rejected</option>
                </select>
              </div>
@@ -674,24 +701,24 @@ const ServiceManagerDashboard = () => {
                           </span>
                         )}
                         
-                        {/* Completed status - show assigned technician */}
-                        {request.status === 'Completed' && request.assignedTechnician && (
-                          <div className="text-sm">
-                            <span className="px-3 py-1 rounded text-sm bg-green-100 text-green-800 mb-1 block">
-                              Completed
-                            </span>
-                            <span className="text-xs text-gray-600">
-                              Technician Assigned
-                            </span>
-                          </div>
-                        )}
-                        
-                        {/* Completed status - no technician assigned (fallback) */}
-                        {request.status === 'Completed' && !request.assignedTechnician && (
-                          <span className="px-3 py-1 rounded text-sm bg-green-100 text-green-800">
-                            Completed
-                          </span>
-                        )}
+                                                 {/* Ready for Pickup status - show assigned technician */}
+                         {request.status === 'Ready for Pickup' && request.assignedTechnician && (
+                           <div className="text-sm">
+                             <span className="px-3 py-1 rounded text-sm bg-green-100 text-green-800 mb-1 block">
+                               Ready for Pickup
+                             </span>
+                             <span className="text-xs text-gray-600">
+                               Technician Assigned
+                             </span>
+                           </div>
+                         )}
+                         
+                         {/* Ready for Pickup status - no technician assigned (fallback) */}
+                         {request.status === 'Ready for Pickup' && !request.assignedTechnician && (
+                           <span className="px-3 py-1 rounded text-sm bg-green-100 text-green-800">
+                             Ready for Pickup
+                           </span>
+                         )}
                       </div>
                     </td>
                   </tr>
@@ -918,11 +945,21 @@ const ServiceManagerDashboard = () => {
                 <label className="block text-sm font-medium mb-2" style={{ color: Brand.body }}>Assignment Notes</label>
                 <textarea
                   value={assignmentData.notes}
-                  onChange={(e) => setAssignmentData({...assignmentData, notes: e.target.value})}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+                  onChange={(e) => {
+                    const newNotes = e.target.value;
+                    setAssignmentData({...assignmentData, notes: newNotes});
+                    const error = validateAssignmentNotes(newNotes);
+                    setAssignmentNotesError(error);
+                  }}
+                  className={`w-full px-3 py-2 border rounded-lg ${
+                    assignmentNotesError ? 'border-red-500' : 'border-gray-300'
+                  }`}
                   rows="3"
                   placeholder="Special instructions or priority notes for the technician..."
                 />
+                {assignmentNotesError && (
+                  <p className="text-red-500 text-sm mt-1">{assignmentNotesError}</p>
+                )}
               </div>
             </div>
             
@@ -931,6 +968,7 @@ const ServiceManagerDashboard = () => {
                 onClick={() => {
                   setShowAssignmentModal(false);
                   setAssignmentData({ technicianId: '', notes: '' });
+                  setAssignmentNotesError('');
                 }}
                 className="flex-1 px-4 py-2 border border-gray-300 rounded-lg"
                 style={{ color: Brand.body }}

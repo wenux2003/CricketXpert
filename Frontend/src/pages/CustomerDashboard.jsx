@@ -204,7 +204,7 @@ const CustomerDashboard = ({ customerId }) => {
       case 'Customer Rejected': return 'bg-orange-100 text-orange-800';
       case 'In Repair': return 'bg-blue-100 text-blue-800';
       case 'Halfway Completed': return 'bg-yellow-100 text-yellow-800';
-      case 'Completed': return 'bg-gray-100 text-gray-800';
+      case 'Ready for Pickup': return 'bg-green-100 text-green-800';
       default: return 'bg-gray-100 text-gray-800';
     }
   };
@@ -272,7 +272,7 @@ const CustomerDashboard = ({ customerId }) => {
             { label: 'In Progress', value: repairRequests.filter(r => r.status === 'In Repair').length, color: Brand.secondary },
             { label: 'Halfway Completed', value: repairRequests.filter(r => r.status === 'Halfway Completed').length, color: '#F59E0B' },
             { label: 'Rejected', value: repairRequests.filter(r => r.status === 'Rejected' || r.status === 'Customer Rejected').length, color: '#EF4444' },
-            { label: 'Completed', value: repairRequests.filter(r => r.status === 'Completed').length, color: '#10B981' }
+            { label: 'Ready for Pickup', value: repairRequests.filter(r => r.status === 'Ready for Pickup').length, color: '#10B981' }
           ].map((stat, index) => (
             <div key={index} className="bg-white rounded-xl shadow-md p-6">
               <div className="text-3xl font-bold" style={{ color: stat.color }}>{stat.value}</div>
@@ -301,7 +301,7 @@ const CustomerDashboard = ({ customerId }) => {
                 <option value="In Repair">In Repair</option>
                 <option value="Halfway Completed">Halfway Completed</option>
                 <option value="Rejected">Rejected</option>
-                <option value="Completed">Completed</option>
+                <option value="Ready for Pickup">Ready for Pickup</option>
               </select>
             </div>
 
@@ -637,7 +637,7 @@ const CustomerDashboard = ({ customerId }) => {
                   </div>
                 )}
                 
-                {request.status === 'Completed' && (
+                {request.status === 'Ready for Pickup' && (
                           <button
                     onClick={() => {
                       setSelectedRequest(request);
