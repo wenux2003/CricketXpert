@@ -59,6 +59,15 @@ const Dashboard = () => {
               Technicians
             </button>
             <button
+              onClick={() => navigate('/new-technician')}
+              className="w-full text-left px-4 py-3 rounded-lg font-medium text-white"
+              style={{ backgroundColor: Brand.primary }}
+              onMouseOver={(e) => { e.currentTarget.style.backgroundColor = Brand.primaryHover; }}
+              onMouseOut={(e) => { e.currentTarget.style.backgroundColor = Brand.primary; }}
+            >
+              New Technician
+            </button>
+            <button
               onClick={() => navigate('/manager')}
               className="w-full text-left px-4 py-3 rounded-lg font-medium text-white"
               style={{ backgroundColor: Brand.primary }}

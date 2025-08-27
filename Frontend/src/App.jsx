@@ -6,6 +6,7 @@ import ServiceManagerDashboard from './pages/ServiceManagerDashboard';
 import TechnicianDashboard from './pages/TechnicianDashboard';
 import Dashboard from './pages/Dashboard';
 import Navigation from './components/Navigation';
+import NewTechnicianForm from './pages/NewTechnicianForm';
 
 // Wrapper to pass URL param
 function CustomerDashboardWrapper() {
@@ -24,6 +25,7 @@ function App() {
           <Route path="/dashboard/:customerId" element={<CustomerDashboardWrapper />} />
           <Route path="/manager" element={<ServiceManagerDashboard />} />
           <Route path="/technician" element={<TechnicianDashboard />} />
+          <Route path="/new-technician" element={<NewTechnicianForm />} />
         </Routes>
       </div>
     </Router>

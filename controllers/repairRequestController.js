@@ -301,29 +301,39 @@ exports.assignTechnician = async (req, res) => {
 exports.updateProgress = async (req, res) => {
   try {
     const { id } = req.params;
-    const { repairProgress } = req.body;
+    const { repairProgress, notes } = req.body;
 
     const request = await RepairRequest.findById(id)
-      .populate('customerId', 'email username');
+      .populate('customerId', 'email username')
+      .populate({ path: 'assignedTechnician', populate: { path: 'technicianId', select: 'username firstName lastName' } });
     if (!request) return res.status(404).json({ error: 'Repair request not found' });
 
     if (repairProgress === undefined || repairProgress < 0 || repairProgress > 100) {
       return res.status(400).json({ error: 'repairProgress must be between 0 and 100' });
     }
 
- 
+    const previousProgress = request.repairProgress || 0;
+    const previousStatus = request.status;
+    const previousStage = request.currentStage;
+
     request.repairProgress = repairProgress;
 
     // Auto-update status & currentStage based on milestones
     if (repairProgress === 0) {
       request.status = 'In Repair';
       request.currentStage = 'Repair Started';
-    } else if (repairProgress > 0 && repairProgress < 50) {
+    } else if (repairProgress > 0 && repairProgress < 25) {
+      request.status = 'In Repair';
+      request.currentStage = 'Repair Started';
+    } else if (repairProgress >= 25 && repairProgress < 50) {
       request.status = 'In Repair';
       request.currentStage = 'Repair In Progress';
-    } else if (repairProgress >= 50 && repairProgress < 100) {
+    } else if (repairProgress >= 50 && repairProgress < 75) {
       request.status = 'Halfway Completed';
       request.currentStage = 'Repair Halfway Completed';
+    } else if (repairProgress >= 75 && repairProgress < 100) {
+      request.status = 'Halfway Completed';
+      request.currentStage = 'Almost Complete';
     } else if (repairProgress === 100) {
       request.status = 'Ready for Pickup';
       request.currentStage = 'Repair Complete';
@@ -343,19 +353,90 @@ exports.updateProgress = async (req, res) => {
         }
       }
     }
+
     // Save updated repair request
     await request.save();
 
-    // Send email notification to customer
-    await sendEmail(
-      request.customerId.email,
-      'Repair Progress Updated',
-      `Hello ${request.customerId.username},\n\nYour repair request progress has been updated:\nProgress: ${request.repairProgress}%\nStatus: ${request.status}\nCurrent Stage: ${request.currentStage}\n\nThank you.`
-    );
+    // Determine if this is a milestone update
+    const milestones = [0, 25, 50, 75, 100];
+    const isMilestone = milestones.includes(repairProgress);
+    const milestoneMessages = {
+      0: '🔧 Repair Started',
+      25: '⚡ Repair In Progress',
+      50: '🎯 Halfway Completed',
+      75: '🚀 Almost Complete',
+      100: '✅ Ready for Pickup'
+    };
 
-    res.json({ message: 'Progress and current stage updated successfully', request });
+    // Send enhanced email notification to customer
+    try {
+      let emailSubject = 'Repair Progress Updated';
+      let emailBody = `Hello ${request.customerId.username},\n\n`;
+
+      if (isMilestone) {
+        emailSubject = milestoneMessages[repairProgress];
+        emailBody += `🎉 ${milestoneMessages[repairProgress]}!\n\n`;
+      }
+
+      emailBody += `Your repair request has been updated:\n\n`;
+      emailBody += `📊 Progress: ${request.repairProgress}%\n`;
+      emailBody += `📋 Status: ${request.status}\n`;
+      emailBody += `📍 Current Stage: ${request.currentStage}\n`;
+      
+      if (request.assignedTechnician?.technicianId) {
+        const tech = request.assignedTechnician.technicianId;
+        emailBody += `👨‍🔧 Technician: ${tech.firstName} ${tech.lastName} (@${tech.username})\n`;
+      }
+
+      if (notes && notes.trim()) {
+        emailBody += `\n📝 Technician Notes:\n${notes}\n`;
+      }
+
+      if (isMilestone) {
+        emailBody += `\n🎯 This is a key milestone in your repair process!\n`;
+      }
+
+      emailBody += `\nThank you for choosing our service!\n\nBest regards,\nCricketXpert Repair Team`;
+
+      await sendEmail(request.customerId.email, emailSubject, emailBody);
+    } catch (emailError) {
+      console.error('Failed to send customer email notification:', emailError);
+      // Don't fail the progress update if email fails
+    }
+
+    // Send notification to service manager if it's a milestone
+    if (isMilestone && process.env.SERVICE_MANAGER_EMAIL) {
+      try {
+        const managerSubject = `Milestone Update: ${milestoneMessages[repairProgress]}`;
+        const managerBody = `A repair request has reached a milestone:\n\n`;
+        managerBody += `Customer: ${request.customerId.username}\n`;
+        managerBody += `Equipment: ${request.equipmentType.replace('_', ' ')}\n`;
+        managerBody += `Damage: ${request.damageType}\n`;
+        managerBody += `Progress: ${request.repairProgress}%\n`;
+        managerBody += `Status: ${request.status}\n`;
+        managerBody += `Stage: ${request.currentStage}\n`;
+        
+        if (request.assignedTechnician?.technicianId) {
+          const tech = request.assignedTechnician.technicianId;
+          managerBody += `Technician: ${tech.firstName} ${tech.lastName}\n`;
+        }
+
+        await sendEmail(process.env.SERVICE_MANAGER_EMAIL, managerSubject, managerBody);
+      } catch (managerEmailError) {
+        console.error('Failed to send service manager email notification:', managerEmailError);
+        // Don't fail the progress update if email fails
+      }
+    }
+
+    res.json({ 
+      message: 'Progress updated successfully', 
+      request,
+      isMilestone,
+      milestoneMessage: isMilestone ? milestoneMessages[repairProgress] : null
+    });
 
   } catch (err) {
+    console.error('Progress update error:', err);
     res.status(500).json({ error: err.message });
   }
 };

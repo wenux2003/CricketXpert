@@ -61,7 +61,7 @@ export const updateRepairStatus = (requestId, statusData) => {
 
 // Update task progress (for technicians)
 export const updateTaskProgress = (requestId, progressData) => {
-  return axios.put(`${BASE_URL}/${requestId}/progress`, progressData);
+  return axios.put(`${BASE_URL}/progress/${requestId}`, progressData);
 };
 
 // Complete a task

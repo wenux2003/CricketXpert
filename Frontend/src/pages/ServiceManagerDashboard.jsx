@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { getAllRepairRequests, updateRepairStatus, assignTechnician, sendEstimate } from '../api/repairRequestApi';
 import { getAllTechnicians } from '../api/repairRequestApi';
+import { updateTechnician } from '../api/technicianApi';
 import Brand from '../brand';
 
 // Using shared Brand from ../brand
@@ -15,6 +16,8 @@ const ServiceManagerDashboard = () => {
   const [showAssignmentModal, setShowAssignmentModal] = useState(false);
   const [showApprovalModal, setShowApprovalModal] = useState(false);
   const [showRejectionModal, setShowRejectionModal] = useState(false);
+  const [showTechnicianDetailsModal, setShowTechnicianDetailsModal] = useState(false);
+  const [selectedTechnician, setSelectedTechnician] = useState(null);
 
   const [approvalData, setApprovalData] = useState({
     cost: '',
@@ -33,10 +36,71 @@ const ServiceManagerDashboard = () => {
   });
   const [filter, setFilter] = useState('all');
   const [searchFilter, setSearchFilter] = useState('all');
+  const [requestSearchTerm, setRequestSearchTerm] = useState('');
+  const [technicianSearchTerm, setTechnicianSearchTerm] = useState('');
+  const [requestSearchFilter, setRequestSearchFilter] = useState('all');
+  const [technicianSearchFilter, setTechnicianSearchFilter] = useState('all');
+  const [technicianAvailabilityFilter, setTechnicianAvailabilityFilter] = useState('available');
+  const [globalFilter, setGlobalFilter] = useState('all');
+  const [deletingTechnician, setDeletingTechnician] = useState(null);
 
   useEffect(() => {
     console.log('ServiceManagerDashboard mounted, loading data...');
     loadData();
+    
+    // Expose loadData function globally for cross-dashboard updates
+    window.serviceManagerDashboard = {
+      loadData: loadData
+    };
+    
+    // Cleanup on unmount
+    return () => {
+      delete window.serviceManagerDashboard;
+    };
+  }, []);
+
+  // Auto-refresh data when component becomes visible
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (!document.hidden) {
+        loadData();
+      }
+    };
+
+    const handleFocus = () => {
+      loadData();
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    window.addEventListener('focus', handleFocus);
+
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+      window.removeEventListener('focus', handleFocus);
+    };
+  }, []);
+
+  // Refresh data when component becomes visible (for navigation back)
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (!document.hidden) {
+        console.log('ServiceManagerDashboard became visible, refreshing data...');
+        loadData();
+      }
+    };
+
+    const handleFocus = () => {
+      console.log('ServiceManagerDashboard window focused, refreshing data...');
+      loadData();
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    window.addEventListener('focus', handleFocus);
+    
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+      window.removeEventListener('focus', handleFocus);
+    };
   }, []);
 
   // Reload data when filters change
@@ -60,10 +124,14 @@ const ServiceManagerDashboard = () => {
       try {
         const techniciansRes = await getAllTechnicians();
         console.log('Technicians response:', techniciansRes.data);
-        // Filter to only show available technicians
-        const availableTechnicians = techniciansRes.data.filter(tech => tech.available === true);
-        console.log('Available technicians:', availableTechnicians);
-        setTechnicians(availableTechnicians);
+        console.log('Technicians with skills:', techniciansRes.data.map(t => ({
+          id: t._id,
+          name: `${t.technicianId?.firstName} ${t.technicianId?.lastName}`,
+          skills: t.skills,
+          skillsCount: t.skills ? t.skills.length : 0
+        })));
+        // Show all technicians in the table
+        setTechnicians(techniciansRes.data);
       } catch (techError) {
         console.error('Error loading technicians:', techError);
         setTechnicians([]);
@@ -162,6 +230,53 @@ const ServiceManagerDashboard = () => {
     }
   };
 
+  const handleTechnicianAvailabilityUpdate = async (technicianId, newAvailability) => {
+    try {
+      console.log('Updating technician availability:', technicianId, 'to:', newAvailability);
+      const response = await updateTechnician(technicianId, { available: newAvailability });
+      console.log('Availability update response:', response.data);
+      
+      await loadData(); // Reload data to reflect changes
+      alert(`Technician availability updated to ${newAvailability ? 'Available' : 'Unavailable'}`);
+    } catch (error) {
+      console.error('Error updating technician availability:', error);
+      console.error('Error response:', error.response?.data);
+      alert(`Failed to update technician availability: ${error.response?.data?.error || error.message}`);
+    }
+  };
+
+  const handleDeleteTechnician = async (technicianId) => {
+    if (!window.confirm('Are you sure you want to delete this technician? This action cannot be undone.')) {
+      return;
+    }
+    
+    setDeletingTechnician(technicianId);
+    try {
+      const response = await fetch(`http://localhost:5000/api/technicians/${technicianId}`, {
+        method: 'DELETE',
+      });
+      
+      if (response.ok) {
+        setTechnicians(prev => prev.filter(tech => tech._id !== technicianId));
+        
+        // Update Technician Dashboard if it's open
+        if (window.technicianDashboard && window.technicianDashboard.loadTechnicians) {
+          window.technicianDashboard.loadTechnicians();
+        }
+        
+        alert('Technician deleted successfully!');
+      } else {
+        const errorData = await response.json();
+        alert(`Failed to delete technician: ${errorData.error || 'Unknown error'}`);
+      }
+    } catch (error) {
+      console.error('Error deleting technician:', error);
+      alert('Failed to delete technician. Please try again.');
+    } finally {
+      setDeletingTechnician(null);
+    }
+  };
+
   const getStatusColor = (status) => {
     switch (status) {
       case 'Pending': return 'bg-yellow-100 text-yellow-800';
@@ -170,6 +285,7 @@ const ServiceManagerDashboard = () => {
       case 'Customer Rejected': return 'bg-orange-100 text-orange-800';
       case 'Rejected': return 'bg-red-100 text-red-800';
       case 'In Repair': return 'bg-blue-100 text-blue-800';
+      case 'Halfway Completed': return 'bg-yellow-100 text-yellow-800';
       case 'Completed': return 'bg-gray-100 text-gray-800';
       default: return 'bg-gray-100 text-gray-800';
     }
@@ -187,8 +303,34 @@ const ServiceManagerDashboard = () => {
       return false;
     }
     
+    // Apply damage type filter
+    if (requestSearchTerm && requestSearchTerm !== '') {
+      const damageType = (request.damageType || '').toLowerCase();
+      if (damageType !== requestSearchTerm.toLowerCase()) {
+        return false;
+      }
+    }
+    
     return true;
   });
+
+  // Filter technicians
+  const filteredTechnicians = technicians.filter(technician => {
+    // Apply availability filter
+    if (technicianAvailabilityFilter !== 'all') {
+      const isAvailable = technician.available === true;
+      if (technicianAvailabilityFilter === 'available' && !isAvailable) {
+        return false;
+      }
+      if (technicianAvailabilityFilter === 'unavailable' && isAvailable) {
+        return false;
+      }
+    }
+    
+    return true;
+  });
+
+
 
   if (loading) {
     return (
@@ -204,123 +346,177 @@ const ServiceManagerDashboard = () => {
   return (
     <div className="min-h-screen" style={{ backgroundColor: Brand.light }}>
       <div className="max-w-7xl mx-auto px-4 py-8">
-        {/* Header */}
-        <div className="bg-white rounded-xl shadow-md p-6 mb-6">
-          <div className="flex justify-between items-center">
-            <div>
-              <h1 className="text-3xl font-bold" style={{ color: Brand.primary }}>Service Manager Dashboard</h1>
-              <p className="mt-1" style={{ color: Brand.body }}>Manage repair requests and technician assignments</p>
-            </div>
-            <div className="flex space-x-3">
-              <button
-                onClick={() => navigate('/')}
-                className="px-4 py-2 rounded-lg text-white font-semibold"
-                style={{ backgroundColor: Brand.accent }}
-              >
-                Main Dashboard
-              </button>
-            </div>
-          </div>
-        </div>
+                 {/* Header */}
+         <div className="bg-white rounded-xl shadow-md p-6 mb-6">
+           <div className="flex justify-between items-center">
+             <div>
+               <h1 className="text-3xl font-bold" style={{ color: Brand.primary }}>Service Manager Dashboard</h1>
+               <p className="mt-1" style={{ color: Brand.body }}>Manage repair requests and technician assignments</p>
+             </div>
+                                                       <div className="flex items-center space-x-4">
+                 {/* Global Filter Dropdown */}
+                 <div className="flex items-center space-x-2">
+                   <select
+                     value={globalFilter}
+                     onChange={(e) => setGlobalFilter(e.target.value)}
+                     className="px-3 py-2 border rounded-lg text-sm"
+                     style={{ borderColor: Brand.secondary, color: Brand.body }}
+                   >
+                     <option value="all">Show All</option>
+                     <option value="repair_requests">Repair Requests Only</option>
+                     <option value="technicians">Technicians Only</option>
+                   </select>
+                 </div>
+                 <button
+                   onClick={() => navigate('/')}
+                   className="px-4 py-2 rounded-lg text-white font-semibold"
+                   style={{ backgroundColor: Brand.accent }}
+                 >
+                   Main Dashboard
+                 </button>
+               </div>
+           </div>
+         </div>
 
-        {/* Stats */}
-        <div className="grid grid-cols-1 md:grid-cols-7 gap-4 mb-6">
-          {[
-            { label: 'Total Requests', value: repairRequests.length, color: Brand.primary },
-            { label: 'Pending', value: repairRequests.filter(r => r.status === 'Pending').length, color: Brand.accent },
-            { label: 'Waiting for Customer', value: repairRequests.filter(r => r.status === 'Approved').length, color: Brand.secondary },
-            { label: 'Customer Approved', value: repairRequests.filter(r => r.status === 'Customer Approved').length, color: '#10B981' },
-            { label: 'Customer Rejected', value: repairRequests.filter(r => r.status === 'Customer Rejected').length, color: '#EF4444' },
-            { label: 'Rejected', value: repairRequests.filter(r => r.status === 'Rejected').length, color: '#DC2626' },
-            { label: 'In Repair', value: repairRequests.filter(r => r.status === 'In Repair').length, color: '#3B82F6' }
-          ].map((stat, index) => (
-            <div key={index} className="bg-white rounded-xl shadow-md p-6">
-              <div className="text-3xl font-bold" style={{ color: stat.color }}>{stat.value}</div>
-              <div className="text-sm" style={{ color: Brand.body }}>{stat.label}</div>
-            </div>
-          ))}
-        </div>
+                 {/* Stats */}
+         <div className="grid grid-cols-1 md:grid-cols-10 gap-4 mb-6">
+           {[
+             { label: 'Total Requests', value: repairRequests.length, color: Brand.primary, show: globalFilter === 'all' || globalFilter === 'repair_requests' },
+             { label: 'Pending', value: repairRequests.filter(r => r.status === 'Pending').length, color: Brand.accent, show: globalFilter === 'all' || globalFilter === 'repair_requests' },
+             { label: 'Waiting for Customer', value: repairRequests.filter(r => r.status === 'Approved').length, color: Brand.secondary, show: globalFilter === 'all' || globalFilter === 'repair_requests' },
+             { label: 'Customer Approved', value: repairRequests.filter(r => r.status === 'Customer Approved').length, color: '#10B981', show: globalFilter === 'all' || globalFilter === 'repair_requests' },
+             { label: 'Customer Rejected', value: repairRequests.filter(r => r.status === 'Customer Rejected').length, color: '#EF4444', show: globalFilter === 'all' || globalFilter === 'repair_requests' },
+             { label: 'Rejected', value: repairRequests.filter(r => r.status === 'Rejected').length, color: '#DC2626', show: globalFilter === 'all' || globalFilter === 'repair_requests' },
+             { label: 'In Repair', value: repairRequests.filter(r => r.status === 'In Repair').length, color: '#3B82F6', show: globalFilter === 'all' || globalFilter === 'repair_requests' },
+             { label: 'Halfway Completed', value: repairRequests.filter(r => r.status === 'Halfway Completed').length, color: '#F59E0B', show: globalFilter === 'all' || globalFilter === 'repair_requests' },
+             { label: 'Total Technicians', value: technicians.length, color: '#7C3AED', show: globalFilter === 'all' || globalFilter === 'technicians' },
+             { label: 'Available Technicians', value: technicians.filter(t => t.available === true).length, color: '#059669', show: globalFilter === 'all' || globalFilter === 'technicians' }
+           ].filter(stat => stat.show).map((stat, index) => (
+             <div key={index} className="bg-white rounded-xl shadow-md p-6">
+               <div className="text-3xl font-bold" style={{ color: stat.color }}>{stat.value}</div>
+               <div className="text-sm" style={{ color: Brand.body }}>{stat.label}</div>
+             </div>
+           ))}
+         </div>
 
-        {/* Filters */}
-        <div className="bg-white rounded-xl shadow-md p-6 mb-6">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            {/* Status Filter */}
-            <div>
-              <h3 className="text-sm font-semibold mb-3" style={{ color: Brand.primary }}>Status Filter</h3>
-              <select 
-                value={filter} 
-                onChange={(e) => setFilter(e.target.value)}
-                className="w-full px-3 py-2 border rounded-lg text-sm"
-                style={{ borderColor: Brand.secondary, color: Brand.body }}
-              >
-                <option value="all">All Statuses</option>
-                <option value="Pending">Pending</option>
-                <option value="Approved">Approved (Waiting for Customer)</option>
-                <option value="Customer Approved">Customer Approved</option>
-                <option value="Customer Rejected">Customer Rejected</option>
-                <option value="In Repair">In Repair</option>
-                <option value="Completed">Completed</option>
-                <option value="Rejected">Rejected</option>
-              </select>
-            </div>
+                                   {/* Filters */}
+          {(globalFilter === 'all' || globalFilter === 'repair_requests') && (
+            <div className="bg-white rounded-xl shadow-md p-6 mb-6">
+           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+             {/* Status Filter */}
+             <div>
+               <h3 className="text-sm font-semibold mb-3" style={{ color: Brand.primary }}>Status Filter</h3>
+               <select 
+                 value={filter} 
+                 onChange={(e) => setFilter(e.target.value)}
+                 className="w-full px-3 py-2 border rounded-lg text-sm"
+                 style={{ borderColor: Brand.secondary, color: Brand.body }}
+               >
+                 <option value="all">All Statuses</option>
+                 <option value="Pending">Pending</option>
+                 <option value="Approved">Approved (Waiting for Customer)</option>
+                 <option value="Customer Approved">Customer Approved</option>
+                 <option value="Customer Rejected">Customer Rejected</option>
+                 <option value="In Repair">In Repair</option>
+                 <option value="Halfway Completed">Halfway Completed</option>
+                 <option value="Completed">Completed</option>
+                 <option value="Rejected">Rejected</option>
+               </select>
+             </div>
 
-            {/* Equipment Type Filter */}
-            <div>
-              <h3 className="text-sm font-semibold mb-3" style={{ color: Brand.primary }}>Equipment Type</h3>
-              <select 
-                value={searchFilter} 
-                onChange={(e) => setSearchFilter(e.target.value)}
-                className="w-full px-3 py-2 border rounded-lg text-sm"
-                style={{ borderColor: Brand.secondary, color: Brand.body }}
-              >
-                <option value="all">All Equipment Types</option>
-                <option value="cricket_bat">Cricket Bat</option>
-                <option value="cricket_ball">Cricket Ball</option>
-                <option value="cricket_gloves">Cricket Gloves</option>
-                <option value="cricket_pads">Cricket Pads</option>
-                <option value="cricket_helmet">Cricket Helmet</option>
-              </select>
-            </div>
-          </div>
+             {/* Equipment Type Filter */}
+             <div>
+               <h3 className="text-sm font-semibold mb-3" style={{ color: Brand.primary }}>Equipment Type</h3>
+               <select 
+                 value={searchFilter} 
+                 onChange={(e) => setSearchFilter(e.target.value)}
+                 className="w-full px-3 py-2 border rounded-lg text-sm"
+                 style={{ borderColor: Brand.secondary, color: Brand.body }}
+               >
+                 <option value="all">All Equipment Types</option>
+                 <option value="cricket_bat">Cricket Bat</option>
+                 <option value="cricket_ball">Cricket Ball</option>
+                 <option value="cricket_gloves">Cricket Gloves</option>
+                 <option value="cricket_pads">Cricket Pads</option>
+                 <option value="cricket_helmet">Cricket Helmet</option>
+               </select>
+             </div>
 
-          {/* Clear Filters Button */}
-          <div className="mt-4 pt-4 border-t" style={{ borderColor: Brand.light }}>
-            <button
-              onClick={() => {
-                setFilter('all');
-                setSearchFilter('all');
-                loadData();
-              }}
-              className="px-4 py-2 rounded-lg text-white font-medium text-sm"
-              style={{ backgroundColor: Brand.accent }}
-            >
-              Clear All Filters
-            </button>
-          </div>
-        </div>
+                                                                                                               {/* Damage Type Filter */}
+                <div>
+                  <h3 className="text-sm font-semibold mb-3" style={{ color: Brand.primary }}>Damage Type</h3>
+                  <select 
+                    value={requestSearchTerm} 
+                    onChange={(e) => setRequestSearchTerm(e.target.value)}
+                    className="w-full px-3 py-2 border rounded-lg text-sm"
+                    style={{ borderColor: Brand.secondary, color: Brand.body }}
+                  >
+                    <option value="">All Damage Types</option>
+                    <option value="Bat Handle Damage">Bat Handle Damage</option>
+                    <option value="Bat Surface Crack">Bat Surface Crack</option>
+                    <option value="Ball Stitch Damage">Ball Stitch Damage</option>
+                    <option value="Gloves Tear">Gloves Tear</option>
+                    <option value="Pads Crack">Pads Crack</option>
+                    <option value="Helmet Damage">Helmet Damage</option>
+                    <option value="Other">Other</option>
+                  </select>
+                </div>
+           </div>
 
-        {/* Requests Table */}
-        <div className="bg-white rounded-xl shadow-md overflow-hidden">
-          <div className="px-6 py-4 border-b" style={{ borderColor: Brand.light }}>
-            <h2 className="text-xl font-semibold" style={{ color: Brand.primary }}>
-              Repair Requests ({filteredRequests.length})
-            </h2>
-            <p className="text-sm" style={{ color: Brand.body }}>
-              Debug: Total requests loaded: {repairRequests.length} | 
-              Status filter: {filter} | 
-              Equipment filter: {searchFilter}
-            </p>
-          </div>
+                                               {/* Clear Filters Button */}
+             <div className="mt-4 pt-4 border-t" style={{ borderColor: Brand.light }}>
+                               <button
+                                     onClick={() => {
+                     setFilter('all');
+                     setSearchFilter('all');
+                     setRequestSearchTerm('');
+                     setTechnicianSearchTerm('');
+                     setRequestSearchFilter('all');
+                     setTechnicianSearchFilter('all');
+                                           setTechnicianAvailabilityFilter('available');
+                     setGlobalFilter('all');
+                     loadData();
+                   }}
+                 className="px-4 py-2 rounded-lg text-white font-medium text-sm"
+                 style={{ backgroundColor: Brand.accent }}
+               >
+                 Clear All Filters
+               </button>
+             </div>
+           </div>
+         )}
+
+                 {/* Requests Table */}
+         {(globalFilter === 'all' || globalFilter === 'repair_requests') && (
+           <div className="bg-white rounded-xl shadow-md overflow-hidden mb-6">
+           <div className="px-6 py-4 border-b" style={{ borderColor: Brand.light }}>
+             <div className="flex justify-between items-center mb-4">
+                               <div>
+                  <h2 className="text-xl font-semibold" style={{ color: Brand.primary }}>
+                    Repair Requests ({filteredRequests.length})
+                  </h2>
+                  <p className="text-sm" style={{ color: Brand.body }}>
+                    Debug: Total requests loaded: {repairRequests.length} | 
+                    Status filter: {filter} | 
+                    Equipment filter: {searchFilter} | 
+                    Damage filter: {requestSearchTerm || 'All'}
+                  </p>
+                </div>
+                
+               
+             </div>
+           </div>
           <div className="overflow-x-auto">
             <table className="min-w-full">
               <thead>
                 <tr className="text-left text-sm" style={{ backgroundColor: Brand.light }}>
-                  <th className="px-6 py-3" style={{ color: Brand.body }}>Customer</th>
-                  <th className="px-6 py-3" style={{ color: Brand.body }}>Equipment</th>
-                  <th className="px-6 py-3" style={{ color: Brand.body }}>Damage</th>
-                  <th className="px-6 py-3" style={{ color: Brand.body }}>Status</th>
-                  <th className="px-6 py-3" style={{ color: Brand.body }}>Date</th>
-                  <th className="px-6 py-3" style={{ color: Brand.body }}>Actions</th>
+                                     <th className="px-6 py-3" style={{ color: Brand.body }}>Customer</th>
+                   <th className="px-6 py-3" style={{ color: Brand.body }}>Equipment</th>
+                   <th className="px-6 py-3" style={{ color: Brand.body }}>Damage</th>
+                   <th className="px-6 py-3" style={{ color: Brand.body }}>Progress</th>
+                   <th className="px-6 py-3 w-48" style={{ color: Brand.body }}>Status</th>
+                   <th className="px-6 py-3" style={{ color: Brand.body }}>Date</th>
+                   <th className="px-6 py-3" style={{ color: Brand.body }}>Actions</th>
                 </tr>
               </thead>
               <tbody>
@@ -339,10 +535,35 @@ const ServiceManagerDashboard = () => {
                       {request.damageType}
                     </td>
                     <td className="px-6 py-4">
-                      <span className={`px-3 py-1 rounded-full text-xs font-semibold ${getStatusColor(request.status)}`}>
-                        {request.status?.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase())}
-                      </span>
+                      <div className="space-y-2">
+                        <div className="flex justify-between items-center">
+                          <span className="text-sm font-medium" style={{ color: Brand.body }}>
+                            {request.repairProgress || 0}%
+                          </span>
+                        </div>
+                        <div className="w-full bg-gray-200 rounded-full h-2">
+                          <div
+                            className="h-2 rounded-full transition-all duration-300"
+                            style={{
+                              width: `${request.repairProgress || 0}%`,
+                              backgroundColor: request.repairProgress >= 75 ? '#10B981' : 
+                                              request.repairProgress >= 50 ? '#3B82F6' : 
+                                              request.repairProgress >= 25 ? '#F59E0B' : '#EF4444'
+                            }}
+                          ></div>
+                        </div>
+                        {request.currentStage && (
+                          <div className="text-xs" style={{ color: Brand.secondary }}>
+                            {request.currentStage}
+                          </div>
+                        )}
+                      </div>
                     </td>
+                                         <td className="px-6 py-4 w-48">
+                       <span className={`px-3 py-1 rounded-full text-xs font-semibold ${getStatusColor(request.status)}`}>
+                         {request.status?.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase())}
+                       </span>
+                     </td>
                     <td className="px-6 py-4" style={{ color: Brand.body }}>
                       {new Date(request.createdAt).toLocaleDateString()}
                     </td>
@@ -479,6 +700,165 @@ const ServiceManagerDashboard = () => {
             </table>
           </div>
         </div>
+        )}
+
+                                   {/* Technicians Table */}
+          {(globalFilter === 'all' || globalFilter === 'technicians') && (
+            <div className="bg-white rounded-xl shadow-md overflow-hidden">
+            <div className="px-6 py-4 border-b" style={{ borderColor: Brand.light }}>
+              <div className="flex justify-between items-center mb-4">
+                <div>
+                  <h2 className="text-xl font-semibold" style={{ color: Brand.primary }}>
+                    Technicians ({filteredTechnicians.length})
+                  </h2>
+                  <p className="text-sm" style={{ color: Brand.body }}>
+                    Manage technician assignments and availability
+                  </p>
+                </div>
+                                 <div className="flex items-center space-x-3">
+                   <div className="flex items-center space-x-2">
+                     <select
+                       value={technicianAvailabilityFilter}
+                       onChange={(e) => setTechnicianAvailabilityFilter(e.target.value)}
+                       className="px-3 py-2 border rounded-lg text-sm"
+                       style={{ borderColor: Brand.secondary, color: Brand.body }}
+                     >
+                                               <option value="available">Available Only</option>
+                        <option value="all">All Technicians</option>
+                        <option value="unavailable">Unavailable Only</option>
+                     </select>
+                   </div>
+                                     <button
+                    onClick={() => navigate('/new-technician')}
+                    className="px-4 py-2 rounded-lg text-white font-semibold"
+                    style={{ backgroundColor: Brand.accent }}
+                  >
+                    Add New Technician
+                  </button>
+                </div>
+                            </div>
+           </div>
+          <div className="overflow-x-auto">
+            <table className="min-w-full">
+              <thead>
+                <tr className="text-left text-sm" style={{ backgroundColor: Brand.light }}>
+                  <th className="px-6 py-3" style={{ color: Brand.body }}>Technician</th>
+                  <th className="px-6 py-3" style={{ color: Brand.body }}>Contact</th>
+                  <th className="px-6 py-3" style={{ color: Brand.body }}>Skills</th>
+                  <th className="px-6 py-3" style={{ color: Brand.body }}>Status</th>
+                  <th className="px-6 py-3" style={{ color: Brand.body }}>Actions</th>
+                </tr>
+              </thead>
+                             <tbody>
+                 {filteredTechnicians.map((technician) => (
+                  <tr key={technician._id} className="border-t" style={{ borderColor: Brand.light }}>
+                    <td className="px-6 py-4">
+                      <div>
+                        <div className="font-medium" style={{ color: Brand.body }}>
+                          {technician.technicianId?.firstName} {technician.technicianId?.lastName}
+                        </div>
+                        <div className="text-sm" style={{ color: Brand.secondary }}>
+                          @{technician.technicianId?.username}
+                        </div>
+                      </div>
+                    </td>
+                    <td className="px-6 py-4">
+                      <div>
+                        <div className="text-sm" style={{ color: Brand.body }}>
+                          {technician.technicianId?.email}
+                        </div>
+                        <div className="text-sm" style={{ color: Brand.secondary }}>
+                          {technician.technicianId?.contactNumber || 'No phone'}
+                        </div>
+                      </div>
+                    </td>
+                    <td className="px-6 py-4">
+                      <div className="flex flex-wrap gap-1">
+                        {technician.skills && technician.skills.length > 0 ? (
+                          technician.skills.map((skill, index) => (
+                            <span
+                              key={index}
+                              className="px-3 py-1 rounded-full text-xs font-medium border"
+                              style={{ 
+                                backgroundColor: Brand.secondary + '20', 
+                                color: Brand.primary,
+                                borderColor: Brand.secondary
+                              }}
+                            >
+                              {skill}
+                            </span>
+                          ))
+                        ) : (
+                          <span className="text-sm text-gray-500 italic">No skills listed</span>
+                        )}
+                      </div>
+                      {/* Debug info - remove this later */}
+                      {process.env.NODE_ENV === 'development' && (
+                        <div className="text-xs text-gray-400 mt-1">
+                          Skills count: {technician.skills ? technician.skills.length : 0}
+                        </div>
+                      )}
+                    </td>
+                    <td className="px-6 py-4">
+                      <span className={`px-3 py-1 rounded-full text-xs font-semibold ${
+                        technician.available 
+                          ? 'bg-green-100 text-green-800' 
+                          : 'bg-red-100 text-red-800'
+                      }`}>
+                        {technician.available ? 'Available' : 'Unavailable'}
+                      </span>
+                    </td>
+                    <td className="px-6 py-4">
+                      <div className="flex space-x-2">
+                                                 <button
+                           onClick={() => {
+                             setSelectedTechnician(technician);
+                             setShowTechnicianDetailsModal(true);
+                           }}
+                           className="px-3 py-1 rounded text-white text-sm"
+                           style={{ backgroundColor: Brand.secondary }}
+                         >
+                           View Details
+                         </button>
+                         <button
+                           onClick={() => handleDeleteTechnician(technician._id)}
+                           disabled={deletingTechnician === technician._id}
+                           className={`px-3 py-1 rounded text-white text-sm transition-colors ${
+                             deletingTechnician === technician._id ? 'opacity-50 cursor-not-allowed' : ''
+                           }`}
+                                                       style={{ backgroundColor: Brand.accent }}
+                         >
+                           {deletingTechnician === technician._id ? 'Deleting...' : 'Delete'}
+                         </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+                                 {filteredTechnicians.length === 0 && !loading && (
+                  <tr>
+                    <td colSpan="5" className="px-6 py-8 text-center">
+                      <div className="text-gray-500">
+                        <div className="text-lg mb-2">No technicians found</div>
+                        <div className="text-sm">Add your first technician to get started</div>
+                      </div>
+                    </td>
+                  </tr>
+                )}
+                {loading && (
+                  <tr>
+                    <td colSpan="5" className="px-6 py-8 text-center">
+                      <div className="text-gray-500">
+                        <div className="animate-spin rounded-full h-8 w-8 border-b-2 mx-auto mb-2" style={{ borderColor: Brand.secondary }}></div>
+                        <div className="text-sm">Loading technicians...</div>
+                      </div>
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+        </div>
+        )}
       </div>
 
 
@@ -508,8 +888,8 @@ const ServiceManagerDashboard = () => {
                   onChange={(e) => setAssignmentData({...assignmentData, technicianId: e.target.value})}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg"
                 >
-                  <option value="">Choose a qualified technician</option>
-                  {technicians.map(tech => {
+                                     <option value="">Choose a qualified technician</option>
+                   {filteredTechnicians.filter(tech => tech.available === true).map(tech => {
                     const hasRelevantSkill = tech.skills?.some(skill => 
                       skill.toLowerCase().includes(selectedRequest?.equipmentType?.replace('_', ' ').toLowerCase()) ||
                       skill.toLowerCase().includes('general') ||
@@ -702,10 +1082,170 @@ const ServiceManagerDashboard = () => {
               </button>
             </div>
           </div>
-        </div>
-      )}
-    </div>
-  );
-};
+                 </div>
+       )}
+
+       {/* Technician Details Modal */}
+       {showTechnicianDetailsModal && selectedTechnician && (
+         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+           <div className="bg-white rounded-xl p-6 w-full max-w-2xl max-h-[90vh] overflow-y-auto">
+             <div className="flex justify-between items-center mb-6">
+               <h3 className="text-xl font-semibold" style={{ color: Brand.primary }}>
+                 Technician Details
+               </h3>
+               <button
+                 onClick={() => {
+                   setShowTechnicianDetailsModal(false);
+                   setSelectedTechnician(null);
+                 }}
+                 className="text-gray-500 hover:text-gray-700 text-2xl font-bold"
+               >
+                 ×
+               </button>
+             </div>
+
+             <div className="space-y-6">
+               {/* Personal Information */}
+               <div className="bg-gray-50 rounded-lg p-4">
+                 <h4 className="text-lg font-semibold mb-3" style={{ color: Brand.primary }}>
+                   Personal Information
+                 </h4>
+                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                   <div>
+                     <label className="block text-sm font-medium mb-1" style={{ color: Brand.body }}>
+                       Full Name
+                     </label>
+                     <p className="text-sm" style={{ color: Brand.body }}>
+                       {selectedTechnician.technicianId?.firstName} {selectedTechnician.technicianId?.lastName}
+                     </p>
+                   </div>
+                   <div>
+                     <label className="block text-sm font-medium mb-1" style={{ color: Brand.body }}>
+                       Username
+                     </label>
+                     <p className="text-sm" style={{ color: Brand.body }}>
+                       @{selectedTechnician.technicianId?.username}
+                     </p>
+                   </div>
+                   <div>
+                     <label className="block text-sm font-medium mb-1" style={{ color: Brand.body }}>
+                       Email
+                     </label>
+                     <p className="text-sm" style={{ color: Brand.body }}>
+                       {selectedTechnician.technicianId?.email}
+                     </p>
+                   </div>
+                   <div>
+                     <label className="block text-sm font-medium mb-1" style={{ color: Brand.body }}>
+                       Phone Number
+                     </label>
+                     <p className="text-sm" style={{ color: Brand.body }}>
+                       {selectedTechnician.technicianId?.contactNumber || 'Not provided'}
+                     </p>
+                   </div>
+                 </div>
+               </div>
+
+               {/* Skills */}
+               <div className="bg-gray-50 rounded-lg p-4">
+                 <h4 className="text-lg font-semibold mb-3" style={{ color: Brand.primary }}>
+                   Skills & Expertise
+                 </h4>
+                 <div>
+                   {selectedTechnician.skills && selectedTechnician.skills.length > 0 ? (
+                     <div className="flex flex-wrap gap-2">
+                       {selectedTechnician.skills.map((skill, index) => (
+                         <span
+                           key={index}
+                           className="px-3 py-2 rounded-full text-sm font-medium border"
+                           style={{ 
+                             backgroundColor: Brand.secondary + '20', 
+                             color: Brand.primary,
+                             borderColor: Brand.secondary
+                           }}
+                         >
+                           {skill}
+                         </span>
+                       ))}
+                     </div>
+                   ) : (
+                     <p className="text-sm text-gray-500 italic">No skills listed</p>
+                   )}
+                 </div>
+               </div>
+
+               {/* Status & Availability */}
+               <div className="bg-gray-50 rounded-lg p-4">
+                 <h4 className="text-lg font-semibold mb-3" style={{ color: Brand.primary }}>
+                   Status & Availability
+                 </h4>
+                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                   <div>
+                     <label className="block text-sm font-medium mb-1" style={{ color: Brand.body }}>
+                       Current Status
+                     </label>
+                     <span className={`px-3 py-1 rounded-full text-xs font-semibold ${
+                       selectedTechnician.available 
+                         ? 'bg-green-100 text-green-800' 
+                         : 'bg-red-100 text-red-800'
+                     }`}>
+                       {selectedTechnician.available ? 'Available' : 'Unavailable'}
+                     </span>
+                   </div>
+                   <div>
+                     <label className="block text-sm font-medium mb-1" style={{ color: Brand.body }}>
+                       Technician ID
+                     </label>
+                     <p className="text-sm font-mono text-gray-600">
+                       {selectedTechnician._id}
+                     </p>
+                   </div>
+                 </div>
+               </div>
+
+               {/* Additional Information */}
+               <div className="bg-gray-50 rounded-lg p-4">
+                 <h4 className="text-lg font-semibold mb-3" style={{ color: Brand.primary }}>
+                   Additional Information
+                 </h4>
+                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                   <div>
+                     <label className="block text-sm font-medium mb-1" style={{ color: Brand.body }}>
+                       User Role
+                     </label>
+                     <p className="text-sm" style={{ color: Brand.body }}>
+                       {selectedTechnician.technicianId?.role || 'Technician'}
+                     </p>
+                   </div>
+                   <div>
+                     <label className="block text-sm font-medium mb-1" style={{ color: Brand.body }}>
+                       Account Status
+                     </label>
+                     <p className="text-sm" style={{ color: Brand.body }}>
+                       {selectedTechnician.technicianId?.status || 'Active'}
+                     </p>
+                   </div>
+                 </div>
+               </div>
+             </div>
+
+             <div className="flex justify-end mt-6 pt-4 border-t" style={{ borderColor: Brand.light }}>
+               <button
+                 onClick={() => {
+                   setShowTechnicianDetailsModal(false);
+                   setSelectedTechnician(null);
+                 }}
+                 className="px-6 py-2 rounded-lg text-white font-medium"
+                 style={{ backgroundColor: Brand.accent }}
+               >
+                 Close
+               </button>
+             </div>
+           </div>
+         </div>
+       )}
+     </div>
+   );
+ };
 
 export default ServiceManagerDashboard;

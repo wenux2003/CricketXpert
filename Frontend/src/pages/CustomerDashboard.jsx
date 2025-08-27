@@ -38,6 +38,37 @@ const CustomerDashboard = ({ customerId }) => {
 
   useEffect(() => {
     loadCustomerRequests();
+    
+    // Expose loadCustomerRequests function globally for cross-dashboard updates
+    window.customerDashboard = {
+      loadCustomerRequests: loadCustomerRequests
+    };
+    
+    // Cleanup on unmount
+    return () => {
+      delete window.customerDashboard;
+    };
+  }, [customerId]);
+
+  // Auto-refresh data when component becomes visible
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (!document.hidden) {
+        loadCustomerRequests();
+      }
+    };
+
+    const handleFocus = () => {
+      loadCustomerRequests();
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    window.addEventListener('focus', handleFocus);
+
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+      window.removeEventListener('focus', handleFocus);
+    };
   }, [customerId]);
 
   const loadCustomerRequests = async () => {
@@ -150,6 +181,7 @@ const CustomerDashboard = ({ customerId }) => {
       case 'Customer Approved': return 'bg-green-100 text-green-800';
       case 'Customer Rejected': return 'bg-orange-100 text-orange-800';
       case 'In Repair': return 'bg-blue-100 text-blue-800';
+      case 'Halfway Completed': return 'bg-yellow-100 text-yellow-800';
       case 'Completed': return 'bg-gray-100 text-gray-800';
       default: return 'bg-gray-100 text-gray-800';
     }
@@ -192,11 +224,12 @@ const CustomerDashboard = ({ customerId }) => {
         </div>
 
         {/* Stats */}
-        <div className="grid grid-cols-1 md:grid-cols-5 gap-4 mb-6">
+        <div className="grid grid-cols-1 md:grid-cols-6 gap-4 mb-6">
           {[
             { label: 'Total Requests', value: repairRequests.length, color: Brand.primary },
             { label: 'Pending', value: repairRequests.filter(r => r.status === 'Pending').length, color: Brand.accent },
             { label: 'In Progress', value: repairRequests.filter(r => r.status === 'In Repair').length, color: Brand.secondary },
+            { label: 'Halfway Completed', value: repairRequests.filter(r => r.status === 'Halfway Completed').length, color: '#F59E0B' },
             { label: 'Rejected', value: repairRequests.filter(r => r.status === 'Rejected' || r.status === 'Customer Rejected').length, color: '#EF4444' },
             { label: 'Completed', value: repairRequests.filter(r => r.status === 'Completed').length, color: '#10B981' }
           ].map((stat, index) => (
@@ -225,6 +258,7 @@ const CustomerDashboard = ({ customerId }) => {
                 <option value="Customer Approved">Customer Approved</option>
                 <option value="Customer Rejected">Customer Rejected</option>
                 <option value="In Repair">In Repair</option>
+                <option value="Halfway Completed">Halfway Completed</option>
                 <option value="Rejected">Rejected</option>
                 <option value="Completed">Completed</option>
               </select>
@@ -533,6 +567,32 @@ const CustomerDashboard = ({ customerId }) => {
                     <p className="text-sm" style={{ color: '#065F46' }}>
                       <strong>Status:</strong> Estimate approved! Your repair request is now being processed.
                     </p>
+                  </div>
+                )}
+
+                {/* Halfway Completed Status - Show progress */}
+                {request.status === 'Halfway Completed' && (
+                  <div className="w-full p-3 rounded-lg" style={{ backgroundColor: '#FEF3C7', border: '1px solid #F59E0B' }}>
+                    <p className="text-sm" style={{ color: '#92400E' }}>
+                      <strong>Status:</strong> Great progress! Your repair is halfway completed. The technician is working on your equipment.
+                    </p>
+                    {request.repairProgress && (
+                      <div className="mt-2">
+                        <div className="flex justify-between text-xs mb-1">
+                          <span>Progress: {request.repairProgress}%</span>
+                          <span>{request.currentStage || 'Halfway Completed'}</span>
+                        </div>
+                        <div className="w-full bg-gray-200 rounded-full h-2">
+                          <div
+                            className="h-2 rounded-full transition-all duration-300"
+                            style={{
+                              width: `${request.repairProgress}%`,
+                              backgroundColor: '#F59E0B'
+                            }}
+                          ></div>
+                        </div>
+                      </div>
+                    )}
                   </div>
                 )}
                 

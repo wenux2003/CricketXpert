@@ -1,27 +1,28 @@
-// src/api/technicianApi.js
-import API from './apiClient';
+import axios from 'axios';
+
+const BASE_URL = 'http://localhost:5000/api/technicians';
 
 // Get all technicians
 export const getAllTechnicians = () => {
-  return API.get('/technicians');
+  return axios.get(BASE_URL);
 };
 
 // Create a new technician
 export const createTechnician = (data) => {
-  return API.post('/technicians', data);
+  return axios.post(BASE_URL, data);
 };
 
 // Get technician by ID
 export const getTechnicianById = (id) => {
-  return API.get(`/technicians/${id}`);
+  return axios.get(`${BASE_URL}/${id}`);
 };
 
 // Update technician info
 export const updateTechnician = (id, data) => {
-  return API.put(`/technicians/${id}`, data);
+  return axios.put(`${BASE_URL}/${id}`, data);
 };
 
 // Delete technician
 export const deleteTechnician = (id) => {
-  return API.delete(`/technicians/${id}`);
+  return axios.delete(`${BASE_URL}/${id}`);
 };
