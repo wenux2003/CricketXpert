@@ -16,6 +16,14 @@ const DAMAGE_TYPES = [
   'Other'
 ];
 
+const EQUIPMENT_TYPES = [
+  { value: 'cricket_bat', label: 'Cricket Bat' },
+  { value: 'cricket_ball', label: 'Cricket Ball' },
+  { value: 'cricket_gloves', label: 'Cricket Gloves' },
+  { value: 'cricket_pads', label: 'Cricket Pads' },
+  { value: 'cricket_helmet', label: 'Cricket Helmet' }
+];
+
 const CustomerDashboard = ({ customerId }) => {
   const navigate = useNavigate();
   const [repairRequests, setRepairRequests] = useState([]);
@@ -23,7 +31,8 @@ const CustomerDashboard = ({ customerId }) => {
   const [selectedRequest, setSelectedRequest] = useState(null);
   const [showFeedbackModal, setShowFeedbackModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
-  const [editData, setEditData] = useState({ damageType: '', description: '' });
+  const [editData, setEditData] = useState({ equipmentType: '', damageType: '', description: '' });
+  const [descriptionError, setDescriptionError] = useState('');
   const [query, setQuery] = useState('');
   const [allRequests, setAllRequests] = useState([]);
   const [technicianDetails, setTechnicianDetails] = useState({});
@@ -117,17 +126,30 @@ const CustomerDashboard = ({ customerId }) => {
 
   const handleOpenEdit = (request) => {
     setSelectedRequest(request);
-    setEditData({ damageType: request.damageType || '', description: request.description || request.damageDescription || '' });
+    setEditData({ 
+      equipmentType: request.equipmentType || '', 
+      damageType: request.damageType || '', 
+      description: request.description || request.damageDescription || '' 
+    });
+    setDescriptionError('');
     setShowEditModal(true);
   };
 
   const handleSaveEdit = async () => {
+    // Validate description before saving
+    if (descriptionError) {
+      alert('Please fix the description errors before saving.');
+      return;
+    }
+    
     try {
       await updateRepairRequest(selectedRequest._id, {
+        equipmentType: editData.equipmentType,
         damageType: editData.damageType,
         description: editData.description
       });
       setShowEditModal(false);
+      setDescriptionError('');
       await loadCustomerRequests();
       alert('Request updated');
     } catch (e) {
@@ -191,6 +213,25 @@ const CustomerDashboard = ({ customerId }) => {
     if (progress >= 80) return '#10B981';
     if (progress >= 50) return '#F59E0B';
     return '#EF4444';
+  };
+
+  // Validate description for repeated characters
+  const validateDescription = (description) => {
+    if (!description || description.length < 4) return '';
+    
+    // Check for repeated letters (3 or more same letters in a row)
+    const letterPattern = /(.)\1{2,}/;
+    if (letterPattern.test(description)) {
+      return 'Description cannot contain 3 or more repeated letters in a row (e.g., "aaa", "bbb")';
+    }
+    
+    // Check for repeated numbers (3 or more same numbers in a row)
+    const numberPattern = /(\d)\1{2,}/;
+    if (numberPattern.test(description)) {
+      return 'Description cannot contain 3 or more repeated numbers in a row (e.g., "111", "222")';
+    }
+    
+    return '';
   };
 
   if (loading) {
@@ -659,6 +700,19 @@ const CustomerDashboard = ({ customerId }) => {
             <h3 className="text-xl font-semibold mb-4" style={{ color: Brand.primary }}>Edit Repair Request</h3>
             <div className="space-y-4">
               <div>
+                <label className="block text-sm font-medium mb-2" style={{ color: Brand.body }}>Equipment Type</label>
+                <select
+                  value={editData.equipmentType}
+                  onChange={(e) => setEditData({ ...editData, equipmentType: e.target.value })}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+                >
+                  <option value="">Select equipment type</option>
+                  {EQUIPMENT_TYPES.map((equipment) => (
+                    <option key={equipment.value} value={equipment.value}>{equipment.label}</option>
+                  ))}
+                </select>
+              </div>
+              <div>
                 <label className="block text-sm font-medium mb-2" style={{ color: Brand.body }}>Damage Type</label>
                 <select
                   value={editData.damageType}
@@ -671,16 +725,26 @@ const CustomerDashboard = ({ customerId }) => {
                   ))}
                 </select>
               </div>
-              <div>
-                <label className="block text-sm font-medium mb-2" style={{ color: Brand.body }}>Description</label>
-                <textarea
-                  value={editData.description}
-                  onChange={(e) => setEditData({ ...editData, description: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg"
-                  rows="4"
-                  placeholder="Describe the damage"
-                />
-              </div>
+                             <div>
+                 <label className="block text-sm font-medium mb-2" style={{ color: Brand.body }}>Description</label>
+                 <textarea
+                   value={editData.description}
+                   onChange={(e) => {
+                     const newDescription = e.target.value;
+                     setEditData({ ...editData, description: newDescription });
+                     const error = validateDescription(newDescription);
+                     setDescriptionError(error);
+                   }}
+                   className={`w-full px-3 py-2 border rounded-lg ${
+                     descriptionError ? 'border-red-500' : 'border-gray-300'
+                   }`}
+                   rows="4"
+                   placeholder="Describe the damage"
+                 />
+                 {descriptionError && (
+                   <p className="text-red-500 text-sm mt-1">{descriptionError}</p>
+                 )}
+               </div>
             </div>
             <div className="flex space-x-3 mt-6">
               <button
