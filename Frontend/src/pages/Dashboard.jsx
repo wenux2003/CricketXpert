@@ -27,36 +27,13 @@ const Dashboard = () => {
         <aside className="col-span-12 md:col-span-3 lg:col-span-2">
           <nav className="space-y-2">
             <button
-              onClick={() => {
-                try {
-                  const u = JSON.parse(localStorage.getItem('cx_current_user') || 'null');
-                  if (u?.id) navigate(`/dashboard/${u.id}`); else navigate('/repair');
-                } catch { navigate('/repair'); }
-              }}
-              className="w-full text-left px-4 py-3 rounded-lg font-medium text-white"
-              style={{ backgroundColor: Brand.secondary }}
-              onMouseOver={(e) => { e.currentTarget.style.backgroundColor = Brand.primaryHover; }}
-              onMouseOut={(e) => { e.currentTarget.style.backgroundColor = Brand.secondary; }}
-            >
-              My Requests
-            </button>
-            <button
-              onClick={() => navigate('/repair')}
+              onClick={() => navigate('/manager')}
               className="w-full text-left px-4 py-3 rounded-lg font-medium text-white"
               style={{ backgroundColor: Brand.primary }}
               onMouseOver={(e) => { e.currentTarget.style.backgroundColor = Brand.primaryHover; }}
               onMouseOut={(e) => { e.currentTarget.style.backgroundColor = Brand.primary; }}
             >
-              New Repair
-            </button>
-            <button
-              onClick={() => navigate('/technician')}
-              className="w-full text-left px-4 py-3 rounded-lg font-medium text-white"
-              style={{ backgroundColor: Brand.primary }}
-              onMouseOver={(e) => { e.currentTarget.style.backgroundColor = Brand.primaryHover; }}
-              onMouseOut={(e) => { e.currentTarget.style.backgroundColor = Brand.primary; }}
-            >
-              Technicians
+              Manager View
             </button>
             <button
               onClick={() => navigate('/new-technician')}
@@ -68,13 +45,13 @@ const Dashboard = () => {
               New Technician
             </button>
             <button
-              onClick={() => navigate('/manager')}
+              onClick={() => navigate('/technician')}
               className="w-full text-left px-4 py-3 rounded-lg font-medium text-white"
               style={{ backgroundColor: Brand.primary }}
               onMouseOver={(e) => { e.currentTarget.style.backgroundColor = Brand.primaryHover; }}
               onMouseOut={(e) => { e.currentTarget.style.backgroundColor = Brand.primary; }}
             >
-              Manager View
+              Technicians
             </button>
           </nav>
         </aside>

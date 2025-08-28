@@ -259,7 +259,6 @@ const CustomerDashboard = ({ customerId }) => {
             </div>
             <div className="flex gap-3">
               <button onClick={() => navigate('/repair')} className="px-4 py-2 rounded-lg text-white font-semibold" style={{ backgroundColor: Brand.secondary }} onMouseOver={(e) => { e.currentTarget.style.backgroundColor = Brand.primaryHover; }} onMouseOut={(e) => { e.currentTarget.style.backgroundColor = Brand.secondary; }}>New Repair</button>
-              <button onClick={() => navigate('/')} className="px-4 py-2 rounded-lg text-white font-semibold" style={{ backgroundColor: Brand.accent }}>Main Dashboard</button>
             </div>
           </div>
         </div>
