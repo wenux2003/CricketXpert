@@ -42,5 +42,7 @@ router.put('/:id', repairController.updateRepairGeneral);
 // Delete repair request
 router.delete('/:id', repairController.deleteRepairRequest);
 
+// Submit feedback for a repair request
+router.post('/:id/feedback', repairController.submitFeedback);
 
 module.exports = router;
