@@ -22,45 +22,42 @@ const Dashboard = () => {
     <div className="min-h-screen" style={{ backgroundColor: Brand.light }}>
       {/* Header removed per request */}
 
-      <div className="max-w-7xl mx-auto px-4 py-8 grid grid-cols-12 gap-6">
+      <div className="flex">
         {/* Sidebar */}
-        <aside className="col-span-12 md:col-span-3 lg:col-span-2">
+        <aside className="w-64 bg-white shadow-md p-4 min-h-screen">
           <nav className="space-y-2">
-            <button
-              onClick={() => navigate('/manager')}
-              className="w-full text-left px-4 py-3 rounded-lg font-medium text-white"
-              style={{ backgroundColor: Brand.primary }}
-              onMouseOver={(e) => { e.currentTarget.style.backgroundColor = Brand.primaryHover; }}
-              onMouseOut={(e) => { e.currentTarget.style.backgroundColor = Brand.primary; }}
-            >
-              Manager View
-            </button>
-            <button
-              onClick={() => navigate('/new-technician')}
-              className="w-full text-left px-4 py-3 rounded-lg font-medium text-white"
-              style={{ backgroundColor: Brand.primary }}
-              onMouseOver={(e) => { e.currentTarget.style.backgroundColor = Brand.primaryHover; }}
-              onMouseOut={(e) => { e.currentTarget.style.backgroundColor = Brand.primary; }}
-            >
-              New Technician
-            </button>
-            <button
-              onClick={() => navigate('/technician')}
-              className="w-full text-left px-4 py-3 rounded-lg font-medium text-white"
-              style={{ backgroundColor: Brand.primary }}
-              onMouseOver={(e) => { e.currentTarget.style.backgroundColor = Brand.primaryHover; }}
-              onMouseOut={(e) => { e.currentTarget.style.backgroundColor = Brand.primary; }}
-            >
-              Technicians
-            </button>
+                         <button
+               onClick={() => navigate('/manager')}
+               className="w-full text-left px-4 py-3 rounded-lg font-medium text-gray-700 hover:text-white transition-colors"
+               onMouseOver={(e) => { e.currentTarget.style.backgroundColor = '#42ADF5'; }}
+               onMouseOut={(e) => { e.currentTarget.style.backgroundColor = 'transparent'; }}
+             >
+               Manager View
+             </button>
+                         <button
+               onClick={() => navigate('/new-technician')}
+               className="w-full text-left px-4 py-3 rounded-lg font-medium text-gray-700 hover:text-white transition-colors"
+               onMouseOver={(e) => { e.currentTarget.style.backgroundColor = '#42ADF5'; }}
+               onMouseOut={(e) => { e.currentTarget.style.backgroundColor = 'transparent'; }}
+             >
+               New Technician
+             </button>
+                         <button
+               onClick={() => navigate('/technician')}
+               className="w-full text-left px-4 py-3 rounded-lg font-medium text-gray-700 hover:text-white transition-colors"
+               onMouseOver={(e) => { e.currentTarget.style.backgroundColor = '#42ADF5'; }}
+               onMouseOut={(e) => { e.currentTarget.style.backgroundColor = 'transparent'; }}
+             >
+               Technicians
+             </button>
           </nav>
         </aside>
 
         {/* Main Content */}
-        <main className="col-span-12 md:col-span-9 lg:col-span-10">
+        <main className="flex-1 p-8">
           {/* Heading */}
           <div className="mb-6">
-            <h1 className="text-3xl font-bold" style={{ color: Brand.primary }}>Dashboard</h1>
+            <h1 className="text-3xl font-bold" style={{ color: Brand.primary }}>Overview of repair</h1>
             <p className="mt-1" style={{ color: Brand.body }}>Overview of repair operations</p>
           </div>
 
