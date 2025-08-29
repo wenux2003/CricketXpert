@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { getCustomerRequests, submitFeedback, downloadRepairReport, updateRepairRequest, deleteRepairRequest, customerDecision } from '../api/repairRequestApi';
+import { getCustomerRequests, downloadRepairReport, updateRepairRequest, deleteRepairRequest, customerDecision } from '../api/repairRequestApi';
 import Brand from '../brand';
 import axios from 'axios';
 
@@ -29,7 +29,6 @@ const CustomerDashboard = ({ customerId }) => {
   const [repairRequests, setRepairRequests] = useState([]);
   const [loading, setLoading] = useState(true);
   const [selectedRequest, setSelectedRequest] = useState(null);
-  const [showFeedbackModal, setShowFeedbackModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
   const [editData, setEditData] = useState({ equipmentType: '', damageType: '', description: '' });
   const [descriptionError, setDescriptionError] = useState('');
@@ -39,11 +38,7 @@ const CustomerDashboard = ({ customerId }) => {
   const [statusFilter, setStatusFilter] = useState('All Statuses');
   const [equipmentFilter, setEquipmentFilter] = useState('All Equipment Types');
   const [damageTypeFilter, setDamageTypeFilter] = useState('All Damage Types');
-  const [feedbackData, setFeedbackData] = useState({
-    rating: 5,
-    comment: '',
-    category: 'general'
-  });
+
 
   useEffect(() => {
     loadCustomerRequests();
@@ -183,17 +178,7 @@ const CustomerDashboard = ({ customerId }) => {
     }
   };
 
-  const handleSubmitFeedback = async () => {
-    try {
-      await submitFeedback(selectedRequest._id, feedbackData);
-      setShowFeedbackModal(false);
-      setFeedbackData({ rating: 5, comment: '', category: 'general' });
-      alert('Feedback submitted successfully!');
-    } catch (error) {
-      console.error('Error submitting feedback:', error);
-      alert('Failed to submit feedback');
-    }
-  };
+
 
   const getStatusColor = (status) => {
     switch (status) {
@@ -636,18 +621,7 @@ const CustomerDashboard = ({ customerId }) => {
                   </div>
                 )}
                 
-                {request.status === 'Ready for Pickup' && (
-                          <button
-                    onClick={() => {
-                      setSelectedRequest(request);
-                      setShowFeedbackModal(true);
-                    }}
-                    className="px-4 py-2 rounded-lg text-white text-sm font-medium"
-                    style={{ backgroundColor: Brand.accent }}
-                  >
-                    Submit Feedback
-                          </button>
-                )}
+
                           <button
                   onClick={() => handleDownload(request._id)}
                   className="px-4 py-2 rounded-lg text-white text-sm font-medium"
@@ -765,78 +739,7 @@ const CustomerDashboard = ({ customerId }) => {
           </div>
         )}
 
-      {/* Feedback Modal */}
-      {showFeedbackModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-xl p-6 w-full max-w-md">
-            <h3 className="text-xl font-semibold mb-4" style={{ color: Brand.primary }}>
-              Submit Feedback
-              </h3>
-            <div className="space-y-4">
-                  <div>
-                <label className="block text-sm font-medium mb-2" style={{ color: Brand.body }}>
-                  Rating
-                </label>
-                <div className="flex space-x-2">
-                  {[1, 2, 3, 4, 5].map((star) => (
-                    <button
-                      key={star}
-                      onClick={() => setFeedbackData({...feedbackData, rating: star})}
-                      className={`text-2xl ${feedbackData.rating >= star ? 'text-yellow-400' : 'text-gray-300'}`}
-                    >
-                      ★
-                    </button>
-                  ))}
-                </div>
-                  </div>
-                <div>
-                <label className="block text-sm font-medium mb-2" style={{ color: Brand.body }}>
-                  Feedback Category
-                  </label>
-                  <select
-                  value={feedbackData.category}
-                  onChange={(e) => setFeedbackData({...feedbackData, category: e.target.value})}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg"
-                >
-                  <option value="general">General Feedback</option>
-                  <option value="quality">Repair Quality</option>
-                  <option value="service">Customer Service</option>
-                  <option value="timing">Timing</option>
-                  <option value="communication">Communication</option>
-                  </select>
-                </div>
-                <div>
-                <label className="block text-sm font-medium mb-2" style={{ color: Brand.body }}>
-                  Comments
-                  </label>
-                  <textarea
-                  value={feedbackData.comment}
-                  onChange={(e) => setFeedbackData({...feedbackData, comment: e.target.value})}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg"
-                  rows="4"
-                  placeholder="Share your experience with the repair service..."
-                  />
-                </div>
-            </div>
-            <div className="flex space-x-3 mt-6">
-                  <button
-                onClick={() => setShowFeedbackModal(false)}
-                className="flex-1 px-4 py-2 border border-gray-300 rounded-lg"
-                style={{ color: Brand.body }}
-                  >
-                    Cancel
-                  </button>
-              <button
-                onClick={handleSubmitFeedback}
-                className="flex-1 px-4 py-2 rounded-lg text-white"
-                style={{ backgroundColor: Brand.accent }}
-              >
-                Submit Feedback
-              </button>
-              </div>
-            </div>
-        </div>
-        )}
+
     </div>
   );
 };
