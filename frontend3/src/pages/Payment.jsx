@@ -1,124 +1,137 @@
-import { useState, useEffect } from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 
 const Payment = () => {
+  const location = useLocation();
+  const navigate = useNavigate();
+  const { cart, totalData, address } = location.state || { cart: [], totalData: { subtotal: 0, deliveryFee: 450, total: 0 }, address: '' };
   const [paymentInfo, setPaymentInfo] = useState({
-    email: '',
     cardNumber: '',
-    expiration: '',
+    expiryDate: '',
     cvc: '',
-    name: '',
-    country: '',
+    cardholderName: '',
+    country: 'India'
   });
 
-  const [orderTotal, setOrderTotal] = useState(0);
-
-  useEffect(() => {
-    fetchOrderTotal();
-  }, []);
-
-  const fetchOrderTotal = async () => {
-    try {
-      const res = await axios.post('http://localhost:5000/api/orders/calculate-total');
-      setOrderTotal(res.data.total);
-    } catch (err) {
-      console.error('Error fetching order total:', err);
-    }
+  const handleChange = (field, value) => {
+    setPaymentInfo(prev => ({ ...prev, [field]: value }));
   };
 
-  const handleChange = (e) => {
-    const { name, value } = e.target;
-    setPaymentInfo((prev) => ({ ...prev, [name]: value }));
-  };
-
-  const handleSubmit = async (e) => {
-    e.preventDefault();
+  const handlePay = async () => {
     try {
-      await axios.post('http://localhost:5000/api/payments/process-order', paymentInfo);
-      alert('Payment successful!');
-      window.location.href = '/success';
+      const orderItems = cart.map(item => ({
+        productId: item.productId,
+        quantity: item.quantity,
+        priceAtOrder: totalData.subtotal / cart.reduce((sum, i) => sum + i.quantity, 0) // Approximate, better to use product price
+      }));
+
+      const res = await axios.post('http://localhost:5000/api/orders/', {
+        items: orderItems,
+        status: 'created',
+        address,
+        amount: totalData.total,
+        customerId: 'guest-user' // Replace with actual if authenticated
+      });
+
+      navigate('/orders', { state: { order: res.data } });
     } catch (err) {
-      alert('Error processing payment: ' + err.message);
+      console.error('Error creating order:', err);
+      alert('Error creating order.');
     }
   };
 
   return (
-    <div className="p-8 bg-white rounded-lg shadow-md flex gap-8">
-      <div className="w-1/2">
-        <h2 className="text-2xl font-bold mb-6">Pay with card</h2>
-        <form onSubmit={handleSubmit}>
-          <input
-            type="email"
-            name="email"
-            value={paymentInfo.email}
-            onChange={handleChange}
-            placeholder="Email"
-            className="w-full border p-2 rounded mb-4"
-            required
-          />
-          <input
-            type="text"
-            name="cardNumber"
-            value={paymentInfo.cardNumber}
-            onChange={handleChange}
-            placeholder="Card information"
-            className="w-full border p-2 rounded mb-4"
-            required
-          />
-          <div className="grid grid-cols-2 gap-4 mb-4">
-            <input
-              type="text"
-              name="expiration"
-              value={paymentInfo.expiration}
-              onChange={handleChange}
-              placeholder="MM/YY"
-              className="border p-2 rounded"
-              required
-            />
-            <input
-              type="text"
-              name="cvc"
-              value={paymentInfo.cvc}
-              onChange={handleChange}
-              placeholder="CVC"
-              className="border p-2 rounded"
-              required
-            />
+    <div className="bg-[#F1F2F7] min-h-screen text-[#36516C] p-8">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+        {/* Order Summary */}
+        <div className="bg-white rounded-lg p-6 shadow-sm">
+          <div className="text-2xl font-bold mb-4">Pay Order</div>
+          <div className="text-3xl font-bold text-green-600 mb-6">₹{totalData.total}.00</div>
+          
+          <div className="space-y-3">
+            {cart.map((item) => {
+              const product = { price: totalData.subtotal / cart.reduce((sum, i) => sum + i.quantity, 0) }; // Approximate
+              return (
+                <div key={item.productId} className="flex justify-between text-sm">
+                  <span>{item.productId} (Qty {item.quantity})</span>
+                  <span>₹{(product.price * item.quantity).toFixed(2)}</span>
+                </div>
+              );
+            })}
+            <div className="flex justify-between text-sm border-t pt-2">
+              <span>Delivery Charge</span>
+              <span>₹{totalData.deliveryFee}.00</span>
+            </div>
           </div>
-          <input
-            type="text"
-            name="name"
-            value={paymentInfo.name}
-            onChange={handleChange}
-            placeholder="Cardholder name"
-            className="w-full border p-2 rounded mb-4"
-            required
-          />
-          <input
-            type="text"
-            name="country"
-            value={paymentInfo.country}
-            onChange={handleChange}
-            placeholder="Country or region"
-            className="w-full border p-2 rounded mb-4"
-            required
-          />
-          <button type="submit" className="bg-blue-500 text-white px-6 py-3 rounded w-full">Pay</button>
-        </form>
-      </div>
-      <div className="w-1/2">
-        <h2 className="text-2xl font-bold mb-6">Order Summary</h2>
-        <div className="flex justify-between mb-2">
-          <p>Course</p>
-          <p>₹{orderTotal}</p>
         </div>
-        <div className="flex justify-between mb-2">
-          <p>GST</p>
-          <p>₹0</p>
-        </div>
-        <div className="flex justify-between font-bold">
-          <p>Total</p>
-          <p>₹{orderTotal}</p>
+
+        {/* Payment Form */}
+        <div className="bg-white rounded-lg p-6 shadow-sm">
+          <h3 className="font-bold text-lg mb-6">Pay with card</h3>
+          
+          <div className="space-y-4">
+            <input 
+              type="email" 
+              placeholder="Email"
+              className="w-full border rounded-lg px-3 py-2"
+            />
+            
+            <div className="relative">
+              <input 
+                type="text" 
+                placeholder="1234 1234 1234 1234"
+                value={paymentInfo.cardNumber}
+                onChange={(e) => handleChange('cardNumber', e.target.value)}
+                className="w-full border rounded-lg px-3 py-2 pr-20"
+              />
+              <div className="absolute right-3 top-2 flex space-x-1">
+                <div className="w-6 h-4 bg-red-500 rounded"></div>
+                <div className="w-6 h-4 bg-blue-500 rounded"></div>
+              </div>
+            </div>
+            
+            <div className="grid grid-cols-2 gap-4">
+              <input 
+                type="text" 
+                placeholder="MM/YY"
+                value={paymentInfo.expiryDate}
+                onChange={(e) => handleChange('expiryDate', e.target.value)}
+                className="border rounded-lg px-3 py-2"
+              />
+              <input 
+                type="text" 
+                placeholder="CVC"
+                value={paymentInfo.cvc}
+                onChange={(e) => handleChange('cvc', e.target.value)}
+                className="border rounded-lg px-3 py-2"
+              />
+            </div>
+            
+            <input 
+              type="text" 
+              placeholder="Cardholder name"
+              value={paymentInfo.cardholderName}
+              onChange={(e) => handleChange('cardholderName', e.target.value)}
+              className="w-full border rounded-lg px-3 py-2"
+            />
+            
+            <select 
+              value={paymentInfo.country}
+              onChange={(e) => handleChange('country', e.target.value)}
+              className="w-full border rounded-lg px-3 py-2"
+            >
+              <option value="India">India</option>
+              <option value="USA">USA</option>
+              <option value="UK">UK</option>
+            </select>
+            
+            <button 
+              onClick={handlePay}
+              className="w-full bg-[#42ADF5] text-white py-3 rounded-lg hover:bg-[#2C8ED1] transition-colors"
+            >
+              Pay
+            </button>
+          </div>
         </div>
       </div>
     </div>

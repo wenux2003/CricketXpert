@@ -2,6 +2,7 @@ import { useEffect, useState, useMemo } from 'react';
 import axios from 'axios';
 import { debounce } from 'lodash';
 import { useNavigate } from 'react-router-dom';
+import { ShoppingCart } from 'lucide-react';
 import bat1 from '../assets/merch1.png';
 import Accessories1 from '../assets/Accessories1.jpg';
 import Electronics1 from '../assets/electronic.jpg';
@@ -9,7 +10,6 @@ import Gaming1 from '../assets/Gaming.jpg';
 import Wearables1 from '../assets/Wearables.jpg';
 import Ball1 from '../assets/ball.jpeg';
 import Sports1 from '../assets/sports.jpg';
-import { ShoppingCart } from 'lucide-react';
 
 const Home = () => {
   const [categories, setCategories] = useState([]);
@@ -17,7 +17,7 @@ const Home = () => {
   const [selectedCategory, setSelectedCategory] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
   const [error, setError] = useState(null);
-  const [cartCount, setCartCount] = useState(0);
+  const [cart, setCart] = useState([]); // Local cart state
   const navigate = useNavigate();
 
   const categoryImages = useMemo(
@@ -35,10 +35,6 @@ const Home = () => {
 
   useEffect(() => {
     fetchCategories();
-    fetchCartCount();
-  }, []);
-
-  useEffect(() => {
     fetchProducts();
   }, [selectedCategory, searchQuery]);
 
@@ -72,44 +68,51 @@ const Home = () => {
     }
   };
 
-  const fetchCartCount = async () => {
-    try {
-      const res = await axios.get('http://localhost:5000/api/cart/');
-      setCartCount(res.data.items ? res.data.items.length : 0);
-    } catch (err) {
-      console.error('Error fetching cart count:', err);
-      setCartCount(0);
-    }
+  const handleQuantityChange = (productId, change) => {
+    setCart((prevCart) => {
+      const existingItem = prevCart.find(item => item.productId === productId);
+      let newCart;
+      if (existingItem) {
+        const newQuantity = existingItem.quantity + change;
+        if (newQuantity <= 0) {
+          // Remove item if quantity becomes 0
+          newCart = prevCart.filter(item => item.productId !== productId);
+        } else {
+          newCart = prevCart.map(item =>
+            item.productId === productId ? { ...item, quantity: newQuantity } : item
+          );
+        }
+      } else if (change > 0) {
+        // Add new item with quantity 1
+        newCart = [...prevCart, { productId, quantity: 1 }];
+      } else {
+        return prevCart; // No change if trying to decrease non-existent item
+      }
+      return newCart;
+    });
   };
 
   const handleSearchChange = debounce((value) => {
     setSearchQuery(value);
   }, 300);
 
-  const handleAddToCart = async (productId) => {
-    try {
-      await axios.post('http://localhost:5000/api/cart/', { productId });
-      fetchCartCount();
-      alert('Item added to cart!');
-    } catch (err) {
-      alert('Error adding to cart: ' + err.message);
-    }
+  const goToCart = () => {
+    navigate('/cart', { state: { cart } }); // Pass cart state to Cart page
   };
 
-  const goToCart = () => {
-    navigate('/cart');
-  };
+  const cartItemCount = cart.reduce((sum, item) => sum + item.quantity, 0);
 
   return (
-    <div className="bg-bgLight min-h-screen text-textSoft">
+    <div className="bg-[#F1F2F7] min-h-screen text-[#36516C]">
       {/* Navbar */}
       <nav className="bg-white shadow-md p-4 flex justify-between items-center sticky top-0 z-10">
-        <div className="text-2xl font-bold text-primary">CricketExpert.</div>
+        <div className="text-2xl font-bold text-[#072679]">CricketExpert.</div>
         <div className="flex gap-6">
-          <a href="/" className="hover:text-secondary" aria-label="Home">Home</a>
-          <a href="/menu" className="hover:text-secondary" aria-label="Menu">Menu</a>
-          <a href="/app" className="hover:text-secondary" aria-label="Mobile App">Mobile App</a>
-          <a href="/contact" className="hover:text-secondary" aria-label="Contact Us">Contact Us</a>
+          <a href="/" className="hover:text-[#42ADF5]" aria-label="Home">Home</a>
+          <a href="/menu" className="hover:text-[#42ADF5]" aria-label="Menu">Menu</a>
+          <a href="/app" className="hover:text-[#42ADF5]" aria-label="Mobile App">Mobile App</a>
+          <a href="/contact" className="hover:text-[#42ADF5]" aria-label="Contact Us">Contact Us</a>
+          <a href="/admin" className="hover:text-[#42ADF5]" aria-label="Admin">Admin</a>
         </div>
         <div className="flex gap-4 items-center">
           <input
@@ -121,12 +124,12 @@ const Home = () => {
           />
           <button
             onClick={goToCart}
-            className="relative bg-accent text-white px-4 py-2 rounded hover:bg-orange-600 flex items-center"
+            className="relative bg-[#42ADF5] text-white px-4 py-2 rounded hover:bg-[#2C8ED1] flex items-center"
           >
             <ShoppingCart size={20} />
-            {cartCount > 0 && (
+            {cartItemCount > 0 && (
               <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center">
-                {cartCount}
+                {cartItemCount}
               </span>
             )}
           </button>
@@ -141,7 +144,7 @@ const Home = () => {
       )}
 
       {/* Hero Section */}
-      <div className="bg-gradient-to-r from-primary to-secondary text-white p-16 flex justify-between items-center">
+      <div className="bg-gradient-to-r from-[#072679] to-[#42ADF5] text-white p-16 flex justify-between items-center">
         <div className="max-w-lg">
           <h1 className="text-5xl font-bold mb-4">Order your favourite cricket equipment here</h1>
           <p className="text-lg mb-6">
@@ -158,8 +161,8 @@ const Home = () => {
 
       {/* Explore Menu (Category Circles) */}
       <section className="p-8 text-center">
-        <h2 className="text-3xl font-bold text-primary mb-4">Explore our menu</h2>
-        <p className="text-textSoft mb-8 max-w-2xl mx-auto">
+        <h2 className="text-3xl font-bold text-[#072679] mb-4">Explore our menu</h2>
+        <p className="text-[#36516C] mb-8 max-w-2xl mx-auto">
           Choose from a diverse selection of cricket equipment and skill development tools.
         </p>
         <div className="flex justify-center gap-8 flex-wrap">
@@ -168,7 +171,7 @@ const Home = () => {
               key={cat}
               onClick={() => setSelectedCategory(cat === selectedCategory ? '' : cat)}
               className={`cursor-pointer text-center w-32 ${
-                selectedCategory === cat ? 'border-4 border-secondary rounded-full' : ''
+                selectedCategory === cat ? 'border-4 border-[#42ADF5] rounded-full' : ''
               }`}
             >
               <img
@@ -180,7 +183,7 @@ const Home = () => {
                   e.target.src = `https://placehold.co/100?text=${cat}`;
                 }}
               />
-              <p className="text-textDark font-medium">{cat}</p>
+              <p className="text-[#000000] font-medium">{cat}</p>
             </div>
           ))}
         </div>
@@ -188,35 +191,51 @@ const Home = () => {
 
       {/* Products Display */}
       <section className="p-8">
-        <h2 className="text-3xl font-bold text-primary mb-4 text-center">Top products near you</h2>
+        <h2 className="text-3xl font-bold text-[#072679] mb-4 text-center">Top products near you</h2>
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
           {products.length === 0 ? (
             <p className="text-center col-span-4">No products available matching your search or category.</p>
           ) : (
-            products.map((product) => (
-              <div key={product._id} className="bg-white rounded-lg shadow-md overflow-hidden">
-                <img
-                  src={product.image_url || 'https://placehold.co/600x500'}
-                  alt={product.name}
-                  className="w-full h-48 object-cover"
-                  onError={(e) => {
-                    console.error(`Product image failed for: ${product.name}`);
-                    e.target.src = 'https://placehold.co/300x200';
-                  }}
-                />
-                <div className="p-4">
-                  <h3 className="text-xl font-bold text-textDark mb-2">{product.name}</h3>
-                  <p className="text-textSoft mb-2">{product.description?.slice(0, 100) || 'No description'}...</p>
-                  <p className="text-primary font-bold mb-4">${product.price || 0}</p>
-                  <button
-                    onClick={() => handleAddToCart(product._id)}
-                    className="bg-secondary text-white px-4 py-2 rounded w-full hover:bg-blue-600"
-                  >
-                    Add to Cart
-                  </button>
+            products.map((product) => {
+              const cartItem = cart.find(item => item.productId === product._id);
+              const quantity = cartItem ? cartItem.quantity : 0;
+              return (
+                <div key={product._id} className="bg-white rounded-lg shadow-md overflow-hidden">
+                  <img
+                    src={product.image_url || 'https://placehold.co/600x500'}
+                    alt={product.name}
+                    className="w-full h-48 object-cover"
+                    onError={(e) => {
+                      console.error(`Product image failed for: ${product.name}`);
+                      e.target.src = 'https://placehold.co/300x200';
+                    }}
+                  />
+                  <div className="p-4">
+                    <h3 className="text-xl font-bold text-[#000000] mb-2">{product.name}</h3>
+                    <p className="text-[#36516C] mb-2">{product.description?.slice(0, 100) || 'No description'}...</p>
+                    <p className="text-[#072679] font-bold mb-4">₹{product.price || 0}</p>
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <button
+                          onClick={() => handleQuantityChange(product._id, -1)}
+                          className="bg-[#D88717] text-white px-3 py-1 rounded hover:bg-[#B36F14] disabled:bg-gray-300"
+                          disabled={quantity === 0}
+                        >
+                          -
+                        </button>
+                        <span className="text-[#000000] font-medium">{quantity}</span>
+                        <button
+                          onClick={() => handleQuantityChange(product._id, 1)}
+                          className="bg-[#42ADF5] text-white px-3 py-1 rounded hover:bg-[#2C8ED1]"
+                        >
+                          +
+                        </button>
+                      </div>
+                    </div>
+                  </div>
                 </div>
-              </div>
-            ))
+              );
+            })
           )}
         </div>
       </section>

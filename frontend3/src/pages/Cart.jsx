@@ -1,110 +1,248 @@
-import { useState, useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import axios from 'axios';
-import { useNavigate } from 'react-router-dom';
-import { Trash2 } from 'lucide-react';
+import { useLocation, useNavigate } from 'react-router-dom';
+import { X, Search, User, ShoppingCart, Minus, Plus } from 'lucide-react';
 
 const Cart = () => {
-  const [cartItems, setCartItems] = useState([]);
-  const [subtotal, setSubtotal] = useState(0);
-  const deliveryFee = 5;
+  const [cart, setCart] = useState([]);
+  const [products, setProducts] = useState([]);
+  const [promoCode, setPromoCode] = useState('');
+  const [error, setError] = useState(null);
+  const [totalData, setTotalData] = useState({ subtotal: 0, deliveryFee: 450, total: 0 });
+  const [loading, setLoading] = useState(true);
+  const location = useLocation();
   const navigate = useNavigate();
 
   useEffect(() => {
-    fetchCart();
-  }, []);
-
-  const fetchCart = async () => {
-    try {
-      const res = await axios.get('http://localhost:5000/api/cart/');
-      setCartItems(res.data.items || []);
-    } catch (err) {
-      console.error('Error fetching cart:', err);
-      setCartItems([]);
+    // Load cart from localStorage on mount, use location.state if available
+    const savedCart = JSON.parse(localStorage.getItem('cricketCart') || '[]');
+    const cartFromState = location.state?.cart;
+    const finalCart = cartFromState || savedCart;
+    if (JSON.stringify(finalCart) !== JSON.stringify(cart)) {
+      setCart(finalCart);
     }
-  };
+    fetchProducts().finally(() => setLoading(false));
+  }, [location.state]);
 
   useEffect(() => {
-    const total = cartItems.reduce((sum, item) => sum + item.price * item.quantity, 0);
-    setSubtotal(total);
-  }, [cartItems]);
+    // Save cart to localStorage whenever it changes
+    localStorage.setItem('cricketCart', JSON.stringify(cart));
+    if (cart.length > 0) {
+      calculateTotal();
+    } else {
+      setTotalData({ subtotal: 0, deliveryFee: 450, total: 450 });
+    }
+  }, [cart]);
 
-  const handleRemoveItem = async (productId) => {
+  const fetchProducts = async () => {
     try {
-      await axios.delete(`http://localhost:5000/api/cart/${productId}`);
-      fetchCart();
-      alert('Item removed from cart!');
+      const res = await axios.get('http://localhost:5000/api/products/');
+      setProducts(res.data || []);
+      if (res.data.length === 0) {
+        setError('No products available.');
+      }
     } catch (err) {
-      alert('Error removing item: ' + err.message);
+      console.error('Error fetching products:', err);
+      setError('Failed to load products.');
     }
   };
 
-  const handleProceedToCheckout = () => {
-    navigate('/checkout');
+  const getProductDetails = (productId) => {
+    return products.find(product => product._id === productId) || {};
   };
 
-  const total = subtotal + deliveryFee;
+  const handleRemoveItem = (productId) => {
+    setCart(prevCart => prevCart.filter(item => item.productId !== productId));
+  };
+
+  const handleQuantityChange = (productId, change) => {
+    setCart((prevCart) => {
+      const existingItem = prevCart.find(item => item.productId === productId);
+      let newCart;
+      if (existingItem) {
+        const newQuantity = existingItem.quantity + change;
+        if (newQuantity <= 0) {
+          newCart = prevCart.filter(item => item.productId !== productId);
+        } else {
+          newCart = prevCart.map(item =>
+            item.productId === productId ? { ...item, quantity: newQuantity } : item
+          );
+        }
+      } else if (change > 0) {
+        newCart = [...prevCart, { productId, quantity: 1 }];
+      } else {
+        return prevCart;
+      }
+      return newCart;
+    });
+  };
+
+  const calculateTotal = async () => {
+    try {
+      const orderItems = cart.map(item => {
+        const product = getProductDetails(item.productId);
+        return {
+          productId: item.productId,
+          quantity: item.quantity,
+          priceAtOrder: product.price || 0
+        };
+      });
+      const res = await axios.post('http://localhost:5000/api/orders/calculate-total', {
+        items: orderItems
+      });
+      setTotalData({
+        subtotal: res.data.subtotal,
+        deliveryFee: res.data.deliveryCharge,
+        total: res.data.total
+      });
+    } catch (err) {
+      console.error('Error calculating total:', err);
+      alert('Error calculating total.');
+    }
+  };
+
+  const handleProceedToDelivery = () => {
+    navigate('/delivery', { state: { cart, totalData } });
+  };
+
+  const cartItemCount = cart.reduce((sum, item) => sum + item.quantity, 0);
+
+  if (loading) {
+    return (
+      <div className="bg-[#F1F2F7] min-h-screen text-[#36516C] p-8 flex items-center justify-center">
+        Loading...
+      </div>
+    );
+  }
 
   return (
-    <div className="p-8 bg-white rounded-lg shadow-md">
-      <h2 className="text-2xl font-bold mb-6">Cart</h2>
-      <table className="w-full mb-6">
-        <thead>
-          <tr className="border-b">
-            <th className="text-left p-2">Item</th>
-            <th className="text-left p-2">Title</th>
-            <th className="text-left p-2">Price</th>
-            <th className="text-left p-2">Quantity</th>
-            <th className="text-left p-2">Total</th>
-            <th className="text-left p-2">Remove</th>
-          </tr>
-        </thead>
-        <tbody>
-          {cartItems.length === 0 ? (
-            <tr>
-              <td colSpan="6" className="p-4 text-center">No items in cart</td>
-            </tr>
-          ) : (
-            cartItems.map((item) => (
-              <tr key={item._id} className="border-b">
-                <td className="p-2">
-                  <img src={item.image_url || 'https://placehold.co/100x100'} alt={item.name} className="w-16 h-16 object-cover rounded" />
-                </td>
-                <td className="p-2">{item.name}</td>
-                <td className="p-2">${item.price}</td>
-                <td className="p-2">{item.quantity}</td>
-                <td className="p-2">${item.price * item.quantity}</td>
-                <td className="p-2">
-                  <button onClick={() => handleRemoveItem(item._id)} className="text-red-500 hover:text-red-700">
-                    <Trash2 size={16} />
-                  </button>
-                </td>
-              </tr>
-            ))
-          )}
-        </tbody>
-      </table>
+    <div className="bg-[#F1F2F7] min-h-screen text-[#36516C] p-8">
+      {/* Header */}
+      <nav className="flex justify-between items-center mb-8 bg-white p-4 rounded-lg shadow-sm">
+        <div className="text-2xl font-bold text-[#072679]">CricketExpert.</div>
+        <div className="flex space-x-6 text-gray-600">
+          <span className="border-b-2 border-[#42ADF5]">home</span>
+          <span>menu</span>
+          <span>mobile app</span>
+          <span>contact us</span>
+        </div>
+        <div className="flex items-center space-x-4">
+          <Search className="w-5 h-5 text-gray-600" />
+          <div className="relative">
+            <ShoppingCart className="w-5 h-5 text-gray-600" />
+            {cartItemCount > 0 && (
+              <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
+                {cartItemCount}
+              </span>
+            )}
+          </div>
+          <User className="w-5 h-5 text-gray-600" />
+        </div>
+      </nav>
 
-      <div className="border-t pt-4">
-        <div className="flex justify-between mb-2">
-          <p>Subtotal</p>
-          <p>${subtotal}</p>
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        {/* Items List */}
+        <div className="lg:col-span-2">
+          <div className="bg-white rounded-lg p-6 shadow-sm">
+            <div className="grid grid-cols-6 gap-4 text-gray-500 text-sm mb-4 pb-2 border-b">
+              <span>Items</span>
+              <span>Title</span>
+              <span>Price</span>
+              <span>Quantity</span>
+              <span>Total</span>
+              <span>Remove</span>
+            </div>
+            
+            {cart.length === 0 ? (
+              <p className="text-center text-[#36516C]">Your cricket gear cart is empty.</p>
+            ) : (
+              cart.map((item) => {
+                const product = getProductDetails(item.productId);
+                return (
+                  <div key={item.productId} className="grid grid-cols-6 gap-4 items-center py-4 border-b">
+                    <img 
+                      src={product.image_url || 'https://placehold.co/50x50'} 
+                      alt={product.name} 
+                      className="w-10 h-10 object-cover rounded" 
+                    />
+                    <div className="font-medium">{product.name || 'Unknown Product'}</div>
+                    <div>₹{product.price || 0}</div>
+                    <div className="flex items-center space-x-2">
+                      <button 
+                        onClick={() => handleQuantityChange(item.productId, -1)}
+                        className="w-6 h-6 rounded-full border flex items-center justify-center hover:bg-gray-100"
+                        disabled={item.quantity <= 1}
+                      >
+                        <Minus className="w-3 h-3" />
+                      </button>
+                      <span className="w-8 text-center">{item.quantity}</span>
+                      <button 
+                        onClick={() => handleQuantityChange(item.productId, 1)}
+                        className="w-6 h-6 rounded-full border flex items-center justify-center hover:bg-gray-100"
+                      >
+                        <Plus className="w-3 h-3" />
+                      </button>
+                    </div>
+                    <div>₹{(product.price || 0) * item.quantity}</div>
+                    <button 
+                      onClick={() => handleRemoveItem(item.productId)}
+                      className="text-gray-400 hover:text-red-500"
+                    >
+                      <X className="w-4 h-4" />
+                    </button>
+                  </div>
+                );
+              })
+            )}
+            {error && <p className="text-red-500 text-center mt-4">{error}</p>}
+          </div>
         </div>
-        <div className="flex justify-between mb-2">
-          <p>Delivery Fee</p>
-          <p>${deliveryFee}</p>
-        </div>
-        <div className="flex justify-between font-bold">
-          <p>Total</p>
-          <p>${total}</p>
+
+        {/* Cart Totals */}
+        <div className="space-y-6">
+          <div className="bg-white rounded-lg p-6 shadow-sm">
+            <h3 className="font-bold text-lg mb-4">Cart Totals</h3>
+            <div className="space-y-2 text-sm">
+              <div className="flex justify-between">
+                <span>Subtotal</span>
+                <span>₹{totalData.subtotal}</span>
+              </div>
+              <div className="flex justify-between">
+                <span>Delivery Fee</span>
+                <span>₹{totalData.deliveryFee}</span>
+              </div>
+              <div className="flex justify-between font-bold text-lg border-t pt-2">
+                <span>Total</span>
+                <span>₹{totalData.total}</span>
+              </div>
+            </div>
+            <button 
+              onClick={handleProceedToDelivery}
+              className="w-full bg-[#42ADF5] text-white py-3 rounded-lg mt-4 hover:bg-[#2C8ED1] transition-colors"
+              disabled={cart.length === 0}
+            >
+              PROCEED TO CHECKOUT
+            </button>
+          </div>
+
+          {/* Promo Code */}
+          <div className="bg-white rounded-lg p-6 shadow-sm">
+            <p className="text-sm text-gray-600 mb-3">If you have a promo code, Enter it here</p>
+            <div className="flex">
+              <input 
+                type="text" 
+                placeholder="promo code"
+                value={promoCode}
+                onChange={(e) => setPromoCode(e.target.value)}
+                className="flex-1 border rounded-l-lg px-3 py-2 text-sm"
+              />
+              <button className="bg-black text-white px-4 py-2 rounded-r-lg text-sm">
+                Submit
+              </button>
+            </div>
+          </div>
         </div>
       </div>
-
-      <button
-        onClick={handleProceedToCheckout}
-        className="bg-orange-500 text-white px-6 py-3 rounded mt-6 w-full"
-      >
-        Proceed to Checkout
-      </button>
     </div>
   );
 };
