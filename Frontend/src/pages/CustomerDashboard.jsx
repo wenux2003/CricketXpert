@@ -445,7 +445,7 @@ const CustomerDashboard = ({ customerId }) => {
                   <h4 className="font-semibold mb-3" style={{ color: Brand.primary }}>Cost & Timeline</h4>
                   <div className="space-y-2 text-sm">
                     {request.costEstimate || request.cost ? (
-                      <p><span className="font-medium" style={{ color: Brand.body }}>Estimated Cost:</span> ${request.costEstimate ?? request.cost}</p>
+                      <p><span className="font-medium" style={{ color: Brand.body }}>Estimated Cost:</span> Rs {request.costEstimate ?? request.cost}</p>
                     ) : (
                       <p><span className="font-medium" style={{ color: Brand.body }}>Estimated Cost:</span> <span style={{ color: Brand.accent }}>Pending</span></p>
                     )}
@@ -518,7 +518,7 @@ const CustomerDashboard = ({ customerId }) => {
                   <h4 className="font-semibold mb-2" style={{ color: '#92400E' }}>📋 Service Estimate Received</h4>
                   <div className="space-y-2 text-sm" style={{ color: '#92400E' }}>
                     {request.costEstimate && (
-                      <p><strong>Estimated Cost:</strong> ${request.costEstimate}</p>
+                      <p><strong>Estimated Cost:</strong> Rs {request.costEstimate}</p>
                     )}
                     {request.timeEstimate && (
                       <p><strong>Time Estimate:</strong> {request.timeEstimate}</p>

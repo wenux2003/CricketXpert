@@ -1064,7 +1064,7 @@ const ServiceManagerDashboard = () => {
             <h3 className="text-xl font-semibold mb-4" style={{ color: Brand.primary }}>Approve Request & Send Estimate</h3>
             <div className="space-y-4">
               <div>
-                <label className="block text-sm font-medium mb-2" style={{ color: Brand.body }}>Estimated Cost ($)</label>
+                <label className="block text-sm font-medium mb-2" style={{ color: Brand.body }}>Estimated Cost (Rs)</label>
                 <input
                   type="text"
                   value={approvalData.cost}

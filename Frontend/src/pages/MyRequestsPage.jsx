@@ -139,7 +139,7 @@ const MyRequestsPage = () => {
                     <h4 className="font-semibold mb-3" style={{ color: Brand.primary }}>Status & Timeline</h4>
                     <div className="space-y-2 text-sm">
                       {request.costEstimate || request.cost ? (
-                        <p><span className="font-medium" style={{ color: Brand.body }}>Estimated Cost:</span> ${request.costEstimate ?? request.cost}</p>
+                        <p><span className="font-medium" style={{ color: Brand.body }}>Estimated Cost:</span> Rs {request.costEstimate ?? request.cost}</p>
                       ) : (
                         <p><span className="font-medium" style={{ color: Brand.body }}>Estimated Cost:</span> <span style={{ color: Brand.accent }}>Pending</span></p>
                       )}
