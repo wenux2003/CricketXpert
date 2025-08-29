@@ -1,14 +1,7 @@
 const User = require('../models/User.js');
 const bcrypt = require('bcryptjs');
-
-// A placeholder for a future email sending service
-const sendWelcomeEmail = async (email, username) => {
-  // In the future, you would integrate a service like Nodemailer or SendGrid here.
-  console.log(`--- Sending welcome email to ${email} for user ${username} ---`);
-  // For now, we just log to the console.
-  return Promise.resolve();
-};
-
+// --- IMPORT THE EMAIL FUNCTIONS from your new file ---
+const { sendWelcomeEmail, sendNewUserNotification } = require('../utils/wemailService.js');
 
 // @desc    Register a new user from a multi-step form
 // @route   POST /api/auth/register
@@ -49,24 +42,25 @@ const registerUser = async (req, res) => {
       dob,
       contactNumber,
       address,
-      profileImageURL: profileImageURL || '', // Handle optional field
+      profileImageURL: profileImageURL || '',
       email,
       username,
       passwordHash,
-      // role and status will use the default values from your schema ('customer', 'active')
     });
 
     // 4. Save the user to the database
     const newUser = await user.save();
 
     if (newUser) {
-      // --- Future Implementation Hooks ---
-      // After user is successfully created, send a welcome email.
-      // We use .catch() so that if the email fails, it doesn't break the registration flow.
-      sendWelcomeEmail(newUser.email, newUser.username).catch(err => {
-        console.error("Failed to send welcome email:", err);
-      });
-      // You could add a notification service call here as well.
+      // --- SEND EMAILS AFTER USER IS SAVED ---
+      try {
+        // Call the functions you imported
+        await sendWelcomeEmail(newUser.email, newUser.username);
+        await sendNewUserNotification(newUser);
+      } catch (emailError) {
+        // Log the error but don't stop the process if emails fail
+        console.error('Failed to send registration emails:', emailError);
+      }
 
       // 5. Send a success response to the frontend
       res.status(201).json({
