@@ -80,7 +80,6 @@ const AddProduct = () => {
     <div className="max-w-2xl mx-auto bg-white p-8 rounded shadow-md">
       <h2 className="text-2xl font-bold mb-6 text-primary">Add New Product</h2>
       <form onSubmit={handleSubmit}>
-        {/* All other input fields remain the same... */}
         <div className="mb-4">
           <label className="block text-textSoft mb-1">Product ID (Unique)</label>
           <input type="text" name="productId" value={formData.productId} onChange={handleChange} className="w-full border border-gray-300 p-2 rounded" required />
@@ -95,15 +94,33 @@ const AddProduct = () => {
         </div>
         <div className="mb-4">
           <label className="block text-textSoft mb-1">Category (e.g., Bats, Balls)</label>
-          <input type="text" name="category" value={formData.category} onChange={handleChange} className="w-full border border-gray-300 p-2 rounded" />
+          <select name="category" value={formData.category} onChange={handleChange} className="w-full border border-gray-300 p-2 rounded" required>
+            <option value="">Select a category</option>
+            <option value="Accessories">Accessories</option>
+            <option value="Bat">Bat</option>
+            <option value="Ball">Ball</option>
+            <option value="Electronics">Electronics</option>
+            <option value="Gaming">Gaming</option>
+            <option value="Sports">Sports</option>
+            <option value="Wearables">Wearables</option>
+          </select>
         </div>
         <div className="mb-4">
           <label className="block text-textSoft mb-1">Brand</label>
-          <input type="text" name="brand" value={formData.brand} onChange={handleChange} className="w-full border border-gray-300 p-2 rounded" />
+          <select name="brand" value={formData.brand} onChange={handleChange} className="w-full border border-gray-300 p-2 rounded" required>
+            <option value="">Select a brand</option>
+            <option value="MRF">MRF</option>
+            <option value="SG">SG</option>
+            <option value="Kookaburra">Kookaburra</option>
+            <option value="Gray-Nicolls">Gray-Nicolls</option>
+            <option value="SS">SS</option>
+            <option value="Adidas">Adidas</option>
+            <option value="Nike">Nike</option>
+          </select>
         </div>
         <div className="mb-4">
-          <label className="block text-textSoft mb-1">Price ($)</label>
-          <input type="number" name="price" value={formData.price} onChange={handleChange} className="w-full border border-gray-300 p-2 rounded" required min="0" />
+          <label className="block text-textSoft mb-1">Price (Rs.)</label>
+          <input type="text" name="price" value={formData.price} onChange={handleChange} className="w-full border border-gray-300 p-2 rounded" required min="0" />
         </div>
         <div className="mb-4">
           <label className="block text-textSoft mb-1">Stock Quantity</label>
