@@ -398,7 +398,7 @@ const TechnicianDashboard = () => {
       <aside className={`fixed top-0 left-0 h-full w-64 bg-white shadow-xl transform transition-transform duration-300 ease-in-out z-40 ${
         showSidebar ? 'translate-x-0' : '-translate-x-full'
       }`}>
-        <div className="p-4">
+        <div className="p-4 h-full flex flex-col">
           <div className="flex justify-between items-center mb-6">
             <h2 className="text-lg font-bold" style={{ color: Brand.primary }}>Repair Management</h2>
             <button
@@ -408,7 +408,7 @@ const TechnicianDashboard = () => {
               ×
             </button>
           </div>
-          <nav className="space-y-2">
+          <nav className="space-y-2 flex-1">
             <button
               onClick={() => {
                 navigate('/');
@@ -421,6 +421,22 @@ const TechnicianDashboard = () => {
               Overview of Repair
             </button>
           </nav>
+          
+          {/* Logout Button at Bottom */}
+          <div className="mt-auto pt-4 border-t border-gray-200">
+            <button
+              onClick={() => {
+                localStorage.removeItem('cx_current_user');
+                navigate('/');
+                setShowSidebar(false);
+              }}
+              className="w-full text-left px-4 py-3 rounded-lg font-medium text-gray-700 hover:text-white transition-colors"
+              onMouseOver={(e) => { e.currentTarget.style.backgroundColor = '#42ADF5'; }}
+              onMouseOut={(e) => { e.currentTarget.style.backgroundColor = 'transparent'; }}
+            >
+              Logout
+            </button>
+          </div>
         </div>
       </aside>
 
