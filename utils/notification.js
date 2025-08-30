@@ -101,24 +101,7 @@ exports.sendEmail = async (to, subject, text, attachmentBuffer = null, filename 
     return true;
   } catch (err) {
     console.error('❌ Error sending email:', err.message);
-    
-    // Provide specific error guidance
-    if (err.message.includes('Invalid login') || err.message.includes('Missing credentials')) {
-      console.error('💡 Gmail Authentication Issue - Please check:');
-      console.error('   1. Your Gmail account has 2-factor authentication enabled');
-      console.error('   2. You have generated an app password for this application');
-      console.error('   3. The app password in .env file is correct');
-      console.error('   4. Your Gmail account allows "less secure app access" or uses app passwords');
-      console.error('');
-      console.error('📧 To fix this:');
-      console.error('   1. Go to your Google Account settings');
-      console.error('   2. Enable 2-factor authentication');
-      console.error('   3. Generate an app password for "Mail"');
-      console.error('   4. Update the EMAIL_PASS in your .env file with the new app password');
-    } else if (err.message.includes('ENOTFOUND')) {
-      console.error('💡 Network/DNS Issue - Check your internet connection');
-    }
-    
+      
     return false;
   }
 };
