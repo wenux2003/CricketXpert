@@ -1,11 +1,12 @@
 import React from 'react'
 import ReactDOM from 'react-dom/client'
-// Make sure the path points to your component inside the components folder
-import SignUpMultiStep from './components/SignUpMultiStep.jsx' 
+// --- 1. Import the main App component ---
+import App from './App.jsx' 
 import './index.css'
 
 ReactDOM.createRoot(document.getElementById('root')).render(
   <React.StrictMode>
-    <SignUpMultiStep />
+    {/* --- 2. Render the App component --- */}
+    <App /> 
   </React.StrictMode>,
 )

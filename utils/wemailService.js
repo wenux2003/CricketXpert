@@ -3,11 +3,21 @@ const nodemailer = require('nodemailer');
 // --- Main Configuration ---
 // It now reads the user and password from your .env file
 const transporter = nodemailer.createTransport({
-  service: 'gmail',
+  host: 'smtp.gmail.com',
+  port: 465,
+  secure: true, // true for 465, false for other ports
   auth: {
-    user: process.env.EMAIL_USER, // Fetches from .env
-    pass: process.env.EMAIL_PASS, // Fetches from .env
+    user: process.env.EMAIL_USER,
+    pass: process.env.EMAIL_PASS,
   },
+});
+
+transporter.verify(function(error, success) {
+  if (error) {
+    console.log('Nodemailer transport verification error:', error);
+  } else {
+    console.log('Nodemailer transport is ready to send emails.');
+  }
 });
 
 // --- Function 1: Welcome Email ---
@@ -18,8 +28,8 @@ const sendWelcomeEmail = async (email, username) => {
     subject: 'Welcome to CricketExpert!',
     html: `<h1>Hi ${username},</h1><p>Welcome to the team! We're glad to have you on board.</p>`,
   };
-  await transporter.sendMail(mailOptions);
-  console.log(`Welcome email sent to ${email}`);
+  const info = await transporter.sendMail(mailOptions);
+  console.log(`Welcome email sent to ${email}: ${info.response}`);
 };
 
 // --- Function 2: New User Notification for Manager ---
@@ -40,12 +50,31 @@ const sendNewUserNotification = async (newUser) => {
             </ul>
         `,
     };
-    await transporter.sendMail(mailOptions);
-    console.log(`New user notification sent to service manager.`);
+    const info = await transporter.sendMail(mailOptions);
+    console.log(`New user notification sent to service manager: ${info.response}`);
 };
 
+
+// --- Function 3: Password Reset Code Email ---
+const sendPasswordResetCodeEmail = async (email, code) => {
+  const mailOptions = {
+    from: process.env.EMAIL_USER,
+    to: email,
+    subject: 'Your Password Reset Code',
+    html: `
+      <h2>Password Reset Request</h2>
+      <p>You requested a password reset. Use the following code to reset your password:</p>
+      <h3><strong>${code}</strong></h3>
+      <p>This code will expire in 10 minutes.</p>
+      <p>If you did not request this, please ignore this email.</p>
+    `,
+  };
+  await transporter.sendMail(mailOptions);
+  console.log(`Password reset code sent to ${email}`);
+};
 
 module.exports = {
   sendWelcomeEmail,
   sendNewUserNotification,
+  sendPasswordResetCodeEmail,
 };

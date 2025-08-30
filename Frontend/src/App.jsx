@@ -1,35 +1,36 @@
-import { useState } from 'react'
-import reactLogo from './assets/react.svg'
-import viteLogo from '/vite.svg'
-import './App.css'
+import React from 'react';
+import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 
-function App() {
-  const [count, setCount] = useState(0)
+// Import Pages and Components
+import Login from './components/Login.jsx';
+import SignUpMultiStep from './components/SignUpMultiStep.jsx';
+import ProtectedRoute from './components/ProtectedRoute.jsx';
+import ForgotPassword from './pages/ForgotPassword.jsx';
 
+// Placeholder Dashboards (replace with your actual dashboards)
+const AdminDashboard = () => <div>Admin Dashboard</div>;
+const CustomerDashboard = () => <div>Customer Dashboard</div>;
+const HomePage = () => <div>Home Page</div>;
+
+
+export default function App() {
   return (
-    <>
-      <div>
-        <a href="https://vite.dev" target="_blank">
-          <img src={viteLogo} className="logo" alt="Vite logo" />
-        </a>
-        <a href="https://react.dev" target="_blank">
-          <img src={reactLogo} className="logo react" alt="React logo" />
-        </a>
-      </div>
-      <h1>Vite + React</h1>
-      <div className="card">
-        <button onClick={() => setCount((count) => count + 1)}>
-          count is {count}
-        </button>
-        <p>
-          Edit <code>src/App.jsx</code> and save to test HMR
-        </p>
-      </div>
-      <p className="read-the-docs">
-        Click on the Vite and React logos to learn more
-      </p>
-    </>
-  )
-}
+    <Router>
+      <Routes>
+        {/* Public Routes */}
+        <Route path="/" element={<HomePage />} />
+        <Route path="/login" element={<Login />} />
+        <Route path="/signup" element={<SignUpMultiStep />} />
+        <Route path="/forgot-password" element={<ForgotPassword />} />
 
-export default App
+        {/* Protected Routes (user must be logged in) */}
+        <Route element={<ProtectedRoute />}>
+          <Route path="/dashboard/admin" element={<AdminDashboard />} />
+          <Route path="/dashboard/customer" element={<CustomerDashboard />} />
+          {/* Add other protected dashboard routes here */}
+        </Route>
+
+      </Routes>
+    </Router>
+  );
+}

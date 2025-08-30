@@ -14,14 +14,19 @@ const userSchema = new mongoose.Schema({
   contactNumber: String,
   address: String,
   profileImageURL: String,
-  dob: Date, // Date of Birth
   status: {
     type: String,
     enum: ['active', 'suspended', 'deactivated'],
     default: 'active',
-  }
-}, { timestamps: true }); // <-- This automatically adds and manages createdAt & updatedAt
+  },
+  dob: Date,
+  // --- ADD THESE TWO FIELDS FOR PASSWORD RESET ---
+  passwordResetCode: String,
+  passwordResetExpires: Date,
+
+}, { timestamps: true });
 
 const User = mongoose.model('User', userSchema);
 
 module.exports = User;
+
