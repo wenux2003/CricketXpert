@@ -1,3 +1,4 @@
+import { useState, useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 
@@ -10,35 +11,106 @@ const Payment = () => {
     expiryDate: '',
     cvc: '',
     cardholderName: '',
-    country: 'India'
+    country: 'India',
+    email: ''
   });
+  const [user, setUser] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  const userId = '689de49c6dc2a3b065e28c88';
+
+  useEffect(() => {
+    const fetchUserDetails = async () => {
+      try {
+        const response = await axios.get(`http://localhost:5000/api/users/${userId}`);
+        setUser(response.data);
+        setPaymentInfo(prev => ({ ...prev, email: response.data.email || '' }));
+      } catch (err) {
+        console.error('Error fetching user details:', err);
+        setError('Failed to load user details.');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchUserDetails();
+    console.log('Received state in Payment:', location.state);
+    if (!location.state) {
+      console.warn('No state passed to Payment page.');
+    }
+  }, [location.state, userId]);
 
   const handleChange = (field, value) => {
     setPaymentInfo(prev => ({ ...prev, [field]: value }));
   };
 
+  const validatePaymentInfo = () => {
+    const cardNumber = paymentInfo.cardNumber.replace(/\s/g, '');
+    if (!cardNumber || cardNumber.length !== 16 || isNaN(cardNumber)) {
+      setError('Please enter a valid 16-digit card number.');
+      return false;
+    }
+    if (!paymentInfo.expiryDate.match(/^(0[1-9]|1[0-2])\/\d{2}$/)) {
+      setError('Please enter a valid expiry date (MM/YY).');
+      return false;
+    }
+    if (!paymentInfo.cvc || paymentInfo.cvc.length !== 3 || isNaN(paymentInfo.cvc)) {
+      setError('Please enter a valid 3-digit CVC.');
+      return false;
+    }
+    if (!paymentInfo.cardholderName.trim()) {
+      setError('Please enter the cardholder name.');
+      return false;
+    }
+    setError(null);
+    return true;
+  };
+
   const handlePay = async () => {
+    if (!validatePaymentInfo()) return;
+
+    setLoading(true);
     try {
+      console.log('Cart:', cart);
       const orderItems = cart.map(item => ({
         productId: item.productId,
         quantity: item.quantity,
-        priceAtOrder: totalData.subtotal / cart.reduce((sum, i) => sum + i.quantity, 0) // Approximate, better to use product price
+        priceAtOrder: totalData.subtotal / cart.reduce((sum, i) => sum + i.quantity, 0)
       }));
-
-      const res = await axios.post('http://localhost:5000/api/orders/', {
+      console.log('Creating order with:', { items: orderItems, status: 'created', address, amount: totalData.total, customerId: userId });
+      const orderRes = await axios.post('http://localhost:5000/api/orders/', {
         items: orderItems,
         status: 'created',
         address,
         amount: totalData.total,
-        customerId: 'guest-user' // Replace with actual if authenticated
+        customerId: userId
       });
+      console.log('Order created:', orderRes.data);
 
-      navigate('/orders', { state: { order: res.data } });
+      console.log('Creating payment with:', { userId, orderId: orderRes.data._id, paymentType: 'order_payment', amount: totalData.total, status: 'success', paymentDate: new Date() });
+      const paymentRes = await axios.post('http://localhost:5000/api/payments/', {
+        userId,
+        orderId: orderRes.data._id,
+        paymentType: 'order_payment',
+        amount: totalData.total,
+        status: 'success',
+        paymentDate: new Date()
+      });
+      console.log('Payment created:', paymentRes.data);
+
+      localStorage.removeItem('cricketCart');
+      navigate('/orders', { state: { order: orderRes.data, payment: paymentRes.data } });
     } catch (err) {
-      console.error('Error creating order:', err);
-      alert('Error creating order.');
+      console.error('Error details:', err.response?.data || err.message);
+      setError(`Error processing payment: ${err.response?.data?.message || err.message}. Please try again.`);
+    } finally {
+      setLoading(false);
     }
   };
+
+  if (loading) return <div className="text-center p-8">Loading...</div>;
+  if (error) return <div className="text-center p-8 text-red-500">{error}</div>;
 
   return (
     <div className="bg-[#F1F2F7] min-h-screen text-[#36516C] p-8">
@@ -50,7 +122,7 @@ const Payment = () => {
           
           <div className="space-y-3">
             {cart.map((item) => {
-              const product = { price: totalData.subtotal / cart.reduce((sum, i) => sum + i.quantity, 0) }; // Approximate
+              const product = { price: totalData.subtotal / cart.reduce((sum, i) => sum + i.quantity, 0) };
               return (
                 <div key={item.productId} className="flex justify-between text-sm">
                   <span>{item.productId} (Qty {item.quantity})</span>
@@ -67,12 +139,14 @@ const Payment = () => {
 
         {/* Payment Form */}
         <div className="bg-white rounded-lg p-6 shadow-sm">
-          <h3 className="font-bold text-lg mb-6">Pay with card</h3>
+          <h3 className="font-bold text-lg mb-6">Pay with Card</h3>
           
           <div className="space-y-4">
             <input 
               type="email" 
               placeholder="Email"
+              value={paymentInfo.email}
+              onChange={(e) => handleChange('email', e.target.value)}
               className="w-full border rounded-lg px-3 py-2"
             />
             
@@ -120,16 +194,17 @@ const Payment = () => {
               onChange={(e) => handleChange('country', e.target.value)}
               className="w-full border rounded-lg px-3 py-2"
             >
-              <option value="India">India</option>
-              <option value="USA">USA</option>
-              <option value="UK">UK</option>
+              <option value="India">Sri Lanka</option>
+              
             </select>
             
+            {error && <p className="text-red-500 text-sm">{error}</p>}
             <button 
               onClick={handlePay}
               className="w-full bg-[#42ADF5] text-white py-3 rounded-lg hover:bg-[#2C8ED1] transition-colors"
+              disabled={loading}
             >
-              Pay
+              {loading ? 'Processing...' : 'Pay'}
             </button>
           </div>
         </div>

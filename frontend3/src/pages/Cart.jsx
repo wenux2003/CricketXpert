@@ -225,22 +225,7 @@ const Cart = () => {
             </button>
           </div>
 
-          {/* Promo Code */}
-          <div className="bg-white rounded-lg p-6 shadow-sm">
-            <p className="text-sm text-gray-600 mb-3">If you have a promo code, Enter it here</p>
-            <div className="flex">
-              <input 
-                type="text" 
-                placeholder="promo code"
-                value={promoCode}
-                onChange={(e) => setPromoCode(e.target.value)}
-                className="flex-1 border rounded-l-lg px-3 py-2 text-sm"
-              />
-              <button className="bg-black text-white px-4 py-2 rounded-r-lg text-sm">
-                Submit
-              </button>
-            </div>
-          </div>
+          
         </div>
       </div>
     </div>
