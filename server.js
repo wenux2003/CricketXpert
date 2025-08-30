@@ -56,6 +56,18 @@ app.use('/api/notifications', notificationRoutes);
 const certificateRoutes = require('./routes/certificateRoutes');
 app.use('/api/certificates', certificateRoutes);
 
+//for payments
+const paymentRoutes = require('./routes/paymentRoutes');
+app.use('/api/payments', paymentRoutes);
+
+//for dashboard
+const dashboardRoutes = require('./routes/dashboardRoutes');
+app.use('/api/dashboard', dashboardRoutes);
+
+//for calendar
+const calendarRoutes = require('./routes/calendarRoutes');
+app.use('/api/calendar', calendarRoutes);
+
 
 
 

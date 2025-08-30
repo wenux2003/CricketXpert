@@ -1,28 +1,30 @@
 import React from "react"
 import Navbar from "./components/Navbar";
 import { Route, Routes } from "react-router-dom";
-import Program from "./pages/Program";
-import ProgramDetails from "./pages/ProgramDetails";
-import Enrollment from "./pages/Enrollment";
-import Groundbooking from "./pages/Groundbooking";
-import Favourite from "./pages/Favourite";
 import Home from "./pages/Home";
-import Profile from "./pages/Profile";
+import CoachingPrograms from "./pages/CoachingPrograms";
+import ProgramDetails from "./pages/ProgramDetails";
+import EnrollmentForm from "./pages/EnrollmentForm";
+import EnrollmentSuccess from "./pages/EnrollmentSuccess";
+import PlayerProfile from "./pages/PlayerProfile";
 
 function App() {
   return (
     <>
-    <Navbar/>
-    <Routes>
-    <Route path ='/' element={<Home/>}/>
-    <Route path ='/program' element={<Program/>}/>
-    <Route path ='/program/:id' element={<ProgramDetails/>}/>
-    <Route path ='/program/:id/:date' element={<Groundbooking/>}/>
-    <Route path ='/enrollment' element={<Enrollment/>}/>
-    <Route path ='/favourite' element={<Favourite/>}/>
-    <Route path ='/profile' element={<Profile/>}/>
-    </Routes>
-
+      <Navbar/>
+      <Routes>
+        <Route path="/" element={<Home />} />
+        <Route path="/programs" element={<CoachingPrograms />} />
+        <Route path="/programs/:id" element={<ProgramDetails />} />
+        <Route path="/programs/:id/enroll" element={<EnrollmentForm />} />
+        <Route path="/enrollment-success/:enrollmentId" element={<EnrollmentSuccess />} />
+        <Route path="/profile" element={<PlayerProfile />} />
+        <Route path="/dashboard" element={<PlayerProfile />} />
+        
+        {/* Additional routes for future implementation */}
+        <Route path="/sessions" element={<div className="p-8 text-center">Sessions page coming soon...</div>} />
+        <Route path="/certificates" element={<div className="p-8 text-center">Certificates page coming soon...</div>} />
+      </Routes>
     </>
   );
 }

@@ -1,383 +1,421 @@
-import React from "react";
-import { useParams, Link } from "react-router-dom";
+import React, { useState, useEffect } from 'react';
+import { useParams, useNavigate } from 'react-router-dom';
+import { 
+  ArrowLeft, 
+  Star, 
+  Clock, 
+  Users, 
+  DollarSign,
+  Calendar,
+  MapPin,
+  BookOpen,
+  Award,
+  Download,
+  ChevronRight,
+  Play,
+  FileText,
+  Link as LinkIcon
+} from 'lucide-react';
+import apiService from '../services/api';
 
-function ProgramDetails() {
+const ProgramDetails = () => {
   const { id } = useParams();
-  
-  // Sample program data - in a real app, this would come from an API
-  const programs = {
-    1: {
-      id: 1,
-      title: "Elite Cricket Academy",
-      description: "Comprehensive training program for aspiring professional cricketers",
-      longDescription: "Our Elite Cricket Academy is designed for serious cricketers who want to take their game to the professional level. This intensive 6-month program combines technical skill development, tactical understanding, physical conditioning, and mental preparation to create well-rounded players ready for competitive cricket.",
-      duration: "6 months",
-      level: "Advanced",
-      price: "$299/month",
-      totalPrice: "$1,794",
-      image: "https://images.unsplash.com/photo-1531415074968-036ba1b575da?w=800&h=400&fit=crop",
-      features: ["Professional Coaching", "Match Analysis", "Fitness Training", "Mental Conditioning"],
-      coach: {
-        name: "John Smith",
-        experience: "15 years",
-        specialization: "Former International Player",
-        image: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&h=150&fit=crop&crop=face"
-      },
-      rating: 4.8,
-      students: 45,
-      schedule: [
-        { day: "Monday", time: "6:00 AM - 8:00 AM", activity: "Batting Practice" },
-        { day: "Tuesday", time: "6:00 AM - 8:00 AM", activity: "Bowling Techniques" },
-        { day: "Wednesday", time: "6:00 AM - 8:00 AM", activity: "Fielding Drills" },
-        { day: "Thursday", time: "6:00 AM - 8:00 AM", activity: "Match Simulation" },
-        { day: "Friday", time: "6:00 AM - 8:00 AM", activity: "Fitness Training" },
-        { day: "Saturday", time: "8:00 AM - 12:00 PM", activity: "Practice Match" }
-      ],
-      curriculum: [
-        {
-          week: "Weeks 1-4",
-          title: "Foundation Building",
-          topics: ["Technical Assessment", "Basic Skill Refinement", "Fitness Baseline", "Mental Preparation Introduction"]
-        },
-        {
-          week: "Weeks 5-12",
-          title: "Skill Development",
-          topics: ["Advanced Batting Techniques", "Bowling Variations", "Fielding Positions", "Game Awareness"]
-        },
-        {
-          week: "Weeks 13-20",
-          title: "Match Application",
-          topics: ["Tactical Understanding", "Pressure Situations", "Team Dynamics", "Performance Analysis"]
-        },
-        {
-          week: "Weeks 21-24",
-          title: "Performance Optimization",
-          topics: ["Individual Specialization", "Match Preparation", "Career Guidance", "Final Assessment"]
-        }
-      ],
-      testimonials: [
-        {
-          name: "Michael Johnson",
-          text: "This program transformed my game completely. The coaching quality is exceptional!",
-          rating: 5
-        },
-        {
-          name: "Sarah Williams",
-          text: "Best investment I made for my cricket career. Highly recommended!",
-          rating: 5
-        }
-      ],
-      facilities: [
-        "Professional Cricket Ground",
-        "Indoor Nets Facility",
-        "Fitness Center",
-        "Video Analysis Room",
-        "Equipment Provided",
-        "Changing Rooms"
-      ]
-    },
-    2: {
-      id: 2,
-      title: "Youth Development Program",
-      description: "Perfect for young cricketers aged 8-16 to build fundamental skills",
-      longDescription: "Our Youth Development Program is specially designed for young cricketers aged 8-16 who are just starting their cricket journey or want to improve their fundamental skills. We focus on creating a fun, safe, and encouraging environment where children can learn the basics of cricket while developing a love for the game.",
-      duration: "3 months",
-      level: "Beginner to Intermediate",
-      price: "$199/month",
-      totalPrice: "$597",
-      image: "https://images.unsplash.com/photo-1578662996442-48f60103fc96?w=800&h=400&fit=crop",
-      features: ["Basic Techniques", "Team Play", "Equipment Training", "Fun Activities"],
-      coach: {
-        name: "Sarah Johnson",
-        experience: "10 years",
-        specialization: "Youth Development Specialist",
-        image: "https://images.unsplash.com/photo-1494790108755-2616b612b786?w=150&h=150&fit=crop&crop=face"
-      },
-      rating: 4.9,
-      students: 78,
-      schedule: [
-        { day: "Monday", time: "4:00 PM - 5:30 PM", activity: "Basic Batting" },
-        { day: "Wednesday", time: "4:00 PM - 5:30 PM", activity: "Bowling Basics" },
-        { day: "Friday", time: "4:00 PM - 5:30 PM", activity: "Fielding & Games" },
-        { day: "Saturday", time: "9:00 AM - 11:00 AM", activity: "Mini Matches" }
-      ],
-      curriculum: [
-        {
-          week: "Weeks 1-3",
-          title: "Introduction to Cricket",
-          topics: ["Equipment Familiarization", "Basic Rules", "Safety Guidelines", "Fun Games"]
-        },
-        {
-          week: "Weeks 4-8",
-          title: "Fundamental Skills",
-          topics: ["Batting Stance", "Basic Bowling", "Catching", "Throwing Techniques"]
-        },
-        {
-          week: "Weeks 9-12",
-          title: "Game Application",
-          topics: ["Mini Matches", "Team Work", "Sportsmanship", "Skill Assessment"]
-        }
-      ],
-      testimonials: [
-        {
-          name: "Parent - Lisa Chen",
-          text: "My son loves coming to practice. Great program for kids!",
-          rating: 5
-        },
-        {
-          name: "Parent - David Miller",
-          text: "Excellent coaches who really care about the children's development.",
-          rating: 5
-        }
-      ],
-      facilities: [
-        "Youth-Friendly Ground",
-        "Soft Ball Training",
-        "Child-Safe Equipment",
-        "Parent Viewing Area",
-        "First Aid Facilities",
-        "Snack Bar"
-      ]
+  const navigate = useNavigate();
+  const [program, setProgram] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [activeTab, setActiveTab] = useState('overview');
+  const [enrollments, setEnrollments] = useState([]);
+
+  // Mock user data - in real app, this would come from authentication context
+  const user = {
+    id: '60f1b2b0b3b4b4b4b4b4b4b4',
+    name: 'John Doe',
+    role: 'customer'
+  };
+
+  useEffect(() => {
+    fetchProgramDetails();
+  }, [id]);
+
+  const fetchProgramDetails = async () => {
+    setLoading(true);
+    try {
+      const response = await apiService.getCoachingProgramById(id);
+      setProgram(response.data);
+      
+      // Also fetch enrollment data
+      if (response.data) {
+        const enrollmentResponse = await apiService.getProgramEnrollments(id);
+        setEnrollments(enrollmentResponse.data || []);
+      }
+      
+      setError(null);
+    } catch (err) {
+      setError('Failed to fetch program details');
+      console.error('Error fetching program details:', err);
+    } finally {
+      setLoading(false);
     }
   };
 
-  const program = programs[id] || programs[1]; // Default to first program if ID not found
+  const handleEnrollClick = () => {
+    navigate(`/programs/${id}/enroll`);
+  };
 
-  return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Hero Section */}
-      <div className="relative bg-gradient-to-r from-[#0D13CC] to-[#42ADF5] text-white">
-        <div className="absolute inset-0 bg-black/20"></div>
-        <div 
-          className="relative bg-cover bg-center py-24"
-          style={{ backgroundImage: `url(${program.image})` }}
-        >
-          <div className="absolute inset-0 bg-gradient-to-r from-[#0D13CC]/90 to-[#42ADF5]/90"></div>
-          <div className="relative container mx-auto px-4">
-            <div className="max-w-4xl">
-              <div className="flex items-center mb-4">
-                <Link to="/program" className="text-blue-200 hover:text-[#D88717] mr-2">
-                  ← Back to Programs
-                </Link>
-                <span className="bg-white/20 px-3 py-1 rounded-full text-sm font-semibold">
-                  {program.level}
-                </span>
-              </div>
-              <h1 className="text-4xl md:text-6xl font-bold mb-6">
-                {program.title}
-              </h1>
-              <p className="text-xl md:text-2xl mb-8 max-w-3xl">
-                {program.description}
-              </p>
-              <div className="flex flex-wrap gap-4 mb-8">
-                <div className="bg-white/20 px-4 py-2 rounded-lg">
-                  <span className="text-sm text-blue-200">Duration</span>
-                  <div className="font-bold text-lg">{program.duration}</div>
-                </div>
-                <div className="bg-white/20 px-4 py-2 rounded-lg">
-                  <span className="text-sm text-blue-200">Students</span>
-                  <div className="font-bold text-lg">{program.students} enrolled</div>
-                </div>
-                <div className="bg-white/20 px-4 py-2 rounded-lg">
-                  <span className="text-sm text-blue-200">Rating</span>
-                  <div className="font-bold text-lg">★ {program.rating}</div>
-                </div>
-              </div>
+  const formatPrice = (price) => {
+    return new Intl.NumberFormat('en-LK', {
+      style: 'currency',
+      currency: 'LKR'
+    }).format(price);
+  };
+
+  const getDifficultyColor = (difficulty) => {
+    const colors = {
+      easy: 'bg-green-100 text-green-800',
+      medium: 'bg-yellow-100 text-yellow-800',
+      hard: 'bg-red-100 text-red-800'
+    };
+    return colors[difficulty] || 'bg-gray-100 text-gray-800';
+  };
+
+  const getCategoryColor = (category) => {
+    const colors = {
+      beginner: 'bg-blue-100 text-blue-800',
+      intermediate: 'bg-purple-100 text-purple-800',
+      advanced: 'bg-orange-100 text-orange-800',
+      professional: 'bg-red-100 text-red-800'
+    };
+    return colors[category] || 'bg-gray-100 text-gray-800';
+  };
+
+  const getFileTypeIcon = (type) => {
+    switch (type) {
+      case 'video':
+        return <Play size={16} className="text-red-500" />;
+      case 'document':
+        return <FileText size={16} className="text-blue-500" />;
+      case 'link':
+        return <LinkIcon size={16} className="text-green-500" />;
+      default:
+        return <Download size={16} className="text-gray-500" />;
+    }
+  };
+
+  const tabs = [
+    { id: 'overview', name: 'Overview', icon: BookOpen },
+    { id: 'curriculum', name: 'Curriculum', icon: Calendar },
+    { id: 'materials', name: 'Materials', icon: Download },
+    { id: 'coach', name: 'Coach', icon: Award }
+  ];
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gray-50">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+          <div className="animate-pulse">
+            <div className="h-8 bg-gray-200 rounded w-1/4 mb-6"></div>
+            <div className="bg-white rounded-lg shadow p-6">
+              <div className="h-6 bg-gray-200 rounded w-3/4 mb-4"></div>
+              <div className="h-4 bg-gray-200 rounded w-full mb-2"></div>
+              <div className="h-4 bg-gray-200 rounded w-2/3"></div>
             </div>
           </div>
         </div>
       </div>
+    );
+  }
 
-      <div className="container mx-auto px-4 py-16">
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-12">
+  if (error || !program) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <h2 className="text-2xl font-bold text-gray-900 mb-4">Program not found</h2>
+          <p className="text-gray-600 mb-4">{error}</p>
+          <button 
+            onClick={() => navigate('/programs')}
+            className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 transition-colors"
+          >
+            Back to Programs
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  const availableSpots = program.maxParticipants - (program.currentEnrollments || 0);
+  const isAvailable = availableSpots > 0 && program.isActive;
+
+  return (
+    <div className="min-h-screen bg-gray-50">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {/* Header */}
+        <div className="mb-6">
+          <button
+            onClick={() => navigate('/programs')}
+            className="flex items-center space-x-2 text-blue-600 hover:text-blue-700 mb-4"
+          >
+            <ArrowLeft size={20} />
+            <span>Back to Programs</span>
+          </button>
+        </div>
+
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           {/* Main Content */}
-          <div className="lg:col-span-2 space-y-12">
-            {/* Program Overview */}
-            <section>
-              <h2 className="text-3xl font-bold text-gray-800 mb-6">Program Overview</h2>
-              <p className="text-lg text-gray-600 leading-relaxed mb-6">
-                {program.longDescription}
-              </p>
+          <div className="lg:col-span-2">
+            {/* Program Header */}
+            <div className="bg-white rounded-lg shadow p-6 mb-6">
+              <div className="flex flex-wrap gap-2 mb-4">
+                <span className={`px-3 py-1 rounded-full text-sm font-medium ${getCategoryColor(program.category)}`}>
+                  {program.category}
+                </span>
+                <span className={`px-3 py-1 rounded-full text-sm font-medium ${getDifficultyColor(program.difficulty)}`}>
+                  {program.difficulty}
+                </span>
+                <span className="px-3 py-1 rounded-full text-sm font-medium bg-gray-100 text-gray-800">
+                  {program.specialization?.replace('-', ' ')}
+                </span>
+              </div>
+
+              <h1 className="text-3xl font-bold text-gray-900 mb-4">{program.title}</h1>
+              <p className="text-gray-600 text-lg mb-6">{program.description}</p>
+
+              {/* Quick Stats */}
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                {program.features.map((feature, index) => (
-                  <div key={index} className="bg-[#42ADF5]/10 p-4 rounded-lg text-center">
-                    <div className="text-[#0D13CC] font-semibold text-sm">{feature}</div>
-                  </div>
-                ))}
-              </div>
-            </section>
-
-            {/* Schedule */}
-            <section>
-              <h2 className="text-3xl font-bold text-gray-800 mb-6">Training Schedule</h2>
-              <div className="bg-white rounded-xl shadow-lg overflow-hidden">
-                <div className="overflow-x-auto">
-                  <table className="w-full">
-                    <thead className="bg-gray-50">
-                      <tr>
-                        <th className="px-6 py-4 text-left text-sm font-semibold text-gray-600">Day</th>
-                        <th className="px-6 py-4 text-left text-sm font-semibold text-gray-600">Time</th>
-                        <th className="px-6 py-4 text-left text-sm font-semibold text-gray-600">Activity</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-gray-200">
-                      {program.schedule.map((session, index) => (
-                        <tr key={index} className="hover:bg-gray-50">
-                          <td className="px-6 py-4 font-semibold text-gray-800">{session.day}</td>
-                          <td className="px-6 py-4 text-gray-600">{session.time}</td>
-                          <td className="px-6 py-4 text-gray-600">{session.activity}</td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
+                <div className="text-center p-3 bg-gray-50 rounded-lg">
+                  <Clock className="mx-auto text-blue-600 mb-2" size={24} />
+                  <p className="text-sm text-gray-600">Duration</p>
+                  <p className="font-semibold">{program.duration?.weeks} weeks</p>
+                </div>
+                <div className="text-center p-3 bg-gray-50 rounded-lg">
+                  <Calendar className="mx-auto text-green-600 mb-2" size={24} />
+                  <p className="text-sm text-gray-600">Sessions</p>
+                  <p className="font-semibold">{program.duration?.sessionsPerWeek}x/week</p>
+                </div>
+                <div className="text-center p-3 bg-gray-50 rounded-lg">
+                  <Users className="mx-auto text-purple-600 mb-2" size={24} />
+                  <p className="text-sm text-gray-600">Enrolled</p>
+                  <p className="font-semibold">{program.currentEnrollments || 0}/{program.maxParticipants}</p>
+                </div>
+                <div className="text-center p-3 bg-gray-50 rounded-lg">
+                  <DollarSign className="mx-auto text-yellow-600 mb-2" size={24} />
+                  <p className="text-sm text-gray-600">Price</p>
+                  <p className="font-semibold">{formatPrice(program.price)}</p>
                 </div>
               </div>
-            </section>
+            </div>
 
-            {/* Curriculum */}
-            <section>
-              <h2 className="text-3xl font-bold text-gray-800 mb-6">Curriculum</h2>
-              <div className="space-y-6">
-                {program.curriculum.map((phase, index) => (
-                  <div key={index} className="bg-white rounded-xl shadow-lg p-6">
-                    <div className="flex items-center mb-4">
-                      <div className="bg-[#0D13CC] text-white w-8 h-8 rounded-full flex items-center justify-center font-bold text-sm mr-4">
-                        {index + 1}
+            {/* Tabs */}
+            <div className="bg-white rounded-lg shadow">
+              <div className="border-b border-gray-200">
+                <nav className="flex space-x-8 px-6">
+                  {tabs.map((tab) => {
+                    const IconComponent = tab.icon;
+                    return (
+                      <button
+                        key={tab.id}
+                        onClick={() => setActiveTab(tab.id)}
+                        className={`flex items-center space-x-2 py-4 px-1 border-b-2 font-medium text-sm ${
+                          activeTab === tab.id
+                            ? 'border-blue-500 text-blue-600'
+                            : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                        }`}
+                      >
+                        <IconComponent size={18} />
+                        <span>{tab.name}</span>
+                      </button>
+                    );
+                  })}
+                </nav>
+              </div>
+
+              <div className="p-6">
+                {/* Overview Tab */}
+                {activeTab === 'overview' && (
+                  <div className="space-y-6">
+                    {program.benefits && program.benefits.length > 0 && (
+                      <div>
+                        <h3 className="text-lg font-semibold text-gray-900 mb-3">What You'll Learn</h3>
+                        <ul className="space-y-2">
+                          {program.benefits.map((benefit, index) => (
+                            <li key={index} className="flex items-start space-x-2">
+                              <ChevronRight className="text-green-500 mt-0.5" size={16} />
+                              <span className="text-gray-700">{benefit}</span>
+                            </li>
+                          ))}
+                        </ul>
                       </div>
-    <div>
-                        <h3 className="text-xl font-bold text-gray-800">{phase.title}</h3>
-                        <p className="text-sm text-gray-500">{phase.week}</p>
+                    )}
+
+                    {program.requirements && program.requirements.length > 0 && (
+                      <div>
+                        <h3 className="text-lg font-semibold text-gray-900 mb-3">Requirements</h3>
+                        <ul className="space-y-2">
+                          {program.requirements.map((requirement, index) => (
+                            <li key={index} className="flex items-start space-x-2">
+                              <ChevronRight className="text-blue-500 mt-0.5" size={16} />
+                              <span className="text-gray-700">{requirement}</span>
+                            </li>
+                          ))}
+                        </ul>
                       </div>
-                    </div>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                      {phase.topics.map((topic, topicIndex) => (
-                        <div key={topicIndex} className="flex items-center">
-                          <span className="text-[#D88717] mr-2">✓</span>
-                          <span className="text-gray-600">{topic}</span>
+                    )}
+                  </div>
+                )}
+
+                {/* Curriculum Tab */}
+                {activeTab === 'curriculum' && (
+                  <div>
+                    <h3 className="text-lg font-semibold text-gray-900 mb-4">Course Curriculum</h3>
+                    {program.curriculum && program.curriculum.length > 0 ? (
+                      <div className="space-y-4">
+                        {program.curriculum.map((item, index) => (
+                          <div key={index} className="border border-gray-200 rounded-lg p-4">
+                            <div className="flex items-center justify-between mb-2">
+                              <h4 className="font-medium text-gray-900">
+                                Week {item.week}, Session {item.session}: {item.title}
+                              </h4>
+                              <span className="text-sm text-gray-500">{item.duration} min</span>
+                            </div>
+                            {item.objectives && item.objectives.length > 0 && (
+                              <ul className="space-y-1">
+                                {item.objectives.map((objective, objIndex) => (
+                                  <li key={objIndex} className="text-sm text-gray-600 flex items-start space-x-2">
+                                    <span className="text-blue-500 mt-1">•</span>
+                                    <span>{objective}</span>
+                                  </li>
+                                ))}
+                              </ul>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <p className="text-gray-600">Curriculum details will be provided upon enrollment.</p>
+                    )}
+                  </div>
+                )}
+
+                {/* Materials Tab */}
+                {activeTab === 'materials' && (
+                  <div>
+                    <h3 className="text-lg font-semibold text-gray-900 mb-4">Course Materials</h3>
+                    {program.materials && program.materials.length > 0 ? (
+                      <div className="space-y-3">
+                        {program.materials.map((material, index) => (
+                          <div key={index} className="flex items-center justify-between p-4 border border-gray-200 rounded-lg hover:bg-gray-50">
+                            <div className="flex items-center space-x-3">
+                              {getFileTypeIcon(material.type)}
+                              <div>
+                                <h4 className="font-medium text-gray-900">{material.title}</h4>
+                                {material.description && (
+                                  <p className="text-sm text-gray-600">{material.description}</p>
+                                )}
+                              </div>
+                            </div>
+                            <span className="text-sm text-gray-500 capitalize">{material.type}</span>
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <p className="text-gray-600">Course materials will be provided upon enrollment.</p>
+                    )}
+                  </div>
+                )}
+
+                {/* Coach Tab */}
+                {activeTab === 'coach' && (
+                  <div>
+                    <h3 className="text-lg font-semibold text-gray-900 mb-4">Your Coach</h3>
+                    {program.coach && (
+                      <div className="flex items-start space-x-4">
+                        <img
+                          src={program.coach.userId?.profileImageURL || '/api/placeholder/80/80'}
+                          alt="Coach"
+                          className="w-20 h-20 rounded-full bg-gray-300"
+                        />
+                        <div className="flex-1">
+                          <h4 className="text-xl font-semibold text-gray-900">
+                            {program.coach.userId?.firstName} {program.coach.userId?.lastName}
+                          </h4>
+                          <div className="flex items-center space-x-2 mb-3">
+                            <div className="flex items-center space-x-1">
+                              <Star className="text-yellow-400 fill-current" size={16} />
+                              <span className="font-medium">{program.coach.rating?.toFixed(1)}</span>
+                              <span className="text-gray-600">({program.coach.totalReviews} reviews)</span>
+                            </div>
+                          </div>
+                          <p className="text-gray-700 mb-3">{program.coach.bio}</p>
+                          <div className="flex flex-wrap gap-2">
+                            {program.coach.specializations?.map((spec, index) => (
+                              <span key={index} className="px-2 py-1 bg-blue-100 text-blue-800 text-sm rounded-full">
+                                {spec.replace('-', ' ')}
+                              </span>
+                            ))}
+                          </div>
                         </div>
-                      ))}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </section>
-
-            {/* Facilities */}
-            <section>
-              <h2 className="text-3xl font-bold text-gray-800 mb-6">Facilities & Equipment</h2>
-              <div className="bg-white rounded-xl shadow-lg p-6">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {program.facilities.map((facility, index) => (
-                    <div key={index} className="flex items-center">
-                      <span className="text-[#D88717] mr-3">✓</span>
-                      <span className="text-gray-700">{facility}</span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </section>
-
-            {/* Testimonials */}
-            <section>
-              <h2 className="text-3xl font-bold text-gray-800 mb-6">What Students Say</h2>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                {program.testimonials.map((testimonial, index) => (
-                  <div key={index} className="bg-white rounded-xl shadow-lg p-6">
-                    <div className="flex items-center mb-4">
-                      <div className="text-yellow-500 text-lg">
-                        {"★".repeat(testimonial.rating)}
                       </div>
-                    </div>
-                    <p className="text-gray-600 mb-4 italic">"{testimonial.text}"</p>
-                    <p className="font-semibold text-gray-800">- {testimonial.name}</p>
+                    )}
                   </div>
-                ))}
+                )}
               </div>
-            </section>
+            </div>
           </div>
 
           {/* Sidebar */}
-          <div className="space-y-8">
-            {/* Pricing Card */}
-            <div className="bg-white rounded-xl shadow-lg p-6 sticky top-8">
+          <div className="lg:col-span-1">
+            <div className="bg-white rounded-lg shadow p-6 sticky top-8">
               <div className="text-center mb-6">
-                <div className="text-4xl font-bold text-[#D88717] mb-2">{program.price}</div>
-                <div className="text-gray-500">Total: {program.totalPrice}</div>
+                <div className="text-3xl font-bold text-blue-600 mb-1">
+                  {formatPrice(program.price)}
+                </div>
+                <p className="text-gray-600">Full program fee</p>
               </div>
-              
+
               <div className="space-y-4 mb-6">
-                <Link 
-                  to={`/enrollment?program=${program.id}`}
-                  className="w-full bg-[#0D13CC] hover:bg-[#0D13CC]/80 text-white py-3 px-6 rounded-lg font-semibold text-lg transition-colors duration-200 text-center block"
+                <div className="flex justify-between items-center">
+                  <span className="text-gray-600">Available spots:</span>
+                  <span className="font-semibold text-gray-900">{availableSpots}</span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-gray-600">Start date:</span>
+                  <span className="font-semibold text-gray-900">
+                    {new Date(program.startDate).toLocaleDateString()}
+                  </span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-gray-600">End date:</span>
+                  <span className="font-semibold text-gray-900">
+                    {new Date(program.endDate).toLocaleDateString()}
+                  </span>
+                </div>
+              </div>
+
+              {isAvailable ? (
+                <button
+                  onClick={handleEnrollClick}
+                  className="w-full bg-blue-600 text-white py-3 px-4 rounded-md hover:bg-blue-700 transition-colors font-medium"
                 >
                   Enroll Now
-                </Link>
-                <button className="w-full border-2 border-[#42ADF5] text-[#42ADF5] hover:bg-[#42ADF5] hover:text-white py-3 px-6 rounded-lg font-semibold transition-colors duration-200">
-                  Book Free Trial
                 </button>
-              </div>
+              ) : (
+                <button
+                  disabled
+                  className="w-full bg-gray-300 text-gray-500 py-3 px-4 rounded-md cursor-not-allowed font-medium"
+                >
+                  {program.isActive ? 'Program Full' : 'Program Unavailable'}
+                </button>
+              )}
 
-              <div className="border-t pt-6">
-                <h3 className="font-bold text-gray-800 mb-4">Need Help?</h3>
-                <div className="space-y-2 text-sm text-gray-600">
-                  <div>📞 Call: +1 (555) 123-4567</div>
-                  <div>📧 Email: info@cricketxpert.com</div>
-                  <div>💬 Live Chat Available</div>
-                </div>
-              </div>
-            </div>
-
-            {/* Coach Profile */}
-            <div className="bg-white rounded-xl shadow-lg p-6">
-              <h3 className="text-xl font-bold text-gray-800 mb-4">Your Coach</h3>
-              <div className="flex items-center mb-4">
-                <img 
-                  src={program.coach.image} 
-                  alt={program.coach.name}
-                  className="w-16 h-16 rounded-full object-cover mr-4"
-                />
-                <div>
-                  <h4 className="font-bold text-gray-800">{program.coach.name}</h4>
-                  <p className="text-sm text-gray-600">{program.coach.specialization}</p>
-                </div>
-              </div>
-              <div className="text-sm text-gray-600">
-                <p><strong>Experience:</strong> {program.coach.experience}</p>
-              </div>
-            </div>
-
-            {/* Quick Facts */}
-            <div className="bg-white rounded-xl shadow-lg p-6">
-              <h3 className="text-xl font-bold text-gray-800 mb-4">Quick Facts</h3>
-              <div className="space-y-3 text-sm">
-                <div className="flex justify-between">
-                  <span className="text-gray-600">Duration:</span>
-                  <span className="font-semibold">{program.duration}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-gray-600">Level:</span>
-                  <span className="font-semibold">{program.level}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-gray-600">Students:</span>
-                  <span className="font-semibold">{program.students}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-gray-600">Rating:</span>
-                  <span className="font-semibold">★ {program.rating}</span>
-                </div>
-              </div>
+              <p className="text-xs text-gray-500 text-center mt-3">
+                30-day money-back guarantee
+              </p>
             </div>
           </div>
         </div>
       </div>
     </div>
   );
-}
+};
 
 export default ProgramDetails;
-
-
-
-
-

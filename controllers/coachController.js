@@ -1,160 +1,426 @@
-const MCoach = require("../models/MCoach"); // adjust path if needed
+const Coach = require('../models/Coach');
+const User = require('../models/User');
+const CoachingProgram = require('../models/CoachingProgram');
+const Enrollment = require('../models/Enrollment');
+const Notification = require('../models/Notification');
+const mongoose = require('mongoose');
 
-// ================= CRUD Operations =================
-
-// @desc Create a new coach profile
-exports.createCoach = async (req, res) => {
+// Get all coaches with filters and pagination
+const getAllCoaches = async (req, res) => {
   try {
-    const coach = new MCoach(req.body);
-    await coach.save();
-    res.status(201).json({ success: true, data: coach });
-  } catch (err) {
-    res.status(400).json({ success: false, error: err.message });
-  }
-};
+    const {
+      page = 1,
+      limit = 10,
+      specialization,
+      minRating,
+      maxRate,
+      isActive = true,
+      search
+    } = req.query;
 
-// @desc Get all coaches
-exports.getAllCoaches = async (req, res) => {
-  try {
-    const coaches = await MCoach.find().populate("UserId", "name email role");
-    res.status(200).json({ success: true, data: coaches });
-  } catch (err) {
-    res.status(500).json({ success: false, error: err.message });
-  }
-};
-
-// @desc Get a coach by ID
-exports.getCoachById = async (req, res) => {
-  try {
-    const coach = await MCoach.findById(req.params.id).populate("UserId", "name email role");
-    if (!coach) {
-      return res.status(404).json({ success: false, message: "Coach not found" });
+    // Build filter object
+    const filter = { isActive };
+    
+    if (specialization) {
+      filter.specializations = { $in: [specialization] };
     }
-    res.status(200).json({ success: true, data: coach });
-  } catch (err) {
-    res.status(500).json({ success: false, error: err.message });
-  }
-};
+    
+    if (minRating) {
+      filter.rating = { $gte: parseFloat(minRating) };
+    }
+    
+    if (maxRate) {
+      filter.hourlyRate = { $lte: parseFloat(maxRate) };
+    }
 
-// @desc Update coach profile
-exports.updateCoach = async (req, res) => {
-  try {
-    const coach = await MCoach.findByIdAndUpdate(req.params.id, req.body, {
-      new: true,
-      runValidators: true
+    // Create aggregation pipeline for search
+    let pipeline = [
+      { $lookup: { from: 'users', localField: 'userId', foreignField: '_id', as: 'user' } },
+      { $unwind: '$user' },
+      { $match: filter }
+    ];
+
+    // Add search functionality
+    if (search) {
+      pipeline.push({
+        $match: {
+          $or: [
+            { 'user.firstName': { $regex: search, $options: 'i' } },
+            { 'user.lastName': { $regex: search, $options: 'i' } },
+            { bio: { $regex: search, $options: 'i' } },
+            { specializations: { $regex: search, $options: 'i' } }
+          ]
+        }
+      });
+    }
+
+    // Add sorting and pagination
+    pipeline.push(
+      { $sort: { rating: -1, createdAt: -1 } },
+      { $skip: (parseInt(page) - 1) * parseInt(limit) },
+      { $limit: parseInt(limit) }
+    );
+
+    const coaches = await Coach.aggregate(pipeline);
+    const totalCoaches = await Coach.countDocuments(filter);
+
+    res.json({
+      success: true,
+      data: coaches,
+      pagination: {
+        currentPage: parseInt(page),
+        totalPages: Math.ceil(totalCoaches / parseInt(limit)),
+        totalCoaches,
+        hasNextPage: page * limit < totalCoaches,
+        hasPrevPage: page > 1
+      }
     });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: 'Error fetching coaches',
+      error: error.message
+    });
+  }
+};
+
+// Get coach by ID
+const getCoachById = async (req, res) => {
+  try {
+    const coach = await Coach.findById(req.params.id)
+      .populate('userId', 'firstName lastName email contactNumber profileImageURL')
+      .populate('assignedPrograms');
+
     if (!coach) {
-      return res.status(404).json({ success: false, message: "Coach not found" });
+      return res.status(404).json({
+        success: false,
+        message: 'Coach not found'
+      });
     }
-    res.status(200).json({ success: true, data: coach });
-  } catch (err) {
-    res.status(400).json({ success: false, error: err.message });
+
+    res.json({
+      success: true,
+      data: coach
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: 'Error fetching coach',
+      error: error.message
+    });
   }
 };
 
-// @desc Delete a coach profile
-exports.deleteCoach = async (req, res) => {
+// Create new coach
+const createCoach = async (req, res) => {
   try {
-    const coach = await MCoach.findByIdAndDelete(req.params.id);
+    const {
+      userId,
+      specializations,
+      experience,
+      certifications,
+      bio,
+      hourlyRate,
+      availability,
+      achievements,
+      profileImage
+    } = req.body;
+
+    // Check if user exists and has coach role
+    const user = await User.findById(userId);
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: 'User not found'
+      });
+    }
+
+    if (user.role !== 'coach') {
+      return res.status(400).json({
+        success: false,
+        message: 'User must have coach role'
+      });
+    }
+
+    // Check if coach profile already exists for this user
+    const existingCoach = await Coach.findOne({ userId });
+    if (existingCoach) {
+      return res.status(400).json({
+        success: false,
+        message: 'Coach profile already exists for this user'
+      });
+    }
+
+    const newCoach = new Coach({
+      userId,
+      specializations,
+      experience,
+      certifications,
+      bio,
+      hourlyRate,
+      availability,
+      achievements,
+      profileImage
+    });
+
+    await newCoach.save();
+
+    // Populate user data for response
+    await newCoach.populate('userId', 'firstName lastName email contactNumber');
+
+    // Send notification to admin about new coach registration
+    await Notification.createNotification({
+      recipient: user._id, // You might want to send this to admin instead
+      title: 'Coach Profile Created',
+      message: 'Your coach profile has been successfully created and is now active.',
+      type: 'general',
+      category: 'success',
+      deliveryChannels: [{ channel: 'in_app' }]
+    });
+
+    res.status(201).json({
+      success: true,
+      message: 'Coach created successfully',
+      data: newCoach
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: 'Error creating coach',
+      error: error.message
+    });
+  }
+};
+
+// Update coach
+const updateCoach = async (req, res) => {
+  try {
+    const coachId = req.params.id;
+    const updateData = req.body;
+
+    // Don't allow updating userId
+    delete updateData.userId;
+
+    const coach = await Coach.findByIdAndUpdate(
+      coachId,
+      updateData,
+      { new: true, runValidators: true }
+    ).populate('userId', 'firstName lastName email contactNumber');
+
     if (!coach) {
-      return res.status(404).json({ success: false, message: "Coach not found" });
+      return res.status(404).json({
+        success: false,
+        message: 'Coach not found'
+      });
     }
-    res.status(200).json({ success: true, message: "Coach deleted successfully" });
-  } catch (err) {
-    res.status(500).json({ success: false, error: err.message });
+
+    res.json({
+      success: true,
+      message: 'Coach updated successfully',
+      data: coach
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: 'Error updating coach',
+      error: error.message
+    });
   }
 };
 
-// ================= Extra Functions =================
-
-// @desc Add certificate to coach
-exports.addCertificate = async (req, res) => {
+// Delete coach (soft delete by setting isActive to false)
+const deleteCoach = async (req, res) => {
   try {
-    const { name, issuedBy, issuedDate, expiryDate, certificateUrl } = req.body;
-    const coach = await MCoach.findById(req.params.id);
-    if (!coach) return res.status(404).json({ success: false, message: "Coach not found" });
+    const coachId = req.params.id;
 
-    coach.certifications.push({ name, issuedBy, issuedDate, expiryDate, certificateUrl });
-    await coach.save();
+    // Check if coach has active programs
+    const activePrograms = await CoachingProgram.countDocuments({
+      coach: coachId,
+      isActive: true,
+      endDate: { $gte: new Date() }
+    });
 
-    res.status(200).json({ success: true, data: coach });
-  } catch (err) {
-    res.status(400).json({ success: false, error: err.message });
-  }
-};
+    if (activePrograms > 0) {
+      return res.status(400).json({
+        success: false,
+        message: 'Cannot delete coach with active programs. Please complete or transfer programs first.'
+      });
+    }
 
-// @desc Update coach availability
-exports.updateAvailability = async (req, res) => {
-  try {
-    const coach = await MCoach.findById(req.params.id);
-    if (!coach) return res.status(404).json({ success: false, message: "Coach not found" });
-
-    coach.availability = req.body.availability; // replace entire availability
-    await coach.save();
-
-    res.status(200).json({ success: true, data: coach });
-  } catch (err) {
-    res.status(400).json({ success: false, error: err.message });
-  }
-};
-
-// @desc Update coach status (active/inactive/suspended)
-exports.updateStatus = async (req, res) => {
-  try {
-    const { status } = req.body;
-    const coach = await MCoach.findByIdAndUpdate(
-      req.params.id,
-      { status },
+    const coach = await Coach.findByIdAndUpdate(
+      coachId,
+      { isActive: false },
       { new: true }
     );
-    if (!coach) return res.status(404).json({ success: false, message: "Coach not found" });
 
-    res.status(200).json({ success: true, data: coach });
-  } catch (err) {
-    res.status(400).json({ success: false, error: err.message });
+    if (!coach) {
+      return res.status(404).json({
+        success: false,
+        message: 'Coach not found'
+      });
+    }
+
+    res.json({
+      success: true,
+      message: 'Coach deactivated successfully'
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: 'Error deleting coach',
+      error: error.message
+    });
   }
 };
 
-// @desc Search & filter coaches
-exports.searchCoaches = async (req, res) => {
+// Get coach statistics
+const getCoachStats = async (req, res) => {
   try {
-    const { specialization, minExp, maxExp, minRating, day, status } = req.query;
+    const coachId = req.params.id;
 
-    let filter = {};
+    const stats = await Coach.aggregate([
+      { $match: { _id: mongoose.Types.ObjectId(coachId) } },
+      {
+        $lookup: {
+          from: 'coachingprograms',
+          localField: '_id',
+          foreignField: 'coach',
+          as: 'programs'
+        }
+      },
+      {
+        $lookup: {
+          from: 'enrollments',
+          localField: 'programs._id',
+          foreignField: 'program',
+          as: 'enrollments'
+        }
+      },
+      {
+        $project: {
+          totalPrograms: { $size: '$programs' },
+          activePrograms: {
+            $size: {
+              $filter: {
+                input: '$programs',
+                cond: { $eq: ['$$this.isActive', true] }
+              }
+            }
+          },
+          totalStudents: { $size: '$enrollments' },
+          completedEnrollments: {
+            $size: {
+              $filter: {
+                input: '$enrollments',
+                cond: { $eq: ['$$this.status', 'completed'] }
+              }
+            }
+          },
+          rating: 1,
+          totalReviews: 1,
+          specializations: 1,
+          experience: 1
+        }
+      }
+    ]);
 
-    // ✅ Filter by specialization
-    if (specialization) {
-      filter.specialization = { $in: specialization.split(",") };
+    if (stats.length === 0) {
+      return res.status(404).json({
+        success: false,
+        message: 'Coach not found'
+      });
     }
 
-    // ✅ Filter by experience
-    if (minExp || maxExp) {
-      filter.experienceYears = {};
-      if (minExp) filter.experienceYears.$gte = parseInt(minExp);
-      if (maxExp) filter.experienceYears.$lte = parseInt(maxExp);
-    }
-
-    // ✅ Filter by rating
-    if (minRating) {
-      filter["rating.averageRating"] = { $gte: parseFloat(minRating) };
-    }
-
-    // ✅ Filter by status
-    if (status) {
-      filter.status = status;
-    }
-
-    // ✅ Filter by availability day
-    if (day) {
-      filter["availability.day"] = day;
-      filter["availability.isActive"] = true;
-    }
-
-    // Run query
-    const coaches = await MCoach.find(filter).populate("UserId", "name email");
-
-    res.status(200).json({ success: true, count: coaches.length, data: coaches });
-  } catch (err) {
-    res.status(500).json({ success: false, error: err.message });
+    res.json({
+      success: true,
+      data: stats[0]
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: 'Error fetching coach statistics',
+      error: error.message
+    });
   }
+};
+
+// Update coach availability
+const updateAvailability = async (req, res) => {
+  try {
+    const coachId = req.params.id;
+    const { availability } = req.body;
+
+    const coach = await Coach.findByIdAndUpdate(
+      coachId,
+      { availability },
+      { new: true, runValidators: true }
+    );
+
+    if (!coach) {
+      return res.status(404).json({
+        success: false,
+        message: 'Coach not found'
+      });
+    }
+
+    res.json({
+      success: true,
+      message: 'Availability updated successfully',
+      data: { availability: coach.availability }
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: 'Error updating availability',
+      error: error.message
+    });
+  }
+};
+
+// Get coach's assigned programs
+const getCoachPrograms = async (req, res) => {
+  try {
+    const coachId = req.params.id;
+    const { status, page = 1, limit = 10 } = req.query;
+
+    const filter = { coach: coachId };
+    if (status) {
+      filter.isActive = status === 'active';
+    }
+
+    const programs = await CoachingProgram.find(filter)
+      .populate('coach', 'userId specializations')
+      .sort({ createdAt: -1 })
+      .limit(parseInt(limit))
+      .skip((parseInt(page) - 1) * parseInt(limit));
+
+    const totalPrograms = await CoachingProgram.countDocuments(filter);
+
+    res.json({
+      success: true,
+      data: programs,
+      pagination: {
+        currentPage: parseInt(page),
+        totalPages: Math.ceil(totalPrograms / parseInt(limit)),
+        totalPrograms
+      }
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: 'Error fetching coach programs',
+      error: error.message
+    });
+  }
+};
+
+module.exports = {
+  getAllCoaches,
+  getCoachById,
+  createCoach,
+  updateCoach,
+  deleteCoach,
+  getCoachStats,
+  updateAvailability,
+  getCoachPrograms
 };
