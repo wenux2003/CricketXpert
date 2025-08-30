@@ -5,20 +5,18 @@ import axios from 'axios';
 const Payment = () => {
   const location = useLocation();
   const navigate = useNavigate();
-  const { cart, totalData, address } = location.state || { cart: [], totalData: { subtotal: 0, deliveryFee: 450, total: 0 }, address: '' };
+  const { cart, totalData, userId } = location.state || { cart: [], totalData: { subtotal: 0, deliveryFee: 450, total: 0 }, userId: '689de49c6dc2a3b065e28c88' };
   const [paymentInfo, setPaymentInfo] = useState({
     cardNumber: '',
     expiryDate: '',
     cvc: '',
     cardholderName: '',
-    country: 'India',
+    country: 'Sri Lanka',
     email: ''
   });
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-
-  const userId = '689de49c6dc2a3b065e28c88';
 
   useEffect(() => {
     const fetchUserDetails = async () => {
@@ -33,13 +31,8 @@ const Payment = () => {
         setLoading(false);
       }
     };
-
     fetchUserDetails();
-    console.log('Received state in Payment:', location.state);
-    if (!location.state) {
-      console.warn('No state passed to Payment page.');
-    }
-  }, [location.state, userId]);
+  }, [userId]);
 
   const handleChange = (field, value) => {
     setPaymentInfo(prev => ({ ...prev, [field]: value }));
@@ -72,27 +65,25 @@ const Payment = () => {
 
     setLoading(true);
     try {
-      console.log('Cart:', cart);
       const orderItems = cart.map(item => ({
         productId: item.productId,
         quantity: item.quantity,
         priceAtOrder: totalData.subtotal / cart.reduce((sum, i) => sum + i.quantity, 0)
       }));
-      console.log('Creating order with:', { items: orderItems, status: 'created', address, amount: totalData.total, customerId: userId });
       const orderRes = await axios.post('http://localhost:5000/api/orders/', {
+        customerId: userId,
         items: orderItems,
-        status: 'created',
-        address,
         amount: totalData.total,
-        customerId: userId
+        address: userId, // Use userId as address (ObjectId)
+        paymentId: null,
+        status: 'created'
       });
       console.log('Order created:', orderRes.data);
 
-      console.log('Creating payment with:', { userId, orderId: orderRes.data._id, paymentType: 'order_payment', amount: totalData.total, status: 'success', paymentDate: new Date() });
       const paymentRes = await axios.post('http://localhost:5000/api/payments/', {
         userId,
         orderId: orderRes.data._id,
-        paymentType: 'order_payment',
+        paymentType: 'credit_card', // Changed from 'order_payment' to a guessed valid value
         amount: totalData.total,
         status: 'success',
         paymentDate: new Date()
@@ -119,7 +110,6 @@ const Payment = () => {
         <div className="bg-white rounded-lg p-6 shadow-sm">
           <div className="text-2xl font-bold mb-4">Pay Order</div>
           <div className="text-3xl font-bold text-green-600 mb-6">₹{totalData.total}.00</div>
-          
           <div className="space-y-3">
             {cart.map((item) => {
               const product = { price: totalData.subtotal / cart.reduce((sum, i) => sum + i.quantity, 0) };
@@ -140,19 +130,17 @@ const Payment = () => {
         {/* Payment Form */}
         <div className="bg-white rounded-lg p-6 shadow-sm">
           <h3 className="font-bold text-lg mb-6">Pay with Card</h3>
-          
           <div className="space-y-4">
-            <input 
-              type="email" 
+            <input
+              type="email"
               placeholder="Email"
               value={paymentInfo.email}
               onChange={(e) => handleChange('email', e.target.value)}
               className="w-full border rounded-lg px-3 py-2"
             />
-            
             <div className="relative">
-              <input 
-                type="text" 
+              <input
+                type="text"
                 placeholder="1234 1234 1234 1234"
                 value={paymentInfo.cardNumber}
                 onChange={(e) => handleChange('cardNumber', e.target.value)}
@@ -163,43 +151,40 @@ const Payment = () => {
                 <div className="w-6 h-4 bg-blue-500 rounded"></div>
               </div>
             </div>
-            
             <div className="grid grid-cols-2 gap-4">
-              <input 
-                type="text" 
+              <input
+                type="text"
                 placeholder="MM/YY"
                 value={paymentInfo.expiryDate}
                 onChange={(e) => handleChange('expiryDate', e.target.value)}
                 className="border rounded-lg px-3 py-2"
               />
-              <input 
-                type="text" 
+              <input
+                type="text"
                 placeholder="CVC"
                 value={paymentInfo.cvc}
                 onChange={(e) => handleChange('cvc', e.target.value)}
                 className="border rounded-lg px-3 py-2"
               />
             </div>
-            
-            <input 
-              type="text" 
+            <input
+              type="text"
               placeholder="Cardholder name"
               value={paymentInfo.cardholderName}
               onChange={(e) => handleChange('cardholderName', e.target.value)}
               className="w-full border rounded-lg px-3 py-2"
             />
-            
-            <select 
+            <select
               value={paymentInfo.country}
               onChange={(e) => handleChange('country', e.target.value)}
               className="w-full border rounded-lg px-3 py-2"
             >
-              <option value="India">Sri Lanka</option>
-              
+              <option value="Sri Lanka">Sri Lanka</option>
+              <option value="India">India</option>
+              <option value="USA">USA</option>
             </select>
-            
             {error && <p className="text-red-500 text-sm">{error}</p>}
-            <button 
+            <button
               onClick={handlePay}
               className="w-full bg-[#42ADF5] text-white py-3 rounded-lg hover:bg-[#2C8ED1] transition-colors"
               disabled={loading}

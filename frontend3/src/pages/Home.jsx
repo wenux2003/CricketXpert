@@ -19,7 +19,6 @@ const Home = () => {
   const [error, setError] = useState(null);
   const [cart, setCart] = useState(() => JSON.parse(localStorage.getItem('cricketCart') || '[]')); // Load from localStorage
   const navigate = useNavigate();
-  const userId = localStorage.getItem('userId');
 
   const categoryImages = useMemo(
     () => ({
@@ -37,7 +36,8 @@ const Home = () => {
   useEffect(() => {
     fetchCategories();
     fetchProducts();
-    localStorage.setItem('cricketCart', JSON.stringify(cart)); // Sync cart
+    // Sync cart to localStorage
+    localStorage.setItem('cricketCart', JSON.stringify(cart));
   }, [selectedCategory, searchQuery, cart]);
 
   const fetchCategories = async () => {
@@ -88,7 +88,7 @@ const Home = () => {
       } else {
         return prevCart;
       }
-      localStorage.setItem('cricketCart', JSON.stringify(newCart));
+      localStorage.setItem('cricketCart', JSON.stringify(newCart)); // Immediate sync
       return newCart;
     });
   };
@@ -98,11 +98,7 @@ const Home = () => {
   }, 300);
 
   const goToCart = () => {
-    if (!userId) {
-      setError('Please login to proceed to cart.');
-      return;
-    }
-    navigate('/cart', { state: { cart, userId } });
+    navigate('/cart', { state: { cart } });
   };
 
   const cartItemCount = cart.reduce((sum, item) => sum + item.quantity, 0);
@@ -113,7 +109,7 @@ const Home = () => {
       <nav className="bg-white shadow-md p-4 flex justify-between items-center sticky top-0 z-10">
         <div className="text-2xl font-bold text-[#072679]">CricketExpert.</div>
         <div className="flex gap-6">
-          <a href="/home" className="hover:text-[#42ADF5]" aria-label="Home">Home</a>
+          <a href="/phome" className="hover:text-[#42ADF5]" aria-label="Home">Home</a>
           <a href="/menu" className="hover:text-[#42ADF5]" aria-label="Menu">Menu</a>
           <a href="/app" className="hover:text-[#42ADF5]" aria-label="Mobile App">Mobile App</a>
           <a href="/contact" className="hover:text-[#42ADF5]" aria-label="Contact Us">Contact Us</a>
@@ -130,7 +126,6 @@ const Home = () => {
           <button
             onClick={goToCart}
             className="relative bg-[#42ADF5] text-white px-4 py-2 rounded hover:bg-[#2C8ED1] flex items-center"
-            disabled={!userId}
           >
             <ShoppingCart size={20} />
             {cartItemCount > 0 && (

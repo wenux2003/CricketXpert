@@ -1,26 +1,36 @@
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
-import PHome from './pages/PHome';
+import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import Home from './pages/Home';
 import Cart from './pages/Cart';
-import Delivery from './pages/Delivery';
-import Payment from './pages/Payment';
+import Login from './pages/Login';
 import OrderSummary from './pages/OrderSummary';
-import AdminDashboard from './pages/Admin/AdminDashboard';
-import AddProduct from './pages/Admin/AddProduct';
-import ListProducts from './pages/Admin/ListProducts';
 
 function App() {
+  const userId = localStorage.getItem('userId'); // Check authentication
+  const isAuthenticated = !!userId;
+
   return (
     <Router>
       <Routes>
-        <Route path="/" element={<PHome />} />
-        <Route path="/cart" element={<Cart />} />
-        <Route path="/delivery" element={<Delivery />} />
-        <Route path="/payment" element={<Payment />} />
-        <Route path="/orders" element={<OrderSummary />} />
-        <Route path="/admin" element={<AdminDashboard />}>
-          <Route path="add" element={<AddProduct />} />
-          <Route path="list" element={<ListProducts />} />
-        </Route>
+        <Route
+          path="/"
+          element={<Navigate to="/login" />}
+        />
+        <Route
+          path="/login"
+          element={!isAuthenticated ? <Login /> : <Navigate to="/home" />}
+        />
+        <Route
+          path="/home"
+          element={isAuthenticated ? <Home /> : <Navigate to="/login" />}
+        />
+        <Route
+          path="/cart"
+          element={isAuthenticated ? <Cart /> : <Navigate to="/login" />}
+        />
+        <Route
+          path="/orders"
+          element={isAuthenticated ? <OrderSummary /> : <Navigate to="/login" />}
+        />
       </Routes>
     </Router>
   );
