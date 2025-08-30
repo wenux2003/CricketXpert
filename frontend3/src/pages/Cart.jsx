@@ -1,73 +1,58 @@
-import { useEffect, useState, useMemo } from 'react';
+import { useEffect, useState } from 'react';
 import axios from 'axios';
-import { debounce } from 'lodash';
-import { useNavigate } from 'react-router-dom';
-import { ShoppingCart } from 'lucide-react';
-import bat1 from '../assets/merch1.png';
-import Accessories1 from '../assets/Accessories1.jpg';
-import Electronics1 from '../assets/electronic.jpg';
-import Gaming1 from '../assets/Gaming.jpg';
-import Wearables1 from '../assets/Wearables.jpg';
-import Ball1 from '../assets/ball.jpeg';
-import Sports1 from '../assets/sports.jpg';
+import { useLocation, useNavigate } from 'react-router-dom';
+import { X, Search, User, ShoppingCart, Minus, Plus } from 'lucide-react';
 
-const Home = () => {
-  const [categories, setCategories] = useState([]);
+const Cart = () => {
+  const [cart, setCart] = useState([]);
   const [products, setProducts] = useState([]);
-  const [selectedCategory, setSelectedCategory] = useState('');
-  const [searchQuery, setSearchQuery] = useState('');
+  const [promoCode, setPromoCode] = useState('');
   const [error, setError] = useState(null);
-  const [cart, setCart] = useState(() => JSON.parse(localStorage.getItem('cricketCart') || '[]')); // Load from localStorage
+  const [totalData, setTotalData] = useState({ subtotal: 0, deliveryFee: 450, total: 0 });
+  const [loading, setLoading] = useState(true);
+  const location = useLocation();
   const navigate = useNavigate();
-  const userId = localStorage.getItem('userId');
-
-  const categoryImages = useMemo(
-    () => ({
-      Accessories: Accessories1,
-      Bat: bat1,
-      Ball: Ball1,
-      Electronics: Electronics1,
-      Gaming: Gaming1,
-      Sports: Sports1,
-      Wearables: Wearables1,
-    }),
-    []
-  );
 
   useEffect(() => {
-    fetchCategories();
-    fetchProducts();
-    localStorage.setItem('cricketCart', JSON.stringify(cart)); // Sync cart
-  }, [selectedCategory, searchQuery, cart]);
-
-  const fetchCategories = async () => {
-    try {
-      const res = await axios.get('http://localhost:5000/api/products/categories');
-      setCategories(res.data);
-      setError(null);
-    } catch (err) {
-      console.error('Error fetching categories:', err.response ? err.response.data : err.message);
-      setCategories(['Accessories', 'Bat', 'Ball', 'Electronics', 'Gaming', 'Sports', 'Wearables']);
-      setError('Failed to load categories. Showing default options.');
+    // Load cart from localStorage on mount, use location.state if available
+    const savedCart = JSON.parse(localStorage.getItem('cricketCart') || '[]');
+    const cartFromState = location.state?.cart;
+    const finalCart = cartFromState || savedCart;
+    if (JSON.stringify(finalCart) !== JSON.stringify(cart)) {
+      setCart(finalCart);
     }
-  };
+    fetchProducts().finally(() => setLoading(false));
+  }, [location.state]);
+
+  useEffect(() => {
+    // Save cart to localStorage whenever it changes
+    localStorage.setItem('cricketCart', JSON.stringify(cart));
+    if (cart.length > 0) {
+      calculateTotal();
+    } else {
+      setTotalData({ subtotal: 0, deliveryFee: 450, total: 450 });
+    }
+  }, [cart]);
 
   const fetchProducts = async () => {
     try {
-      const params = {
-        page: 1,
-        limit: 10,
-        ...(selectedCategory && { category: selectedCategory }),
-        ...(searchQuery && { query: searchQuery }),
-      };
-      const res = await axios.get('http://localhost:5000/api/products/search', { params });
-      setProducts(res.data.products || []);
-      setError(null);
+      const res = await axios.get('http://localhost:5000/api/products/');
+      setProducts(res.data || []);
+      if (res.data.length === 0) {
+        setError('No products available.');
+      }
     } catch (err) {
-      console.error('Error fetching products:', err.response ? err.response.data : err.message);
-      setProducts([]);
-      setError('Failed to load products. Please try again.');
+      console.error('Error fetching products:', err);
+      setError('Failed to load products.');
     }
+  };
+
+  const getProductDetails = (productId) => {
+    return products.find(product => product._id === productId) || {};
+  };
+
+  const handleRemoveItem = (productId) => {
+    setCart(prevCart => prevCart.filter(item => item.productId !== productId));
   };
 
   const handleQuantityChange = (productId, change) => {
@@ -88,165 +73,163 @@ const Home = () => {
       } else {
         return prevCart;
       }
-      localStorage.setItem('cricketCart', JSON.stringify(newCart));
       return newCart;
     });
   };
 
-  const handleSearchChange = debounce((value) => {
-    setSearchQuery(value);
-  }, 300);
-
-  const goToCart = () => {
-    if (!userId) {
-      setError('Please login to proceed to cart.');
-      return;
+  const calculateTotal = async () => {
+    try {
+      const orderItems = cart.map(item => {
+        const product = getProductDetails(item.productId);
+        return {
+          productId: item.productId,
+          quantity: item.quantity,
+          priceAtOrder: product.price || 0
+        };
+      });
+      const res = await axios.post('http://localhost:5000/api/orders/calculate-total', {
+        items: orderItems
+      });
+      setTotalData({
+        subtotal: res.data.subtotal,
+        deliveryFee: res.data.deliveryCharge,
+        total: res.data.total
+      });
+    } catch (err) {
+      console.error('Error calculating total:', err);
+      alert('Error calculating total.');
     }
-    navigate('/cart', { state: { cart, userId } });
+  };
+
+  const handleProceedToDelivery = () => {
+    navigate('/delivery', { state: { cart, totalData } });
   };
 
   const cartItemCount = cart.reduce((sum, item) => sum + item.quantity, 0);
 
+  if (loading) {
+    return (
+      <div className="bg-[#F1F2F7] min-h-screen text-[#36516C] p-8 flex items-center justify-center">
+        Loading...
+      </div>
+    );
+  }
+
   return (
-    <div className="bg-[#F1F2F7] min-h-screen text-[#36516C]">
-      {/* Navbar */}
-      <nav className="bg-white shadow-md p-4 flex justify-between items-center sticky top-0 z-10">
+    <div className="bg-[#F1F2F7] min-h-screen text-[#36516C] p-8">
+      {/* Header */}
+      <nav className="flex justify-between items-center mb-8 bg-white p-4 rounded-lg shadow-sm">
         <div className="text-2xl font-bold text-[#072679]">CricketExpert.</div>
-        <div className="flex gap-6">
-          <a href="/home" className="hover:text-[#42ADF5]" aria-label="Home">Home</a>
-          <a href="/menu" className="hover:text-[#42ADF5]" aria-label="Menu">Menu</a>
-          <a href="/app" className="hover:text-[#42ADF5]" aria-label="Mobile App">Mobile App</a>
-          <a href="/contact" className="hover:text-[#42ADF5]" aria-label="Contact Us">Contact Us</a>
-          <a href="/admin" className="hover:text-[#42ADF5]" aria-label="Admin">Admin</a>
+        <div className="flex space-x-6 text-gray-600">
+          <span className="border-b-2 border-[#42ADF5]">home</span>
+          <span>menu</span>
+          <span>mobile app</span>
+          <span>contact us</span>
         </div>
-        <div className="flex gap-4 items-center">
-          <input
-            type="text"
-            placeholder="Search all products..."
-            className="border border-gray-300 p-2 rounded"
-            aria-label="Search products"
-            onChange={(e) => handleSearchChange(e.target.value)}
-          />
-          <button
-            onClick={goToCart}
-            className="relative bg-[#42ADF5] text-white px-4 py-2 rounded hover:bg-[#2C8ED1] flex items-center"
-            disabled={!userId}
-          >
-            <ShoppingCart size={20} />
+        <div className="flex items-center space-x-4">
+          <Search className="w-5 h-5 text-gray-600" />
+          <div className="relative">
+            <ShoppingCart className="w-5 h-5 text-gray-600" />
             {cartItemCount > 0 && (
-              <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center">
+              <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
                 {cartItemCount}
               </span>
             )}
-          </button>
+          </div>
+          <User className="w-5 h-5 text-gray-600" />
         </div>
       </nav>
 
-      {/* Error Message */}
-      {error && (
-        <div className="bg-red-100 text-red-700 p-4 mx-8 my-4 rounded" role="alert">
-          {error}
-        </div>
-      )}
-
-      {/* Hero Section */}
-      <div className="bg-gradient-to-r from-[#072679] to-[#42ADF5] text-white p-16 flex justify-between items-center">
-        <div className="max-w-lg">
-          <h1 className="text-5xl font-bold mb-4">Order your favourite cricket equipment here</h1>
-          <p className="text-lg mb-6">
-            Choose from a diverse menu featuring a delectable array of cricket gears and skill development tools.
-          </p>
-        </div>
-        <img
-          src="https://placehold.co/500x300?text=Cricket+Gear"
-          alt="Cricket equipment"
-          className="rounded-lg shadow-lg"
-          onError={(e) => { e.target.src = 'https://placehold.co/500x300'; }}
-        />
-      </div>
-
-      {/* Explore Menu (Category Circles) */}
-      <section className="p-8 text-center">
-        <h2 className="text-3xl font-bold text-[#072679] mb-4">Explore our menu</h2>
-        <p className="text-[#36516C] mb-8 max-w-2xl mx-auto">
-          Choose from a diverse selection of cricket equipment and skill development tools.
-        </p>
-        <div className="flex justify-center gap-8 flex-wrap">
-          {categories.map((cat) => (
-            <div
-              key={cat}
-              onClick={() => setSelectedCategory(cat === selectedCategory ? '' : cat)}
-              className={`cursor-pointer text-center w-32 ${
-                selectedCategory === cat ? 'border-4 border-[#42ADF5] rounded-full' : ''
-              }`}
-            >
-              <img
-                src={categoryImages[cat] || `https://placehold.co/100?text=${cat}`}
-                alt={cat}
-                className="w-24 h-24 rounded-full object-cover mx-auto mb-2 shadow-md"
-                onError={(e) => {
-                  console.error(`Image load failed for category: ${cat}`);
-                  e.target.src = `https://placehold.co/100?text=${cat}`;
-                }}
-              />
-              <p className="text-[#000000] font-medium">{cat}</p>
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        {/* Items List */}
+        <div className="lg:col-span-2">
+          <div className="bg-white rounded-lg p-6 shadow-sm">
+            <div className="grid grid-cols-6 gap-4 text-gray-500 text-sm mb-4 pb-2 border-b">
+              <span>Items</span>
+              <span>Title</span>
+              <span>Price</span>
+              <span>Quantity</span>
+              <span>Total</span>
+              <span>Remove</span>
             </div>
-          ))}
-        </div>
-      </section>
-
-      {/* Products Display */}
-      <section className="p-8">
-        <h2 className="text-3xl font-bold text-[#072679] mb-4 text-center">Top products near you</h2>
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-          {products.length === 0 ? (
-            <p className="text-center col-span-4">No products available matching your search or category.</p>
-          ) : (
-            products.map((product) => {
-              const cartItem = cart.find(item => item.productId === product._id);
-              const quantity = cartItem ? cartItem.quantity : 0;
-              return (
-                <div key={product._id} className="bg-white rounded-lg shadow-md overflow-hidden">
-                  <img
-                    src={product.image_url || 'https://placehold.co/600x500'}
-                    alt={product.name}
-                    className="w-full h-48 object-cover"
-                    onError={(e) => {
-                      console.error(`Product image failed for: ${product.name}`);
-                      e.target.src = 'https://placehold.co/300x200';
-                    }}
-                  />
-                  <div className="p-4">
-                    <h3 className="text-xl font-bold text-[#000000] mb-2">{product.name}</h3>
-                    <p className="text-[#36516C] mb-2">{product.description?.slice(0, 100) || 'No description'}...</p>
-                    <p className="text-[#072679] font-bold mb-4">₹{product.price || 0}</p>
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-2">
-                        <button
-                          onClick={() => handleQuantityChange(product._id, -1)}
-                          className="bg-[#D88717] text-white px-3 py-1 rounded hover:bg-[#B36F14] disabled:bg-gray-300"
-                          disabled={quantity === 0}
-                        >
-                          -
-                        </button>
-                        <span className="text-[#000000] font-medium">{quantity}</span>
-                        <button
-                          onClick={() => handleQuantityChange(product._id, 1)}
-                          className="bg-[#42ADF5] text-white px-3 py-1 rounded hover:bg-[#2C8ED1]"
-                        >
-                          +
-                        </button>
-                      </div>
+            
+            {cart.length === 0 ? (
+              <p className="text-center text-[#36516C]">Your cricket gear cart is empty.</p>
+            ) : (
+              cart.map((item) => {
+                const product = getProductDetails(item.productId);
+                return (
+                  <div key={item.productId} className="grid grid-cols-6 gap-4 items-center py-4 border-b">
+                    <img 
+                      src={product.image_url || 'https://placehold.co/50x50'} 
+                      alt={product.name} 
+                      className="w-10 h-10 object-cover rounded" 
+                    />
+                    <div className="font-medium">{product.name || 'Unknown Product'}</div>
+                    <div>₹{product.price || 0}</div>
+                    <div className="flex items-center space-x-2">
+                      <button 
+                        onClick={() => handleQuantityChange(item.productId, -1)}
+                        className="w-6 h-6 rounded-full border flex items-center justify-center hover:bg-gray-100"
+                        disabled={item.quantity <= 1}
+                      >
+                        <Minus className="w-3 h-3" />
+                      </button>
+                      <span className="w-8 text-center">{item.quantity}</span>
+                      <button 
+                        onClick={() => handleQuantityChange(item.productId, 1)}
+                        className="w-6 h-6 rounded-full border flex items-center justify-center hover:bg-gray-100"
+                      >
+                        <Plus className="w-3 h-3" />
+                      </button>
                     </div>
+                    <div>₹{(product.price || 0) * item.quantity}</div>
+                    <button 
+                      onClick={() => handleRemoveItem(item.productId)}
+                      className="text-gray-400 hover:text-red-500"
+                    >
+                      <X className="w-4 h-4" />
+                    </button>
                   </div>
-                </div>
-              );
-            })
-          )}
+                );
+              })
+            )}
+            {error && <p className="text-red-500 text-center mt-4">{error}</p>}
+          </div>
         </div>
-      </section>
+
+        {/* Cart Totals */}
+        <div className="space-y-6">
+          <div className="bg-white rounded-lg p-6 shadow-sm">
+            <h3 className="font-bold text-lg mb-4">Cart Totals</h3>
+            <div className="space-y-2 text-sm">
+              <div className="flex justify-between">
+                <span>Subtotal</span>
+                <span>₹{totalData.subtotal}</span>
+              </div>
+              <div className="flex justify-between">
+                <span>Delivery Fee</span>
+                <span>₹{totalData.deliveryFee}</span>
+              </div>
+              <div className="flex justify-between font-bold text-lg border-t pt-2">
+                <span>Total</span>
+                <span>₹{totalData.total}</span>
+              </div>
+            </div>
+            <button 
+              onClick={handleProceedToDelivery}
+              className="w-full bg-[#42ADF5] text-white py-3 rounded-lg mt-4 hover:bg-[#2C8ED1] transition-colors"
+              disabled={cart.length === 0}
+            >
+              PROCEED TO CHECKOUT
+            </button>
+          </div>
+
+          
+        </div>
+      </div>
     </div>
   );
 };
 
-export default Home;
+export default Cart;
