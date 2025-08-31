@@ -28,19 +28,14 @@ export default function Login() {
         try {
             const { data } = await axios.post('http://localhost:5000/api/auth/login', formData);
             localStorage.setItem('userInfo', JSON.stringify(data));
-            const roleToPathMap = {
-                admin: '/dashboard/admin',
-                coach: '/dashboard/coach',
-                customer: '/dashboard/customer',
-                ground_manager: '/dashboard/ground-manager',
-                order_manager: '/dashboard/order-manager',
-                coaching_manager: '/dashboard/coaching-manager',
-                service_manager: '/dashboard/service-manager',
-                technician: '/dashboard/technician',
-                delivery_staff: '/dashboard/delivery-staff',
-            };
-            const path = roleToPathMap[data.role] || '/';
-            navigate(path);
+            
+            // Role-based redirection
+            if (data.role === 'admin') {
+                navigate('/admin/dashboard');
+            } else {
+                navigate('/'); // Redirect customers and all other roles to home
+            }
+
         } catch (err) {
             setError(err.response?.data?.message || 'Login failed.');
         } finally {
@@ -50,29 +45,29 @@ export default function Login() {
 
 
     return (
-        <div className="min-h-screen bg-[#F1F2F7] flex items-center justify-center p-4">
-            <div className="w-full max-w-md bg-white rounded-2xl shadow-xl p-8 space-y-6">
+        <div className="min-h-screen bg-background flex items-center justify-center p-4">
+            <div className="w-full max-w-md bg-surface rounded-2xl shadow-xl p-8 space-y-6">
                 <div className="text-center">
-                    <h2 className="text-3xl font-bold text-[#072679]">Welcome Back!</h2>
-                    <p className="text-[#36516C]">Sign in to continue to CricketExpert.</p>
+                    <h2 className="text-3xl font-bold text-primary">Welcome Back!</h2>
+                    <p className="text-text-body">Sign in to continue to CricketExpert.</p>
                 </div>
 
                 <form onSubmit={handleSubmit} className="space-y-4">
                     <div className="relative">
                         <span className="absolute inset-y-0 left-0 flex items-center pl-3"><UserIcon /></span>
-                        <input type="text" name="loginIdentifier" value={formData.loginIdentifier} onChange={handleChange} placeholder="Email or Username" required className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-1 focus:ring-[#42ADF5]" />
+                        <input type="text" name="loginIdentifier" value={formData.loginIdentifier} onChange={handleChange} placeholder="Email or Username" required className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-1 focus:ring-secondary" />
                     </div>
                     <div className="relative">
                         <span className="absolute inset-y-0 left-0 flex items-center pl-3"><LockIcon /></span>
-                        <input type={showPassword ? "text" : "password"} name="password" value={formData.password} onChange={handleChange} placeholder="Password" required className="w-full pl-10 pr-10 py-2 border border-gray-300 rounded-lg focus:ring-1 focus:ring-[#42ADF5]" />
+                        <input type={showPassword ? "text" : "password"} name="password" value={formData.password} onChange={handleChange} placeholder="Password" required className="w-full pl-10 pr-10 py-2 border border-gray-300 rounded-lg focus:ring-1 focus:ring-secondary" />
                         <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute inset-y-0 right-0 flex items-center pr-3">
                             {showPassword ? <EyeOpenIcon /> : <EyeClosedIcon />}
                         </button>
                     </div>
                     <div className="flex items-center justify-end text-sm">
-                        <Link to="/forgot-password" className="font-medium text-[#42ADF5] hover:underline">Forgot Password?</Link>
+                        <Link to="/forgot-password" className="font-medium text-secondary hover:underline">Forgot Password?</Link>
                     </div>
-                    <button type="submit" disabled={loading} className="w-full bg-[#42ADF5] hover:bg-[#2C8ED1] text-white font-bold py-3 px-4 rounded-lg shadow-lg transition-colors disabled:bg-gray-400">
+                    <button type="submit" disabled={loading} className="w-full bg-secondary hover:bg-secondary-hover text-white font-bold py-3 px-4 rounded-lg shadow-lg transition-colors disabled:bg-gray-400">
                         {loading ? 'Signing In...' : 'Sign In'}
                     </button>
                 </form>
@@ -81,7 +76,7 @@ export default function Login() {
 
                 <p className="text-center text-sm text-gray-500">
                     Don't have an account?{' '}
-                    <Link to="/signup" className="font-medium text-[#42ADF5] hover:underline">
+                    <Link to="/signup" className="font-medium text-secondary hover:underline">
                         Sign Up Here
                     </Link>
                 </p>

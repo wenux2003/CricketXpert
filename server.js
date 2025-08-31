@@ -13,6 +13,7 @@ connectDB();
 // --- IMPORT YOUR ROUTES ---
 const authRoutes = require('./routes/authRoutes');
 const uploadRoutes = require('./routes/uploadRoutes');
+const userRoutes = require('./routes/userRoutes'); // <-- IMPORT THIS
 
 const app = express();
 
@@ -23,6 +24,7 @@ app.use(express.json());
 // --- DEFINE YOUR ROUTES ---
 app.use('/api/auth', authRoutes);
 app.use('/api/upload', uploadRoutes);
+app.use('/api/users', userRoutes); // <-- USE THE NEW ROUTES
 
 // --- SERVE STATIC UPLOADED FILES ---
 // This makes the 'uploads' folder public
@@ -31,11 +33,11 @@ app.use('/uploads', express.static(path.join(dirname, '/uploads')));
 
 
 app.get('/api/test', (req, res) => {
-  res.json({ success: true, message: 'Test route working!' });
+  res.json({ success: true, message: 'Test route working!' });
 });
 
 
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
+  console.log(`Server running on port ${PORT}`);
 });

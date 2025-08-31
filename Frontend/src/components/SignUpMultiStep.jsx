@@ -1,5 +1,6 @@
 import React, { useState, useRef } from 'react';
 import axios from 'axios';
+import { useNavigate } from 'react-router-dom'; // <-- IMPORT useNavigate
 
 // --- Data for Sri Lankan Provinces and Districts/Cities ---
 const srilankaData = {
@@ -23,7 +24,6 @@ const LockIcon = () => <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-
 const CalendarIcon = () => <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>;
 const PhoneIcon = () => <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" /></svg>;
 const UploadIcon = () => <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8 text-gray-400 mb-1" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" /></svg>;
-// --- NEW EYE ICONS ---
 const EyeOpenIcon = () => <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /><path strokeLinecap="round" strokeLinejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" /></svg>;
 const EyeClosedIcon = () => <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21" /></svg>;
 
@@ -48,13 +48,12 @@ export default function SignUpMultiStep() {
     const [loading, setLoading] = useState(false);
     const [message, setMessage] = useState('');
     const [error, setError] = useState('');
-    // --- NEW STATE FOR PASSWORD VISIBILITY ---
     const [showPassword, setShowPassword] = useState(false);
+    const navigate = useNavigate(); // <-- INITIALIZE useNavigate
 
     const handleTextOnlyChange = (e) => setFormData({ ...formData, [e.target.name]: e.target.value.replace(/[^a-zA-Z\s]/g, '') });
-    // --- UPDATED PHONE NUMBER HANDLER ---
     const handleNumbersOnlyChange = (e) => {
-        const value = e.target.value.replace(/[^0-9]/g, '').slice(0, 10); // Only numbers, max 10 digits
+        const value = e.target.value.replace(/[^0-9]/g, '').slice(0, 10);
         setFormData({ ...formData, [e.target.name]: value });
     };
     const handleChange = (e) => setFormData({ ...formData, [e.target.name]: e.target.value });
@@ -95,7 +94,6 @@ export default function SignUpMultiStep() {
             setError('Please enter a valid email address.');
             return;
         }
-        // --- NEW PHONE NUMBER VALIDATION ---
         const phoneRegex = /^0\d{9}$/;
         if (!phoneRegex.test(formData.contactNumber)) {
             setError('Please enter a valid 10-digit phone number starting with 0.');
@@ -110,7 +108,7 @@ export default function SignUpMultiStep() {
     };
 
     const prevStep = () => setStep(1);
-    const validatePassword = () => { /* ... (remains the same) ... */ 
+    const validatePassword = () => {
         const { password, confirmPassword } = formData;
         if (password !== confirmPassword) {
             setPasswordError("Passwords do not match.");
@@ -124,13 +122,16 @@ export default function SignUpMultiStep() {
         setPasswordError('');
         return true;
     };
-    const handleSubmit = async (e) => { /* ... (remains the same) ... */ 
+
+    // --- UPDATED SUBMIT HANDLER ---
+    const handleSubmit = async (e) => {
         e.preventDefault();
         if (!validatePassword()) return;
         setLoading(true);
         setMessage('');
         setError('');
         let uploadedImagePath = '';
+
         if (imageFile) {
             const uploadFormData = new FormData();
             uploadFormData.append('profileImage', imageFile);
@@ -147,8 +148,17 @@ export default function SignUpMultiStep() {
         try {
             const registrationData = { ...formData, profileImageURL: uploadedImagePath };
             const { data } = await axios.post('http://localhost:5000/api/auth/register', registrationData);
-            setMessage(data.message + " Redirecting to home page...");
-            setTimeout(() => { window.location.href = '/'; }, 2000);
+
+            // --- FIX IS HERE: AUTOMATICALLY LOG THE USER IN ---
+            localStorage.setItem('userInfo', JSON.stringify(data));
+            
+            setMessage("Account created successfully! Redirecting to your profile...");
+            
+            // --- REDIRECT TO PROFILE PAGE ---
+            setTimeout(() => {
+                navigate('/profile');
+            }, 2000);
+
         } catch (regError) {
             setError(regError.response?.data?.message || 'Registration failed.');
         } finally {
@@ -194,7 +204,6 @@ export default function SignUpMultiStep() {
                 {step === 2 && (
                     <form onSubmit={handleSubmit} className="space-y-4">
                         <div className="relative"><span className="absolute inset-y-0 left-0 flex items-center pl-3"><UserIcon /></span><input type="text" name="username" placeholder="Username*" value={formData.username} onChange={handleChange} required className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-1 focus:ring-[#42ADF5]" /></div>
-                        {/* --- UPDATED PASSWORD INPUT --- */}
                         <div className="relative">
                             <span className="absolute inset-y-0 left-0 flex items-center pl-3"><LockIcon /></span>
                             <input type={showPassword ? "text" : "password"} name="password" placeholder="Password*" value={formData.password} onChange={handleChange} required className="w-full pl-10 pr-10 py-2 border border-gray-300 rounded-lg focus:ring-1 focus:ring-[#42ADF5]" />
@@ -202,11 +211,10 @@ export default function SignUpMultiStep() {
                                 {showPassword ? <EyeOpenIcon /> : <EyeClosedIcon />}
                             </button>
                         </div>
-                        {/* --- UPDATED CONFIRM PASSWORD INPUT --- */}
                         <div className="relative">
                             <span className="absolute inset-y-0 left-0 flex items-center pl-3"><LockIcon /></span>
                             <input type={showPassword ? "text" : "password"} name="confirmPassword" placeholder="Confirm Password*" value={formData.confirmPassword} onChange={handleChange} required className="w-full pl-10 pr-10 py-2 border border-gray-300 rounded-lg focus:ring-1 focus:ring-[#42ADF5]" />
-                             <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute inset-y-0 right-0 flex items-center pr-3">
+                               <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute inset-y-0 right-0 flex items-center pr-3">
                                 {showPassword ? <EyeOpenIcon /> : <EyeClosedIcon />}
                             </button>
                         </div>

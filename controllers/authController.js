@@ -1,12 +1,18 @@
 const User = require('../models/User.js');
 const bcrypt = require('bcryptjs');
-const jwt = require('jsonwebtoken');
-const generateToken = require('../utils/generateToken.js');
-const { sendWelcomeEmail, sendNewUserNotification, sendPasswordResetCodeEmail } = require('../utils/wemailService.js');
+const jwt = require('jsonwebtoken'); // <-- Make sure JWT is imported
+const { sendWelcomeEmail, sendNewUserNotification } = require('../utils/wemailService');
+const { sendPasswordResetCodeEmail } = require('../utils/wemailService');
 
-// @desc    Register a new user
-// @route   POST /api/auth/register
-// @access  Public
+// This function is new or was missing from previous versions
+const generateToken = (id) => {
+    return jwt.sign({ id }, process.env.JWT_SECRET, {
+        expiresIn: '30d',
+    });
+};
+
+
+// --- REGISTER USER ---
 const registerUser = async (req, res) => {
     const {
         firstName, lastName, dob, contactNumber, address,
@@ -28,97 +34,99 @@ const registerUser = async (req, res) => {
 
         const user = new User({
             firstName, lastName, dob, contactNumber, address,
-            profileImageURL: profileImageURL || '',
-            email, username, passwordHash,
+            profileImageURL: profileImageURL || '', email, username, passwordHash,
         });
 
         const newUser = await user.save();
 
         if (newUser) {
-            try {
-                await sendWelcomeEmail(newUser.email, newUser.username);
-                await sendNewUserNotification(newUser);
-            } catch (emailError) {
-                console.error('Failed to send registration emails:', emailError);
-                // We don't block the registration if emails fail, but we log the error.
-                // You might want to add more robust error handling here, like a retry queue.
-            }
+            // --- Send Emails ---
+            Promise.all([
+                sendWelcomeEmail(newUser.email, newUser.username),
+                sendNewUserNotification(newUser)
+            ]).catch(err => {
+                console.error("Failed to send registration emails:", err);
+            });
 
+            // --- THIS IS THE FIX ---
+            // Send back the full user object AND a token, just like the login function
             res.status(201).json({
-                message: 'User registered successfully! Please check your email to verify your account.',
-                user: { _id: newUser._id, username: newUser.username, email: newUser.email }
+                _id: newUser._id,
+                username: newUser.username,
+                email: newUser.email,
+                role: newUser.role,
+                profileImageURL: newUser.profileImageURL,
+                token: generateToken(newUser._id), // <-- GENERATE AND SEND TOKEN
             });
         } else {
             res.status(400).json({ message: 'Invalid user data' });
         }
     } catch (error) {
-        console.error('Registration Error:', error);
+        console.error(error);
         res.status(500).json({ message: 'Server Error' });
     }
 };
 
-// @desc    Auth user & get token (Login)
-// @route   POST /api/auth/login
-// @access  Public
+
+// --- LOGIN USER ---
 const loginUser = async (req, res) => {
     const { loginIdentifier, password } = req.body;
     try {
-        const user = await User.findOne({
-            $or: [{ email: loginIdentifier }, { username: loginIdentifier }],
+        const user = await User.findOne({ 
+            $or: [{ email: loginIdentifier }, { username: loginIdentifier }] 
         });
+
         if (user && (await bcrypt.compare(password, user.passwordHash))) {
             res.json({
                 _id: user._id,
                 username: user.username,
                 email: user.email,
                 role: user.role,
+                profileImageURL: user.profileImageURL,
                 token: generateToken(user._id),
             });
         } else {
-            res.status(401).json({ message: 'Invalid email/username or password' });
+            res.status(401).json({ message: 'Invalid credentials' });
         }
     } catch (error) {
-        console.error('Login Error:', error);
         res.status(500).json({ message: 'Server Error' });
     }
 };
 
-// @desc    Request password reset code
-// @route   POST /api/auth/forgot-password
-// @access  Public
+// --- FORGOT PASSWORD ---
 const forgotPassword = async (req, res) => {
     const { email } = req.body;
     try {
         const user = await User.findOne({ email });
         if (!user) {
-            return res.json({ message: 'If a user with that email exists, a reset code has been sent.' });
+            return res.status(404).json({ message: 'User not found' });
         }
-        
+
         const resetCode = Math.floor(100000 + Math.random() * 900000).toString();
-        
+        const resetCodeExpires = Date.now() + 10 * 60 * 1000; // 10 minutes
+
         user.passwordResetCode = resetCode;
-        user.passwordResetExpires = Date.now() + 10 * 60 * 1000; // 10 minutes from now
+        user.passwordResetExpires = resetCodeExpires;
         await user.save();
-        
+
         await sendPasswordResetCodeEmail(user.email, resetCode);
-        
-        res.json({ message: 'A reset code has been sent to your email.' });
+        res.json({ message: 'Password reset code sent to your email.' });
+
     } catch (error) {
-        console.error('Forgot Password Error:', error);
-        res.status(500).json({ message: 'Server Error' });
+        console.error("Forgot Password Error:", error);
+        res.status(500).json({ message: 'Server error while sending email.' });
     }
 };
 
-// @desc    Reset password using code
-// @route   POST /api/auth/reset-password
-// @access  Public
+
+// --- RESET PASSWORD ---
 const resetPassword = async (req, res) => {
     const { email, code, password } = req.body;
     try {
-        const user = await User.findOne({ 
-            email, 
+        const user = await User.findOne({
+            email,
             passwordResetCode: code,
-            passwordResetExpires: { $gt: Date.now() } 
+            passwordResetExpires: { $gt: Date.now() },
         });
 
         if (!user) {
@@ -127,14 +135,13 @@ const resetPassword = async (req, res) => {
 
         const salt = await bcrypt.genSalt(10);
         user.passwordHash = await bcrypt.hash(password, salt);
-        
         user.passwordResetCode = undefined;
         user.passwordResetExpires = undefined;
         await user.save();
-        
-        res.json({ message: 'Password has been reset successfully.' });
+
+        res.json({ message: 'Password reset successful.' });
+
     } catch (error) {
-        console.error('Reset Password Error:', error);
         res.status(500).json({ message: 'Server Error' });
     }
 };
@@ -146,3 +153,4 @@ module.exports = {
     forgotPassword,
     resetPassword,
 };
+
