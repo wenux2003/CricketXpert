@@ -17,8 +17,9 @@ const Payment = () => {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [cartOrder, setCartOrder] = useState(null);
 
-  const userId = '689de49c6dc2a3b065e28c88';
+  const userId = '68a34c9c6c30e2b6fa15c978';
 
   useEffect(() => {
     const fetchUserDetails = async () => {
@@ -34,7 +35,18 @@ const Payment = () => {
       }
     };
 
+    const fetchCartOrder = async () => {
+      try {
+        const response = await axios.get(`http://localhost:5000/api/orders/cart/${userId}`);
+        setCartOrder(response.data);
+      } catch (err) {
+        console.error('Error fetching cart order:', err);
+        // If no cart order exists, we'll create one during payment
+      }
+    };
+
     fetchUserDetails();
+    fetchCartOrder();
     console.log('Received state in Payment:', location.state);
     if (!location.state) {
       console.warn('No state passed to Payment page.');
@@ -72,26 +84,42 @@ const Payment = () => {
 
     setLoading(true);
     try {
-      console.log('Cart:', cart);
-      const orderItems = cart.map(item => ({
-        productId: item.productId,
-        quantity: item.quantity,
-        priceAtOrder: totalData.subtotal / cart.reduce((sum, i) => sum + i.quantity, 0)
-      }));
-      console.log('Creating order with:', { items: orderItems, status: 'created', address, amount: totalData.total, customerId: userId });
-      const orderRes = await axios.post('http://localhost:5000/api/orders/', {
-        items: orderItems,
-        status: 'created',
-        address,
-        amount: totalData.total,
-        customerId: userId
-      });
-      console.log('Order created:', orderRes.data);
+      let orderToComplete = cartOrder;
 
-      console.log('Creating payment with:', { userId, orderId: orderRes.data._id, paymentType: 'order_payment', amount: totalData.total, status: 'success', paymentDate: new Date() });
+      // If no cart order exists, create one first
+      if (!cartOrder) {
+        console.log('No cart order found, creating one...');
+        const orderItems = cart.map(item => ({
+          productId: item.productId,
+          quantity: item.quantity,
+          priceAtOrder: totalData.subtotal / cart.reduce((sum, i) => sum + i.quantity, 0)
+        }));
+        
+        // Use the address from state, user data, or fallback
+        const deliveryAddress = address || user?.address || 'No address provided';
+        
+        const newCartOrder = await axios.post('http://localhost:5000/api/orders/cart', {
+          customerId: userId,
+          items: orderItems,
+          amount: totalData.total,
+          address: deliveryAddress
+        });
+        orderToComplete = newCartOrder.data;
+        setCartOrder(orderToComplete);
+      }
+
+      console.log('Creating payment with:', { 
+        userId, 
+        orderId: orderToComplete._id, 
+        paymentType: 'order_payment', 
+        amount: totalData.total, 
+        status: 'success', 
+        paymentDate: new Date() 
+      });
+      
       const paymentRes = await axios.post('http://localhost:5000/api/payments/', {
         userId,
-        orderId: orderRes.data._id,
+        orderId: orderToComplete._id,
         paymentType: 'order_payment',
         amount: totalData.total,
         status: 'success',
@@ -99,8 +127,16 @@ const Payment = () => {
       });
       console.log('Payment created:', paymentRes.data);
 
+      // Complete the cart order (change status from 'cart_pending' to 'created')
+      console.log('Completing cart order:', orderToComplete._id);
+      const completedOrder = await axios.put('http://localhost:5000/api/orders/cart/complete', {
+        orderId: orderToComplete._id,
+        paymentId: paymentRes.data._id
+      });
+      console.log('Order completed:', completedOrder.data);
+
       localStorage.removeItem('cricketCart');
-      navigate('/orders', { state: { order: orderRes.data, payment: paymentRes.data } });
+      navigate('/orders', { state: { order: completedOrder.data, payment: paymentRes.data } });
     } catch (err) {
       console.error('Error details:', err.response?.data || err.message);
       setError(`Error processing payment: ${err.response?.data?.message || err.message}. Please try again.`);
@@ -190,6 +226,8 @@ const Payment = () => {
             />
             
           
+             
+            
             
             {error && <p className="text-red-500 text-sm">{error}</p>}
             <button 

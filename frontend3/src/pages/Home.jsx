@@ -18,7 +18,11 @@ const Home = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [error, setError] = useState(null);
   const [cart, setCart] = useState([]); // Local cart state
+  const [user, setUser] = useState(null);
   const navigate = useNavigate();
+
+  // Hardcoded user ID for now - in real app this would come from authentication
+  const userId = '68a34c9c6c30e2b6fa15c978';
 
   const categoryImages = useMemo(
     () => ({
@@ -36,7 +40,30 @@ const Home = () => {
   useEffect(() => {
     fetchCategories();
     fetchProducts();
+    fetchUserDetails();
   }, [selectedCategory, searchQuery]);
+
+  useEffect(() => {
+    // Save cart to localStorage whenever it changes
+    localStorage.setItem('cricketCart', JSON.stringify(cart));
+    
+    // Update cart order in database when cart changes
+    if (cart.length > 0) {
+      updateCartOrder();
+    } else {
+      deleteCartOrder();
+    }
+  }, [cart]);
+
+  const fetchUserDetails = async () => {
+    try {
+      const response = await axios.get(`http://localhost:5000/api/users/${userId}`);
+      setUser(response.data);
+    } catch (err) {
+      console.error('Error fetching user details:', err);
+      // Don't show error to user as this is background sync
+    }
+  };
 
   const fetchCategories = async () => {
     try {
@@ -65,6 +92,53 @@ const Home = () => {
       console.error('Error fetching products:', err.response ? err.response.data : err.message);
       setProducts([]);
       setError('Failed to load products. Please try again.');
+    }
+  };
+
+  // Create or update cart order in database
+  const updateCartOrder = async () => {
+    try {
+      if (cart.length === 0) return;
+
+      const orderItems = cart.map(item => {
+        const product = products.find(p => p._id === item.productId);
+        return {
+          productId: item.productId,
+          quantity: item.quantity,
+          priceAtOrder: product?.price || 0
+        };
+      });
+
+      // Calculate total amount
+      const subtotal = cart.reduce((sum, item) => {
+        const product = products.find(p => p._id === item.productId);
+        return sum + (product?.price || 0) * item.quantity;
+      }, 0);
+      const total = subtotal + 450; // Adding delivery charge
+
+      const cartOrderData = {
+        customerId: userId,
+        items: orderItems,
+        amount: total,
+        address: user?.address || 'No address provided'
+      };
+
+      await axios.post('http://localhost:5000/api/orders/cart', cartOrderData);
+      console.log('Cart order updated in database from Home page');
+    } catch (err) {
+      console.error('Error updating cart order from Home:', err);
+      // Don't show error to user as this is background sync
+    }
+  };
+
+  // Delete cart order from database
+  const deleteCartOrder = async () => {
+    try {
+      await axios.delete(`http://localhost:5000/api/orders/cart/${userId}`);
+      console.log('Cart order deleted from database from Home page');
+    } catch (err) {
+      console.error('Error deleting cart order from Home:', err);
+      // Don't show error to user as this is background sync
     }
   };
 

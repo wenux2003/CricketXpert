@@ -27,8 +27,7 @@ const orderSchema = new mongoose.Schema({
     required: true
   },
   address: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'User',
+    type: String,
     required: true
   },
 
@@ -42,11 +41,11 @@ const orderSchema = new mongoose.Schema({
     default: null
   },
   status: {
-  type: String,
-  enum: ['created', 'processing', 'completed', 'cancelled'], // example
-  default: 'created',
-  required: true
-},
+    type: String,
+    enum: ['cart_pending', 'created', 'processing', 'completed', 'cancelled'],
+    default: 'created',
+    required: true
+  },
 });
 
 module.exports = mongoose.model('Order', orderSchema);

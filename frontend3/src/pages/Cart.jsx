@@ -10,8 +10,12 @@ const Cart = () => {
   const [error, setError] = useState(null);
   const [totalData, setTotalData] = useState({ subtotal: 0, deliveryFee: 450, total: 0 });
   const [loading, setLoading] = useState(true);
+  const [user, setUser] = useState(null);
   const location = useLocation();
   const navigate = useNavigate();
+
+  // Hardcoded user ID for now - in real app this would come from authentication
+  const userId = '68a34c9c6c30e2b6fa15c978';
 
   useEffect(() => {
     // Load cart from localStorage on mount, use location.state if available
@@ -21,7 +25,8 @@ const Cart = () => {
     if (JSON.stringify(finalCart) !== JSON.stringify(cart)) {
       setCart(finalCart);
     }
-    fetchProducts().finally(() => setLoading(false));
+    fetchProducts();
+    fetchUserDetails();
   }, [location.state]);
 
   useEffect(() => {
@@ -29,10 +34,26 @@ const Cart = () => {
     localStorage.setItem('cricketCart', JSON.stringify(cart));
     if (cart.length > 0) {
       calculateTotal();
+      // Create/update cart order in database
+      updateCartOrder();
     } else {
       setTotalData({ subtotal: 0, deliveryFee: 450, total: 450 });
+      // Delete cart order from database if cart is empty
+      deleteCartOrder();
     }
   }, [cart]);
+
+  const fetchUserDetails = async () => {
+    try {
+      const response = await axios.get(`http://localhost:5000/api/users/${userId}`);
+      setUser(response.data);
+    } catch (err) {
+      console.error('Error fetching user details:', err);
+      // Don't show error to user as this is background sync
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const fetchProducts = async () => {
     try {
@@ -49,6 +70,46 @@ const Cart = () => {
 
   const getProductDetails = (productId) => {
     return products.find(product => product._id === productId) || {};
+  };
+
+  // Create or update cart order in database
+  const updateCartOrder = async () => {
+    try {
+      if (cart.length === 0) return;
+
+      const orderItems = cart.map(item => {
+        const product = getProductDetails(item.productId);
+        return {
+          productId: item.productId,
+          quantity: item.quantity,
+          priceAtOrder: product.price || 0
+        };
+      });
+
+      const cartOrderData = {
+        customerId: userId,
+        items: orderItems,
+        amount: totalData.total,
+        address: user?.address || 'No address provided'
+      };
+
+      await axios.post('http://localhost:5000/api/orders/cart', cartOrderData);
+      console.log('Cart order updated in database');
+    } catch (err) {
+      console.error('Error updating cart order:', err);
+      // Don't show error to user as this is background sync
+    }
+  };
+
+  // Delete cart order from database
+  const deleteCartOrder = async () => {
+    try {
+      await axios.delete(`http://localhost:5000/api/orders/cart/${userId}`);
+      console.log('Cart order deleted from database');
+    } catch (err) {
+      console.error('Error deleting cart order:', err);
+      // Don't show error to user as this is background sync
+    }
   };
 
   const handleRemoveItem = (productId) => {

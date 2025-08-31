@@ -1,5 +1,5 @@
 const Payment = require('../models/Payments');
-const Order = require('../models/order');
+const Order = require('../models/Order');
 
 // Create payment
 exports.createPayment = async (req, res) => {

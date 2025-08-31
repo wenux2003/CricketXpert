@@ -1,5 +1,5 @@
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
-import PHome from './pages/PHome';
+import Home from './pages/Home';
 import Cart from './pages/Cart';
 import Delivery from './pages/Delivery';
 import Payment from './pages/Payment';
@@ -12,7 +12,7 @@ function App() {
   return (
     <Router>
       <Routes>
-        <Route path="/" element={<PHome />} />
+        <Route path="/" element={<Home />} />
         <Route path="/cart" element={<Cart />} />
         <Route path="/delivery" element={<Delivery />} />
         <Route path="/payment" element={<Payment />} />

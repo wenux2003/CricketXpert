@@ -1,5 +1,5 @@
-const Order = require('../models/order');
-const Product = require('../models/product');
+const Order = require('../models/Order');
+const Product = require('../models/Product');
 
 // Create order
 exports.createOrder = async (req, res) => {
@@ -9,6 +9,107 @@ exports.createOrder = async (req, res) => {
     res.status(201).json(order);
   } catch (error) {
     res.status(400).json({ message: error.message });
+  }
+};
+
+// Create cart order (pending order when items are added to cart)
+exports.createCartOrder = async (req, res) => {
+  try {
+    const { customerId, items, amount, address } = req.body;
+    
+    // Check if user already has a pending cart order
+    let existingCartOrder = await Order.findOne({ 
+      customerId, 
+      status: 'cart_pending' 
+    });
+
+    if (existingCartOrder) {
+      // Update existing cart order
+      existingCartOrder.items = items;
+      existingCartOrder.amount = amount;
+      existingCartOrder.address = address;
+      existingCartOrder.date = new Date();
+      await existingCartOrder.save();
+      res.json(existingCartOrder);
+    } else {
+      // Create new cart order
+      const cartOrder = new Order({
+        customerId,
+        items,
+        amount,
+        address,
+        status: 'cart_pending',
+        date: new Date()
+      });
+      await cartOrder.save();
+      res.status(201).json(cartOrder);
+    }
+  } catch (error) {
+    res.status(400).json({ message: error.message });
+  }
+};
+
+// Get cart order for a user
+exports.getCartOrder = async (req, res) => {
+  try {
+    const { customerId } = req.params;
+    const cartOrder = await Order.findOne({ 
+      customerId, 
+      status: 'cart_pending' 
+    }).populate('items.productId');
+    
+    if (!cartOrder) {
+      return res.status(404).json({ message: 'No pending cart order found' });
+    }
+    
+    res.json(cartOrder);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+// Update cart order to completed order (when payment is successful)
+exports.completeCartOrder = async (req, res) => {
+  try {
+    const { orderId, paymentId } = req.body;
+    
+    const order = await Order.findById(orderId);
+    if (!order) {
+      return res.status(404).json({ message: 'Order not found' });
+    }
+    
+    if (order.status !== 'cart_pending') {
+      return res.status(400).json({ message: 'Order is not in cart pending status' });
+    }
+    
+    // Update order status and add payment ID
+    order.status = 'created';
+    order.paymentId = paymentId;
+    order.date = new Date();
+    await order.save();
+    
+    res.json(order);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+// Delete cart order (when user clears cart)
+exports.deleteCartOrder = async (req, res) => {
+  try {
+    const { customerId } = req.params;
+    const result = await Order.deleteOne({ 
+      customerId, 
+      status: 'cart_pending' 
+    });
+    
+    if (result.deletedCount === 0) {
+      return res.status(404).json({ message: 'No pending cart order found' });
+    }
+    
+    res.json({ message: 'Cart order deleted successfully' });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
   }
 };
 
@@ -50,7 +151,7 @@ exports.updateOrder = async (req, res) => {
 exports.updateOrderStatus = async (req, res) => {
   try {
     const { status } = req.body;
-    const validStatuses = ['created', 'processing', 'completed', 'cancelled'];
+    const validStatuses = ['created', 'processing', 'completed', 'cancelled', 'cart_pending'];
 
     if (!validStatuses.includes(status)) {
       return res.status(400).json({ message: 'Invalid order status' });
