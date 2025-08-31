@@ -111,7 +111,6 @@ const Header = () => {
 
               {/* Profile Icon */}
               <button 
-                onClick={() => navigate('/')}
                 className="p-3 text-white hover:bg-white hover:bg-opacity-10 rounded-full transition-colors"
               >
                 <svg className="w-9 h-9" fill="none" stroke="currentColor" viewBox="0 0 24 24">
