@@ -371,3 +371,15 @@ For questions about the frontend implementation:
 - **UI/UX Feedback**: Document specific issues or suggestions
 
 This frontend provides a solid foundation for the cricket coaching management system with room for future enhancements and customization based on specific requirements.
+
+
+
+
+
+
+
+
+
+
+
+

@@ -1,31 +1,51 @@
 import React from "react"
-import Navbar from "./components/Navbar";
 import { Route, Routes } from "react-router-dom";
+import { Toaster } from 'react-hot-toast';
+import { AuthProvider } from "./contexts/AuthContext";
+import Navbar from "./components/Navbar";
 import Home from "./pages/Home";
-import CoachingPrograms from "./pages/CoachingPrograms";
+import Programs from "./pages/Programs";
 import ProgramDetails from "./pages/ProgramDetails";
-import EnrollmentForm from "./pages/EnrollmentForm";
-import EnrollmentSuccess from "./pages/EnrollmentSuccess";
-import PlayerProfile from "./pages/PlayerProfile";
+import Profile from "./pages/Profile";
+import Login from "./pages/Login";
+import ManagerDashboard from "./pages/ManagerDashboard";
+import CoachProfiles from "./pages/CoachProfiles";
+import CoachDashboard from "./pages/CoachDashboard";
 
 function App() {
   return (
-    <>
-      <Navbar/>
-      <Routes>
-        <Route path="/" element={<Home />} />
-        <Route path="/programs" element={<CoachingPrograms />} />
-        <Route path="/programs/:id" element={<ProgramDetails />} />
-        <Route path="/programs/:id/enroll" element={<EnrollmentForm />} />
-        <Route path="/enrollment-success/:enrollmentId" element={<EnrollmentSuccess />} />
-        <Route path="/profile" element={<PlayerProfile />} />
-        <Route path="/dashboard" element={<PlayerProfile />} />
+    <AuthProvider>
+      <div className="min-h-screen bg-gray-50">
+        <Navbar/>
+        <Routes>
+          <Route path="/" element={<Home />} />
+          <Route path="/programs" element={<Programs />} />
+          <Route path="/programs/:id" element={<ProgramDetails />} />
+          <Route path="/coaches" element={<CoachProfiles />} />
+          
+          {/* Additional routes for future implementation */}
+          <Route path="/sessions" element={<div className="p-8 text-center">Sessions page coming soon...</div>} />
+          <Route path="/certificates" element={<div className="p-8 text-center">Certificates page coming soon...</div>} />
+          <Route path="/profile" element={<Profile />} />
+          <Route path="/dashboard" element={<div className="p-8 text-center">Dashboard page coming soon...</div>} />
+          <Route path="/coach-dashboard" element={<CoachDashboard />} />
+          <Route path="/manager-dashboard" element={<ManagerDashboard />} />
+          <Route path="/login" element={<Login />} />
+        </Routes>
         
-        {/* Additional routes for future implementation */}
-        <Route path="/sessions" element={<div className="p-8 text-center">Sessions page coming soon...</div>} />
-        <Route path="/certificates" element={<div className="p-8 text-center">Certificates page coming soon...</div>} />
-      </Routes>
-    </>
+        {/* Toast notifications */}
+        <Toaster 
+          position="top-right"
+          toastOptions={{
+            duration: 4000,
+            style: {
+              background: '#363636',
+              color: '#fff',
+            },
+          }}
+        />
+      </div>
+    </AuthProvider>
   );
 }
 

@@ -1,156 +1,209 @@
 import React, { useState, useEffect } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
-import { 
-  ArrowLeft, 
-  Star, 
-  Clock, 
-  Users, 
-  DollarSign,
+import { useParams, useNavigate, Link } from 'react-router-dom';
+import {
+  ArrowLeft,
+  Clock,
+  User,
+  Users,
   Calendar,
   MapPin,
-  BookOpen,
-  Award,
-  Download,
-  ChevronRight,
-  Play,
+  CheckCircle,
   FileText,
-  Link as LinkIcon
+  Video,
+  ExternalLink,
+  Star,
+  Loader2,
+  AlertCircle,
+  BookOpen,
+  Target,
+  Award
 } from 'lucide-react';
-import apiService from '../services/api';
+import { programsAPI, enrollmentsAPI } from '../services/apiService';
+import { useAuth } from '../contexts/AuthContext';
+import toast from 'react-hot-toast';
+import EnrollmentModal from '../components/EnrollmentModal';
+import SuccessNotification from '../components/SuccessNotification';
 
 const ProgramDetails = () => {
   const { id } = useParams();
   const navigate = useNavigate();
+  const { user, isAuthenticated, isCustomer } = useAuth();
+  
   const [program, setProgram] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [activeTab, setActiveTab] = useState('overview');
-  const [enrollments, setEnrollments] = useState([]);
-
-  // Mock user data - in real app, this would come from authentication context
-  const user = {
-    id: '60f1b2b0b3b4b4b4b4b4b4b4',
-    name: 'John Doe',
-    role: 'customer'
-  };
+  const [enrolling, setEnrolling] = useState(false);
+  const [userEnrollment, setUserEnrollment] = useState(null);
+  const [showEnrollmentModal, setShowEnrollmentModal] = useState(false);
+  const [showSuccessNotification, setShowSuccessNotification] = useState(false);
 
   useEffect(() => {
     fetchProgramDetails();
-  }, [id]);
+    if (isAuthenticated && user) {
+      checkUserEnrollment();
+    }
+  }, [id, isAuthenticated, user]);
 
   const fetchProgramDetails = async () => {
-    setLoading(true);
     try {
-      const response = await apiService.getCoachingProgramById(id);
-      setProgram(response.data);
-      
-      // Also fetch enrollment data
-      if (response.data) {
-        const enrollmentResponse = await apiService.getProgramEnrollments(id);
-        setEnrollments(enrollmentResponse.data || []);
-      }
-      
+      setLoading(true);
       setError(null);
+      
+      const response = await programsAPI.getById(id);
+      
+      if (response.success) {
+        setProgram(response.data);
+      } else {
+        throw new Error(response.message || 'Failed to fetch program details');
+      }
     } catch (err) {
-      setError('Failed to fetch program details');
       console.error('Error fetching program details:', err);
+      setError(err.message);
+      toast.error('Failed to load program details');
     } finally {
       setLoading(false);
     }
   };
 
-  const handleEnrollClick = () => {
-    navigate(`/programs/${id}/enroll`);
+  const checkUserEnrollment = async () => {
+    if (!user?.id) return;
+    
+    try {
+      // Check enrollments from localStorage for demo mode
+      const storedEnrollments = JSON.parse(localStorage.getItem(`enrollments_${user.id}`)) || [];
+      const programEnrollment = storedEnrollments.find(enrollment => 
+        enrollment.program._id === id || enrollment.program.id === id
+      );
+      
+      if (programEnrollment) {
+        setUserEnrollment(programEnrollment);
+      }
+    } catch (err) {
+      console.error('Error checking enrollment:', err);
+    }
+  };
+
+  const handleEnroll = () => {
+    if (!isAuthenticated) {
+      toast.error('Please login to enroll in programs');
+      return;
+    }
+
+    if (!isCustomer()) {
+      toast.error('Only customers can enroll in programs');
+      return;
+    }
+
+    setShowEnrollmentModal(true);
+  };
+
+  const handleEnrollmentSuccess = (enrollment) => {
+    setUserEnrollment(enrollment);
+    fetchProgramDetails(); // Refresh to update enrollment count
+    setShowSuccessNotification(true);
+    
+    // Navigate to profile page after showing notification
+    setTimeout(() => {
+      navigate('/profile');
+    }, 3000);
   };
 
   const formatPrice = (price) => {
     return new Intl.NumberFormat('en-LK', {
       style: 'currency',
-      currency: 'LKR'
+      currency: 'LKR',
+      minimumFractionDigits: 0
     }).format(price);
   };
 
   const getDifficultyColor = (difficulty) => {
-    const colors = {
-      easy: 'bg-green-100 text-green-800',
-      medium: 'bg-yellow-100 text-yellow-800',
-      hard: 'bg-red-100 text-red-800'
-    };
-    return colors[difficulty] || 'bg-gray-100 text-gray-800';
-  };
-
-  const getCategoryColor = (category) => {
-    const colors = {
-      beginner: 'bg-blue-100 text-blue-800',
-      intermediate: 'bg-purple-100 text-purple-800',
-      advanced: 'bg-orange-100 text-orange-800',
-      professional: 'bg-red-100 text-red-800'
-    };
-    return colors[category] || 'bg-gray-100 text-gray-800';
-  };
-
-  const getFileTypeIcon = (type) => {
-    switch (type) {
-      case 'video':
-        return <Play size={16} className="text-red-500" />;
-      case 'document':
-        return <FileText size={16} className="text-blue-500" />;
-      case 'link':
-        return <LinkIcon size={16} className="text-green-500" />;
-      default:
-        return <Download size={16} className="text-gray-500" />;
+    switch (difficulty) {
+      case 'easy': return 'bg-green-100 text-green-800';
+      case 'medium': return 'bg-yellow-100 text-yellow-800';
+      case 'hard': return 'bg-red-100 text-red-800';
+      default: return 'bg-gray-100 text-gray-800';
     }
   };
 
-  const tabs = [
-    { id: 'overview', name: 'Overview', icon: BookOpen },
-    { id: 'curriculum', name: 'Curriculum', icon: Calendar },
-    { id: 'materials', name: 'Materials', icon: Download },
-    { id: 'coach', name: 'Coach', icon: Award }
-  ];
+  const getMaterialIcon = (type) => {
+    switch (type) {
+      case 'video': return Video;
+      case 'document': return FileText;
+      case 'link': return ExternalLink;
+      default: return FileText;
+    }
+  };
+
+  const getEnrollmentStatusColor = (status) => {
+    switch (status) {
+      case 'active': return 'bg-green-100 text-green-800';
+      case 'pending': return 'bg-yellow-100 text-yellow-800';
+      case 'completed': return 'bg-blue-100 text-blue-800';
+      case 'cancelled': return 'bg-red-100 text-red-800';
+      default: return 'bg-gray-100 text-gray-800';
+    }
+  };
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-          <div className="animate-pulse">
-            <div className="h-8 bg-gray-200 rounded w-1/4 mb-6"></div>
-            <div className="bg-white rounded-lg shadow p-6">
-              <div className="h-6 bg-gray-200 rounded w-3/4 mb-4"></div>
-              <div className="h-4 bg-gray-200 rounded w-full mb-2"></div>
-              <div className="h-4 bg-gray-200 rounded w-2/3"></div>
-            </div>
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <Loader2 className="h-12 w-12 animate-spin text-blue-600 mx-auto mb-4" />
+          <p className="text-gray-600">Loading program details...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center max-w-md">
+          <AlertCircle className="h-16 w-16 text-red-500 mx-auto mb-4" />
+          <h2 className="text-2xl font-bold text-gray-900 mb-2">Error Loading Program</h2>
+          <p className="text-gray-600 mb-6">{error}</p>
+          <div className="space-x-4">
+            <button
+              onClick={fetchProgramDetails}
+              className="bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition-colors"
+            >
+              Try Again
+            </button>
+            <Link
+              to="/programs"
+              className="bg-gray-600 text-white px-6 py-3 rounded-lg hover:bg-gray-700 transition-colors"
+            >
+              Back to Programs
+            </Link>
           </div>
         </div>
       </div>
     );
   }
 
-  if (error || !program) {
+  if (!program) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
-          <h2 className="text-2xl font-bold text-gray-900 mb-4">Program not found</h2>
-          <p className="text-gray-600 mb-4">{error}</p>
-          <button 
-            onClick={() => navigate('/programs')}
-            className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 transition-colors"
+          <BookOpen className="h-16 w-16 text-gray-400 mx-auto mb-4" />
+          <h2 className="text-2xl font-bold text-gray-900 mb-2">Program Not Found</h2>
+          <p className="text-gray-600 mb-6">The program you're looking for doesn't exist.</p>
+          <Link
+            to="/programs"
+            className="bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition-colors"
           >
             Back to Programs
-          </button>
+          </Link>
         </div>
       </div>
     );
   }
 
-  const availableSpots = program.maxParticipants - (program.currentEnrollments || 0);
-  const isAvailable = availableSpots > 0 && program.isActive;
-
   return (
     <div className="min-h-screen bg-gray-50">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Header */}
-        <div className="mb-6">
+      {/* Header */}
+      <div className="bg-white shadow-sm border-b border-gray-200">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
           <button
             onClick={() => navigate('/programs')}
             className="flex items-center space-x-2 text-blue-600 hover:text-blue-700 mb-4"
@@ -158,262 +211,362 @@ const ProgramDetails = () => {
             <ArrowLeft size={20} />
             <span>Back to Programs</span>
           </button>
-        </div>
-
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          {/* Main Content */}
-          <div className="lg:col-span-2">
-            {/* Program Header */}
-            <div className="bg-white rounded-lg shadow p-6 mb-6">
-              <div className="flex flex-wrap gap-2 mb-4">
-                <span className={`px-3 py-1 rounded-full text-sm font-medium ${getCategoryColor(program.category)}`}>
-                  {program.category}
-                </span>
-                <span className={`px-3 py-1 rounded-full text-sm font-medium ${getDifficultyColor(program.difficulty)}`}>
-                  {program.difficulty}
-                </span>
-                <span className="px-3 py-1 rounded-full text-sm font-medium bg-gray-100 text-gray-800">
-                  {program.specialization?.replace('-', ' ')}
-                </span>
-              </div>
-
-              <h1 className="text-3xl font-bold text-gray-900 mb-4">{program.title}</h1>
-              <p className="text-gray-600 text-lg mb-6">{program.description}</p>
-
-              {/* Quick Stats */}
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                <div className="text-center p-3 bg-gray-50 rounded-lg">
-                  <Clock className="mx-auto text-blue-600 mb-2" size={24} />
-                  <p className="text-sm text-gray-600">Duration</p>
-                  <p className="font-semibold">{program.duration?.weeks} weeks</p>
+          
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            {/* Program Image */}
+            <div className="lg:col-span-1">
+              <div className="relative h-64 lg:h-80 bg-gradient-to-br from-blue-500 to-blue-600 rounded-lg overflow-hidden">
+                {program.imageUrl ? (
+                  <img
+                    src={program.imageUrl}
+                    alt={program.title}
+                    className="w-full h-full object-cover"
+                  />
+                ) : (
+                  <div className="w-full h-full flex items-center justify-center">
+                    <BookOpen className="text-white" size={64} />
+                  </div>
+                )}
+                
+                {/* Badges */}
+                <div className="absolute top-4 left-4 space-y-2">
+                  <span className={`px-2 py-1 rounded-full text-xs font-medium ${getDifficultyColor(program.difficulty)}`}>
+                    {program.difficulty?.charAt(0).toUpperCase() + program.difficulty?.slice(1)}
+                  </span>
+                  <br />
+                  <span className="px-2 py-1 bg-blue-100 text-blue-800 text-xs rounded-full">
+                    {program.category?.charAt(0).toUpperCase() + program.category?.slice(1)}
+                  </span>
                 </div>
-                <div className="text-center p-3 bg-gray-50 rounded-lg">
-                  <Calendar className="mx-auto text-green-600 mb-2" size={24} />
-                  <p className="text-sm text-gray-600">Sessions</p>
-                  <p className="font-semibold">{program.duration?.sessionsPerWeek}x/week</p>
-                </div>
-                <div className="text-center p-3 bg-gray-50 rounded-lg">
-                  <Users className="mx-auto text-purple-600 mb-2" size={24} />
-                  <p className="text-sm text-gray-600">Enrolled</p>
-                  <p className="font-semibold">{program.currentEnrollments || 0}/{program.maxParticipants}</p>
-                </div>
-                <div className="text-center p-3 bg-gray-50 rounded-lg">
-                  <DollarSign className="mx-auto text-yellow-600 mb-2" size={24} />
-                  <p className="text-sm text-gray-600">Price</p>
-                  <p className="font-semibold">{formatPrice(program.price)}</p>
+
+                <div className="absolute top-4 right-4">
+                  <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                    program.isFull ? 'bg-red-100 text-red-800' : 'bg-green-100 text-green-800'
+                  }`}>
+                    {program.isFull ? 'Full' : 'Available'}
+                  </span>
                 </div>
               </div>
             </div>
 
-            {/* Tabs */}
-            <div className="bg-white rounded-lg shadow">
-              <div className="border-b border-gray-200">
-                <nav className="flex space-x-8 px-6">
-                  {tabs.map((tab) => {
-                    const IconComponent = tab.icon;
-                    return (
-                      <button
-                        key={tab.id}
-                        onClick={() => setActiveTab(tab.id)}
-                        className={`flex items-center space-x-2 py-4 px-1 border-b-2 font-medium text-sm ${
-                          activeTab === tab.id
-                            ? 'border-blue-500 text-blue-600'
-                            : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                        }`}
-                      >
-                        <IconComponent size={18} />
-                        <span>{tab.name}</span>
-                      </button>
-                    );
-                  })}
-                </nav>
+            {/* Program Info */}
+            <div className="lg:col-span-2">
+              <h1 className="text-3xl font-bold text-gray-900 mb-4">{program.title}</h1>
+              
+              <div className="flex items-center space-x-4 mb-6">
+                <span className="px-3 py-1 bg-gray-100 text-gray-800 text-sm rounded-full">
+                  {program.specialization?.replace('-', ' ').replace(/\b\w/g, l => l.toUpperCase())}
+                </span>
+                {program.tags && program.tags.map((tag, index) => (
+                  <span key={index} className="px-3 py-1 bg-blue-100 text-blue-800 text-sm rounded-full">
+                    {tag}
+                  </span>
+                ))}
               </div>
 
-              <div className="p-6">
-                {/* Overview Tab */}
-                {activeTab === 'overview' && (
-                  <div className="space-y-6">
-                    {program.benefits && program.benefits.length > 0 && (
-                      <div>
-                        <h3 className="text-lg font-semibold text-gray-900 mb-3">What You'll Learn</h3>
-                        <ul className="space-y-2">
-                          {program.benefits.map((benefit, index) => (
-                            <li key={index} className="flex items-start space-x-2">
-                              <ChevronRight className="text-green-500 mt-0.5" size={16} />
-                              <span className="text-gray-700">{benefit}</span>
-                            </li>
-                          ))}
-                        </ul>
-                      </div>
-                    )}
+              <p className="text-lg text-gray-600 mb-6 leading-relaxed">
+                {program.description}
+              </p>
 
-                    {program.requirements && program.requirements.length > 0 && (
-                      <div>
-                        <h3 className="text-lg font-semibold text-gray-900 mb-3">Requirements</h3>
-                        <ul className="space-y-2">
-                          {program.requirements.map((requirement, index) => (
-                            <li key={index} className="flex items-start space-x-2">
-                              <ChevronRight className="text-blue-500 mt-0.5" size={16} />
-                              <span className="text-gray-700">{requirement}</span>
-                            </li>
-                          ))}
-                        </ul>
-                      </div>
-                    )}
-                  </div>
-                )}
+              {/* Program Stats */}
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+                <div className="text-center p-4 bg-gray-50 rounded-lg">
+                  <Clock className="h-8 w-8 text-blue-600 mx-auto mb-2" />
+                  <div className="text-lg font-semibold text-gray-900">{program.duration?.weeks}</div>
+                  <div className="text-sm text-gray-600">Weeks</div>
+                </div>
+                
+                <div className="text-center p-4 bg-gray-50 rounded-lg">
+                  <Calendar className="h-8 w-8 text-blue-600 mx-auto mb-2" />
+                  <div className="text-lg font-semibold text-gray-900">{program.duration?.sessionsPerWeek}</div>
+                  <div className="text-sm text-gray-600">Sessions/Week</div>
+                </div>
+                
+                <div className="text-center p-4 bg-gray-50 rounded-lg">
+                  <Users className="h-8 w-8 text-blue-600 mx-auto mb-2" />
+                  <div className="text-lg font-semibold text-gray-900">{program.currentEnrollments || 0}/{program.maxParticipants}</div>
+                  <div className="text-sm text-gray-600">Enrolled</div>
+                </div>
+                
+                <div className="text-center p-4 bg-gray-50 rounded-lg">
+                  <Target className="h-8 w-8 text-blue-600 mx-auto mb-2" />
+                  <div className="text-lg font-semibold text-gray-900">{program.totalSessions}</div>
+                  <div className="text-sm text-gray-600">Total Sessions</div>
+                </div>
+              </div>
 
-                {/* Curriculum Tab */}
-                {activeTab === 'curriculum' && (
+              {/* Price and Enrollment */}
+              <div className="bg-white border border-gray-200 rounded-lg p-6">
+                <div className="flex items-center justify-between mb-4">
                   <div>
-                    <h3 className="text-lg font-semibold text-gray-900 mb-4">Course Curriculum</h3>
-                    {program.curriculum && program.curriculum.length > 0 ? (
-                      <div className="space-y-4">
-                        {program.curriculum.map((item, index) => (
-                          <div key={index} className="border border-gray-200 rounded-lg p-4">
-                            <div className="flex items-center justify-between mb-2">
-                              <h4 className="font-medium text-gray-900">
-                                Week {item.week}, Session {item.session}: {item.title}
-                              </h4>
-                              <span className="text-sm text-gray-500">{item.duration} min</span>
-                            </div>
-                            {item.objectives && item.objectives.length > 0 && (
-                              <ul className="space-y-1">
-                                {item.objectives.map((objective, objIndex) => (
-                                  <li key={objIndex} className="text-sm text-gray-600 flex items-start space-x-2">
-                                    <span className="text-blue-500 mt-1">•</span>
-                                    <span>{objective}</span>
-                                  </li>
-                                ))}
-                              </ul>
-                            )}
-                          </div>
-                        ))}
-                      </div>
-                    ) : (
-                      <p className="text-gray-600">Curriculum details will be provided upon enrollment.</p>
-                    )}
+                    <span className="text-3xl font-bold text-gray-900">
+                      {formatPrice(program.price)}
+                    </span>
+                    <span className="text-gray-600 ml-2">for the complete program</span>
                   </div>
-                )}
+                </div>
 
-                {/* Materials Tab */}
-                {activeTab === 'materials' && (
-                  <div>
-                    <h3 className="text-lg font-semibold text-gray-900 mb-4">Course Materials</h3>
-                    {program.materials && program.materials.length > 0 ? (
-                      <div className="space-y-3">
-                        {program.materials.map((material, index) => (
-                          <div key={index} className="flex items-center justify-between p-4 border border-gray-200 rounded-lg hover:bg-gray-50">
-                            <div className="flex items-center space-x-3">
-                              {getFileTypeIcon(material.type)}
-                              <div>
-                                <h4 className="font-medium text-gray-900">{material.title}</h4>
-                                {material.description && (
-                                  <p className="text-sm text-gray-600">{material.description}</p>
-                                )}
-                              </div>
-                            </div>
-                            <span className="text-sm text-gray-500 capitalize">{material.type}</span>
-                          </div>
-                        ))}
-                      </div>
-                    ) : (
-                      <p className="text-gray-600">Course materials will be provided upon enrollment.</p>
-                    )}
-                  </div>
-                )}
-
-                {/* Coach Tab */}
-                {activeTab === 'coach' && (
-                  <div>
-                    <h3 className="text-lg font-semibold text-gray-900 mb-4">Your Coach</h3>
-                    {program.coach && (
-                      <div className="flex items-start space-x-4">
-                        <img
-                          src={program.coach.userId?.profileImageURL || '/api/placeholder/80/80'}
-                          alt="Coach"
-                          className="w-20 h-20 rounded-full bg-gray-300"
-                        />
-                        <div className="flex-1">
-                          <h4 className="text-xl font-semibold text-gray-900">
-                            {program.coach.userId?.firstName} {program.coach.userId?.lastName}
-                          </h4>
-                          <div className="flex items-center space-x-2 mb-3">
-                            <div className="flex items-center space-x-1">
-                              <Star className="text-yellow-400 fill-current" size={16} />
-                              <span className="font-medium">{program.coach.rating?.toFixed(1)}</span>
-                              <span className="text-gray-600">({program.coach.totalReviews} reviews)</span>
-                            </div>
-                          </div>
-                          <p className="text-gray-700 mb-3">{program.coach.bio}</p>
-                          <div className="flex flex-wrap gap-2">
-                            {program.coach.specializations?.map((spec, index) => (
-                              <span key={index} className="px-2 py-1 bg-blue-100 text-blue-800 text-sm rounded-full">
-                                {spec.replace('-', ' ')}
-                              </span>
-                            ))}
-                          </div>
+                {/* User Enrollment Status */}
+                {userEnrollment && (
+                  <div className="mb-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                    <div className="flex items-center space-x-2 mb-2">
+                      <CheckCircle className="text-blue-600" size={20} />
+                      <span className="font-medium text-blue-900">You are enrolled in this program</span>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <span className="text-sm text-blue-700">Status:</span>
+                      <span className={`px-2 py-1 rounded-full text-xs font-medium ${getEnrollmentStatusColor(userEnrollment.status)}`}>
+                        {userEnrollment.status?.charAt(0).toUpperCase() + userEnrollment.status?.slice(1)}
+                      </span>
+                    </div>
+                    {userEnrollment.progress && (
+                      <div className="mt-2">
+                        <span className="text-sm text-blue-700">Progress: {userEnrollment.progress.progressPercentage || 0}%</span>
+                        <div className="w-full bg-blue-200 rounded-full h-2 mt-1">
+                          <div 
+                            className="bg-blue-600 h-2 rounded-full" 
+                            style={{ width: `${userEnrollment.progress.progressPercentage || 0}%` }}
+                          ></div>
                         </div>
                       </div>
                     )}
                   </div>
                 )}
+
+                {/* Enrollment Button */}
+                {isAuthenticated && isCustomer() && !userEnrollment && (
+                  <button
+                    onClick={handleEnroll}
+                    disabled={program.isFull}
+                    className={`w-full py-3 px-6 rounded-lg font-medium transition-colors ${
+                      program.isFull
+                        ? 'bg-gray-400 text-gray-600 cursor-not-allowed'
+                        : 'bg-blue-600 text-white hover:bg-blue-700'
+                    }`}
+                  >
+                    {program.isFull ? 'Program Full' : 'Enroll Now'}
+                  </button>
+                )}
+
+                {!isAuthenticated && (
+                  <div className="text-center">
+                    <p className="text-gray-600 mb-4">Please login to enroll in this program</p>
+                    <Link
+                      to="/login"
+                      className="bg-blue-600 text-white py-3 px-6 rounded-lg font-medium hover:bg-blue-700 transition-colors"
+                    >
+                      Login to Enroll
+                    </Link>
+                  </div>
+                )}
+
+                {isAuthenticated && !isCustomer() && (
+                  <div className="text-center">
+                    <p className="text-gray-600">Only customers can enroll in programs</p>
+                  </div>
+                )}
               </div>
-            </div>
-          </div>
-
-          {/* Sidebar */}
-          <div className="lg:col-span-1">
-            <div className="bg-white rounded-lg shadow p-6 sticky top-8">
-              <div className="text-center mb-6">
-                <div className="text-3xl font-bold text-blue-600 mb-1">
-                  {formatPrice(program.price)}
-                </div>
-                <p className="text-gray-600">Full program fee</p>
-              </div>
-
-              <div className="space-y-4 mb-6">
-                <div className="flex justify-between items-center">
-                  <span className="text-gray-600">Available spots:</span>
-                  <span className="font-semibold text-gray-900">{availableSpots}</span>
-                </div>
-                <div className="flex justify-between items-center">
-                  <span className="text-gray-600">Start date:</span>
-                  <span className="font-semibold text-gray-900">
-                    {new Date(program.startDate).toLocaleDateString()}
-                  </span>
-                </div>
-                <div className="flex justify-between items-center">
-                  <span className="text-gray-600">End date:</span>
-                  <span className="font-semibold text-gray-900">
-                    {new Date(program.endDate).toLocaleDateString()}
-                  </span>
-                </div>
-              </div>
-
-              {isAvailable ? (
-                <button
-                  onClick={handleEnrollClick}
-                  className="w-full bg-blue-600 text-white py-3 px-4 rounded-md hover:bg-blue-700 transition-colors font-medium"
-                >
-                  Enroll Now
-                </button>
-              ) : (
-                <button
-                  disabled
-                  className="w-full bg-gray-300 text-gray-500 py-3 px-4 rounded-md cursor-not-allowed font-medium"
-                >
-                  {program.isActive ? 'Program Full' : 'Program Unavailable'}
-                </button>
-              )}
-
-              <p className="text-xs text-gray-500 text-center mt-3">
-                30-day money-back guarantee
-              </p>
             </div>
           </div>
         </div>
       </div>
+
+      {/* Program Details Sections */}
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+          {/* Main Content */}
+          <div className="lg:col-span-2 space-y-8">
+            {/* Coach Information */}
+            {program.coach && (
+              <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+                <h2 className="text-2xl font-bold text-gray-900 mb-4">Your Coach</h2>
+                <div className="flex items-start space-x-4">
+                  <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center">
+                    <User className="text-blue-600" size={32} />
+                  </div>
+                  <div className="flex-1">
+                    <h3 className="text-xl font-semibold text-gray-900">
+                      {program.coach?.userId ? `${program.coach.userId.firstName} ${program.coach.userId.lastName}` : 'Professional Coach'}
+                    </h3>
+                    <p className="text-gray-600 mt-1">{program.coach?.userId?.email || program.coach?.email}</p>
+                    {program.coach.specializations && (
+                      <div className="mt-2 flex flex-wrap gap-2">
+                        {program.coach.specializations.map((spec, index) => (
+                          <span key={index} className="px-2 py-1 bg-blue-100 text-blue-800 text-xs rounded-full">
+                            {spec}
+                          </span>
+                        ))}
+                      </div>
+                    )}
+                    {program.coach.experience && (
+                      <p className="text-sm text-gray-600 mt-2">
+                        {program.coach.experience} years of experience
+                      </p>
+                    )}
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Program Benefits */}
+            {program.benefits && program.benefits.length > 0 && (
+              <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+                <h2 className="text-2xl font-bold text-gray-900 mb-4">What You'll Gain</h2>
+                <ul className="space-y-3">
+                  {program.benefits.map((benefit, index) => (
+                    <li key={index} className="flex items-start space-x-3">
+                      <CheckCircle className="text-green-500 mt-0.5 flex-shrink-0" size={20} />
+                      <span className="text-gray-700">{benefit}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+
+            {/* Program Requirements */}
+            {program.requirements && program.requirements.length > 0 && (
+              <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+                <h2 className="text-2xl font-bold text-gray-900 mb-4">Requirements</h2>
+                <ul className="space-y-3">
+                  {program.requirements.map((requirement, index) => (
+                    <li key={index} className="flex items-start space-x-3">
+                      <div className="w-2 h-2 bg-blue-600 rounded-full mt-2 flex-shrink-0"></div>
+                      <span className="text-gray-700">{requirement}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+
+            {/* Program Curriculum */}
+            {program.curriculum && program.curriculum.length > 0 && (
+              <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+                <h2 className="text-2xl font-bold text-gray-900 mb-4">Program Curriculum</h2>
+                <div className="space-y-4">
+                  {program.curriculum.map((item, index) => (
+                    <div key={index} className="border border-gray-200 rounded-lg p-4">
+                      <div className="flex items-center space-x-2 mb-2">
+                        <span className="bg-blue-100 text-blue-800 text-xs font-medium px-2 py-1 rounded">
+                          Week {item.week}
+                        </span>
+                        <span className="bg-gray-100 text-gray-800 text-xs font-medium px-2 py-1 rounded">
+                          Session {item.session}
+                        </span>
+                        {item.duration && (
+                          <span className="text-gray-600 text-sm">{item.duration} minutes</span>
+                        )}
+                      </div>
+                      <h4 className="font-semibold text-gray-900 mb-2">{item.title}</h4>
+                      {item.objectives && item.objectives.length > 0 && (
+                        <ul className="list-disc list-inside text-sm text-gray-600 space-y-1">
+                          {item.objectives.map((objective, objIndex) => (
+                            <li key={objIndex}>{objective}</li>
+                          ))}
+                        </ul>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Sidebar */}
+          <div className="lg:col-span-1 space-y-6">
+            {/* Program Materials */}
+            {program.materials && program.materials.length > 0 && (
+              <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+                <h3 className="text-lg font-semibold text-gray-900 mb-4">Learning Materials</h3>
+                <div className="space-y-3">
+                  {program.materials.map((material, index) => {
+                    const IconComponent = getMaterialIcon(material.type);
+                    return (
+                      <div key={index} className="flex items-start space-x-3 p-3 bg-gray-50 rounded-lg">
+                        <IconComponent className="text-blue-600 flex-shrink-0 mt-0.5" size={20} />
+                        <div className="flex-1 min-w-0">
+                          <h4 className="text-sm font-medium text-gray-900 truncate">
+                            {material.title}
+                          </h4>
+                          {material.description && (
+                            <p className="text-xs text-gray-600 mt-1">{material.description}</p>
+                          )}
+                          {material.url && (
+                            <a
+                              href={material.url}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="text-xs text-blue-600 hover:text-blue-700 mt-1 inline-flex items-center space-x-1"
+                            >
+                              <span>View</span>
+                              <ExternalLink size={12} />
+                            </a>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
+            {/* Program Dates */}
+            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+              <h3 className="text-lg font-semibold text-gray-900 mb-4">Program Schedule</h3>
+              <div className="space-y-3">
+                <div className="flex items-center space-x-3">
+                  <Calendar className="text-blue-600" size={20} />
+                  <div>
+                    <div className="text-sm font-medium text-gray-900">Start Date</div>
+                    <div className="text-sm text-gray-600">
+                      {new Date(program.startDate).toLocaleDateString()}
+                    </div>
+                  </div>
+                </div>
+                <div className="flex items-center space-x-3">
+                  <Calendar className="text-blue-600" size={20} />
+                  <div>
+                    <div className="text-sm font-medium text-gray-900">End Date</div>
+                    <div className="text-sm text-gray-600">
+                      {new Date(program.endDate).toLocaleDateString()}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Quick Info */}
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-6">
+              <h3 className="text-lg font-semibold text-blue-900 mb-3">Need Help?</h3>
+              <p className="text-sm text-blue-700 mb-4">
+                Have questions about this program? Contact our support team for assistance.
+              </p>
+              <button className="w-full bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 transition-colors text-sm font-medium">
+                Contact Support
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Enrollment Modal */}
+      {program && (
+        <EnrollmentModal
+          isOpen={showEnrollmentModal}
+          onClose={() => setShowEnrollmentModal(false)}
+          program={program}
+          onSuccess={handleEnrollmentSuccess}
+        />
+      )}
+
+      {/* Success Notification */}
+      <SuccessNotification
+        isVisible={showSuccessNotification}
+        onClose={() => setShowSuccessNotification(false)}
+        title="Enrollment Successful!"
+        message={`You have successfully enrolled in ${program?.title}. You will be redirected to your profile shortly.`}
+        actionText="View My Profile"
+        actionLink="/profile"
+      />
     </div>
   );
 };

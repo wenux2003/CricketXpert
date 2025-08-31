@@ -35,12 +35,12 @@ class ApiService {
   // Coaching Programs API
   async getCoachingPrograms(params = {}) {
     const queryString = new URLSearchParams(params).toString();
-    const endpoint = `/coaching-programs${queryString ? `?${queryString}` : ''}`;
+    const endpoint = `/programs${queryString ? `?${queryString}` : ''}`;
     return this.makeRequest(endpoint);
   }
 
   async getCoachingProgramById(id) {
-    return this.makeRequest(`/coaching-programs/${id}`);
+    return this.makeRequest(`/programs/${id}`);
   }
 
   async getProgramEnrollments(programId, params = {}) {
@@ -182,3 +182,5 @@ class ApiService {
 // Create and export a singleton instance
 const apiService = new ApiService();
 export default apiService;
+
+

@@ -3,6 +3,13 @@ const dotenv = require('dotenv');
 const cors = require('cors');
 const connectDB = require('./config/db');
 
+// Import models to register them
+require('./models/User');
+require('./models/Coach');
+require('./models/CoachingProgram');
+require('./models/ProgramEnrollment');
+require('./models/Session');
+
 // Load env vars
 dotenv.config();
 
@@ -12,61 +19,31 @@ connectDB();
 const app = express();
 
 // Middleware
-app.use(cors());
+app.use(cors({
+  origin: ['http://localhost:3000', 'http://localhost:5173', 'http://localhost:5174', 'http://localhost:5175', 'http://localhost:4173', 'http://127.0.0.1:5173'],
+  credentials: false,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization']
+}));
 app.use(express.json());
 
-//for user
-const userRoutes = require("./routes/userRoutes");
-app.use('/api/users', userRoutes);
+// Import routes
+const coachingProgramRoutes = require('./routes/coachingPrograms');
+const programEnrollmentRoutes = require('./routes/programEnrollments');
+const sessionRoutes = require('./routes/sessions');
+const userRoutes = require('./routes/users');
+const coachRoutes = require('./routes/coaches');
+const syncRoutes = require('./routes/sync');
 
-//for Coach
-const coachRoutes = require("./routes/coachRoutes");
-app.use("/api/coaches", coachRoutes);
-
-//for coach availabity
-const coachAvailabilityRoutes = require('./routes/coachAvailabilityRoutes');
-app.use('/api/coach-availability', coachAvailabilityRoutes);
-
-//for coaching programs
-
-const coachingProgramRoutes = require('./routes/coachingProgramRoutes');
-app.use('/api/coaching-programs', coachingProgramRoutes);
-
-//for enrollments
-const enrollmentRoutes = require('./routes/enrollmentRoutes');
-app.use('/api/enrollments', enrollmentRoutes);
-
-//for sessions
-const sessionRoutes = require('./routes/sessionRoutes');
+// Mount routes
+app.use('/api/programs', coachingProgramRoutes);
+app.use('/api/enrollments', programEnrollmentRoutes);
 app.use('/api/sessions', sessionRoutes);
+app.use('/api/users', userRoutes);
+app.use('/api/coaches', coachRoutes);
+app.use('/api/sync', syncRoutes);
 
-//for ground
-const groundRoutes = require('./routes/groundRoutes');
-app.use('/api/grounds', groundRoutes);
 
-//for feedbacks
-const feedbackRoutes = require('./routes/feedbackRoutes');
-app.use('/api/feedbacks', feedbackRoutes);
-
-//for noifications
-const notificationRoutes = require('./routes/notificationRoutes');
-app.use('/api/notifications', notificationRoutes);
-
-//for certificates
-const certificateRoutes = require('./routes/certificateRoutes');
-app.use('/api/certificates', certificateRoutes);
-
-//for payments
-const paymentRoutes = require('./routes/paymentRoutes');
-app.use('/api/payments', paymentRoutes);
-
-//for dashboard
-const dashboardRoutes = require('./routes/dashboardRoutes');
-app.use('/api/dashboard', dashboardRoutes);
-
-//for calendar
-const calendarRoutes = require('./routes/calendarRoutes');
-app.use('/api/calendar', calendarRoutes);
 
 
 

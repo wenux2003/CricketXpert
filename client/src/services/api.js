@@ -174,3 +174,15 @@ export const certificatesAPI = {
 };
 
 export default API;
+
+
+
+
+
+
+
+
+
+
+
+

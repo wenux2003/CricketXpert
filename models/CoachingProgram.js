@@ -121,4 +121,7 @@ coachingProgramSchema.pre('save', function(next) {
   next();
 });
 
+// Pagination plugin commented out - install mongoose-paginate-v2 to enable
+// coachingProgramSchema.plugin(mongoosePaginate);
+
 module.exports = mongoose.model('CoachingProgram', coachingProgramSchema);

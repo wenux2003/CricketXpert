@@ -1,81 +1,92 @@
 const Session = require('../models/Session');
-const Enrollment = require('../models/Enrollment');
-const Ground = require('../models/Ground');
 const CoachingProgram = require('../models/CoachingProgram');
-const Notification = require('../models/Notification');
-const mongoose = require('mongoose');
+const ProgramEnrollment = require('../models/ProgramEnrollment');
+const Ground = require('../models/Ground');
 
-// Get all sessions with filters
+// Helper function for manual pagination
+const paginateHelper = async (Model, filter, options) => {
+  const skip = (options.page - 1) * options.limit;
+  
+  const docs = await Model.find(filter)
+    .sort(options.sort)
+    .skip(skip)
+    .limit(options.limit)
+    .populate(options.populate);
+
+  const totalDocs = await Model.countDocuments(filter);
+  const totalPages = Math.ceil(totalDocs / options.limit);
+
+  return {
+    docs,
+    totalDocs,
+    limit: options.limit,
+    page: options.page,
+    totalPages,
+    hasNextPage: options.page < totalPages,
+    hasPrevPage: options.page > 1
+  };
+};
+
+// @desc    Get all sessions
+// @route   GET /api/sessions
+// @access  Private
 const getAllSessions = async (req, res) => {
   try {
     const {
       page = 1,
       limit = 10,
-      coach,
       program,
+      coach,
       ground,
       status,
       date,
-      userId
+      week,
+      sortBy = 'scheduledDate',
+      sortOrder = 'asc'
     } = req.query;
 
     // Build filter object
     const filter = {};
-    if (coach) filter.coach = coach;
     if (program) filter.program = program;
+    if (coach) filter.coach = coach;
     if (ground) filter.ground = ground;
     if (status) filter.status = status;
+    if (week) filter.week = week;
     
-    // Filter by date range
     if (date) {
       const startDate = new Date(date);
       const endDate = new Date(date);
       endDate.setDate(endDate.getDate() + 1);
-      filter.scheduledDate = {
-        $gte: startDate,
-        $lt: endDate
-      };
+      filter.scheduledDate = { $gte: startDate, $lt: endDate };
     }
 
-    // If userId is provided, filter sessions where user is enrolled
-    let sessionQuery = Session.find(filter);
+    // Build sort object
+    const sort = { [sortBy]: sortOrder === 'desc' ? -1 : 1 };
 
-    if (userId) {
-      // Get user's enrollments first
-      const userEnrollments = await Enrollment.find({
-        user: userId,
-        status: { $in: ['active', 'pending'] }
-      }).select('program');
-
-      const programIds = userEnrollments.map(enrollment => enrollment.program);
-      filter.program = { $in: programIds };
-    }
-
-    const sessions = await Session.find(filter)
-      .populate({
-        path: 'coach',
-        populate: {
-          path: 'userId',
-          select: 'firstName lastName'
+    const options = {
+      page: parseInt(page),
+      limit: parseInt(limit),
+      sort,
+      populate: [
+        { path: 'program', select: 'title category specialization' },
+        { path: 'coach', select: 'name email' },
+        { path: 'ground', select: 'name location facilities' },
+        { 
+          path: 'participants.user', 
+          select: 'name email' 
+        },
+        {
+          path: 'participants.enrollment',
+          select: 'status progress'
         }
-      })
-      .populate('program', 'title category')
-      .populate('ground', 'description')
-      .populate('participants.user', 'firstName lastName')
-      .sort({ scheduledDate: 1, startTime: 1 })
-      .limit(parseInt(limit))
-      .skip((parseInt(page) - 1) * parseInt(limit));
+      ]
+    };
 
-    const totalSessions = await Session.countDocuments(filter);
+    const sessions = await paginateHelper(Session, filter, options);
 
-    res.json({
+    res.status(200).json({
       success: true,
-      data: sessions,
-      pagination: {
-        currentPage: parseInt(page),
-        totalPages: Math.ceil(totalSessions / parseInt(limit)),
-        totalSessions
-      }
+      data: sessions
     });
   } catch (error) {
     res.status(500).json({
@@ -86,27 +97,17 @@ const getAllSessions = async (req, res) => {
   }
 };
 
-// Get session by ID
-const getSessionById = async (req, res) => {
+// @desc    Get single session
+// @route   GET /api/sessions/:id
+// @access  Private
+const getSession = async (req, res) => {
   try {
     const session = await Session.findById(req.params.id)
-      .populate({
-        path: 'coach',
-        populate: {
-          path: 'userId',
-          select: 'firstName lastName email contactNumber'
-        }
-      })
-      .populate('program', 'title description category')
-      .populate('ground', 'description pricePerSlot')
-      .populate({
-        path: 'participants.user',
-        select: 'firstName lastName email'
-      })
-      .populate({
-        path: 'participants.enrollment',
-        select: 'enrollmentDate progress'
-      });
+      .populate('program', 'title description category specialization')
+      .populate('coach', 'name email specializations')
+      .populate('ground', 'name location facilities equipment')
+      .populate('participants.user', 'name email phone')
+      .populate('participants.enrollment', 'status progress');
 
     if (!session) {
       return res.status(404).json({
@@ -115,7 +116,7 @@ const getSessionById = async (req, res) => {
       });
     }
 
-    res.json({
+    res.status(200).json({
       success: true,
       data: session
     });
@@ -128,119 +129,76 @@ const getSessionById = async (req, res) => {
   }
 };
 
-// Create new session
+// @desc    Create new session
+// @route   POST /api/sessions
+// @access  Private (Coach only)
 const createSession = async (req, res) => {
   try {
-    const {
-      programId,
-      coachId,
-      title,
-      description,
-      sessionNumber,
-      week,
-      scheduledDate,
-      startTime,
-      endTime,
-      duration,
-      groundId,
-      groundSlot,
-      objectives,
-      materials,
-      maxParticipants
-    } = req.body;
+    const sessionData = {
+      ...req.body,
+      coach: req.user.coachId || req.body.coach
+    };
 
     // Check if ground slot is available
-    const isSlotAvailable = await Session.isSlotAvailable(
-      groundId,
-      groundSlot,
-      new Date(scheduledDate),
-      startTime,
-      endTime
+    const isAvailable = await Session.isSlotAvailable(
+      sessionData.ground,
+      sessionData.groundSlot,
+      new Date(sessionData.scheduledDate),
+      sessionData.startTime,
+      sessionData.endTime
     );
 
-    if (!isSlotAvailable) {
+    if (!isAvailable) {
       return res.status(400).json({
         success: false,
-        message: 'Ground slot is not available for the specified time'
+        message: 'Ground slot is not available at the specified time'
       });
     }
 
-    // Verify ground exists and has the requested slot
-    const ground = await Ground.findById(groundId);
-    if (!ground) {
+    // Verify the program exists and coach has access
+    const program = await CoachingProgram.findById(sessionData.program);
+    if (!program) {
       return res.status(404).json({
         success: false,
-        message: 'Ground not found'
+        message: 'Program not found'
       });
     }
 
-    if (groundSlot > ground.groundSlot) {
-      return res.status(400).json({
+    if (program.coach.toString() !== sessionData.coach && req.user.role !== 'admin') {
+      return res.status(403).json({
         success: false,
-        message: 'Invalid ground slot number'
+        message: 'Not authorized to create sessions for this program'
       });
     }
 
-    // Create session
-    const session = new Session({
-      program: programId,
-      coach: coachId,
-      title,
-      description,
-      sessionNumber,
-      week,
-      scheduledDate,
-      startTime,
-      endTime,
-      duration,
-      ground: groundId,
-      groundSlot,
-      objectives: objectives || [],
-      materials: materials || [],
-      maxParticipants: maxParticipants || 10
-    });
-
-    await session.save();
-
-    // Populate session data for response
-    await session.populate([
-      {
-        path: 'coach',
-        populate: {
-          path: 'userId',
-          select: 'firstName lastName'
-        }
-      },
-      { path: 'program', select: 'title' },
-      { path: 'ground', select: 'description' }
-    ]);
-
-    // Notify enrolled students about new session
-    const enrollments = await Enrollment.find({
-      program: programId,
-      status: 'active'
-    });
-
-    for (const enrollment of enrollments) {
-      await Notification.createNotification({
-        recipient: enrollment.user,
-        title: 'New Session Scheduled',
-        message: `A new session "${title}" has been scheduled for ${new Date(scheduledDate).toDateString()}`,
-        type: 'session_scheduled',
-        category: 'info',
-        relatedModel: 'Session',
-        relatedId: session._id,
-        actionUrl: `/sessions/${session._id}`,
-        deliveryChannels: [{ channel: 'in_app' }]
-      });
-    }
+    const session = await Session.create(sessionData);
+    
+    const populatedSession = await Session.findById(session._id)
+      .populate('program', 'title')
+      .populate('coach', 'name email')
+      .populate('ground', 'name location');
 
     res.status(201).json({
       success: true,
-      message: 'Session created successfully',
-      data: session
+      data: populatedSession,
+      message: 'Session created successfully'
     });
   } catch (error) {
+    if (error.name === 'ValidationError') {
+      return res.status(400).json({
+        success: false,
+        message: 'Validation error',
+        errors: Object.values(error.errors).map(err => err.message)
+      });
+    }
+
+    if (error.code === 11000) {
+      return res.status(400).json({
+        success: false,
+        message: 'Session conflicts with existing booking'
+      });
+    }
+
     res.status(500).json({
       success: false,
       message: 'Error creating session',
@@ -249,205 +207,13 @@ const createSession = async (req, res) => {
   }
 };
 
-// Book session for user
-const bookSession = async (req, res) => {
-  try {
-    const { sessionId } = req.params;
-    const { userId } = req.body;
-
-    const session = await Session.findById(sessionId)
-      .populate('program');
-
-    if (!session) {
-      return res.status(404).json({
-        success: false,
-        message: 'Session not found'
-      });
-    }
-
-    // Check if session can be booked
-    if (!session.canBook) {
-      return res.status(400).json({
-        success: false,
-        message: 'Session cannot be booked (full, past deadline, or cancelled)'
-      });
-    }
-
-    // Check if user is enrolled in the program
-    const enrollment = await Enrollment.findOne({
-      user: userId,
-      program: session.program._id,
-      status: 'active'
-    });
-
-    if (!enrollment) {
-      return res.status(400).json({
-        success: false,
-        message: 'User is not enrolled in this program'
-      });
-    }
-
-    // Check if user is already registered for this session
-    const isAlreadyRegistered = session.participants.some(
-      participant => participant.user.toString() === userId
-    );
-
-    if (isAlreadyRegistered) {
-      return res.status(400).json({
-        success: false,
-        message: 'User is already registered for this session'
-      });
-    }
-
-    // Add user to session participants
-    session.participants.push({
-      user: userId,
-      enrollment: enrollment._id
-    });
-
-    await session.save();
-
-    // Add session to enrollment
-    if (!enrollment.sessions.includes(sessionId)) {
-      enrollment.sessions.push(sessionId);
-      await enrollment.save();
-    }
-
-    // Send notifications
-    await Notification.createNotification({
-      recipient: userId,
-      title: 'Session Booked',
-      message: `You have successfully booked "${session.title}" scheduled for ${new Date(session.scheduledDate).toDateString()}`,
-      type: 'session_scheduled',
-      category: 'success',
-      relatedModel: 'Session',
-      relatedId: session._id,
-      actionUrl: `/sessions/${session._id}`,
-      deliveryChannels: [{ channel: 'in_app' }]
-    });
-
-    // Notify coach
-    const coach = await session.populate({
-      path: 'coach',
-      populate: {
-        path: 'userId'
-      }
-    });
-
-    await Notification.createNotification({
-      recipient: coach.coach.userId._id,
-      title: 'New Session Booking',
-      message: `A student has booked your session "${session.title}"`,
-      type: 'session_scheduled',
-      category: 'info',
-      relatedModel: 'Session',
-      relatedId: session._id,
-      deliveryChannels: [{ channel: 'in_app' }]
-    });
-
-    res.json({
-      success: true,
-      message: 'Session booked successfully',
-      data: {
-        sessionId: session._id,
-        availableSpots: session.availableSpots
-      }
-    });
-  } catch (error) {
-    res.status(500).json({
-      success: false,
-      message: 'Error booking session',
-      error: error.message
-    });
-  }
-};
-
-// Cancel session booking
-const cancelBooking = async (req, res) => {
-  try {
-    const { sessionId } = req.params;
-    const { userId } = req.body;
-
-    const session = await Session.findById(sessionId);
-    if (!session) {
-      return res.status(404).json({
-        success: false,
-        message: 'Session not found'
-      });
-    }
-
-    // Check if session is too close to start time
-    const now = new Date();
-    const sessionStart = new Date(session.scheduledDate);
-    const [hours, minutes] = session.startTime.split(':').map(Number);
-    sessionStart.setHours(hours, minutes, 0, 0);
-
-    if (now > session.bookingDeadline) {
-      return res.status(400).json({
-        success: false,
-        message: 'Cannot cancel booking - too close to session start time'
-      });
-    }
-
-    // Remove user from participants
-    const participantIndex = session.participants.findIndex(
-      participant => participant.user.toString() === userId
-    );
-
-    if (participantIndex === -1) {
-      return res.status(400).json({
-        success: false,
-        message: 'User is not registered for this session'
-      });
-    }
-
-    session.participants.splice(participantIndex, 1);
-    await session.save();
-
-    // Remove session from user's enrollment
-    const enrollment = await Enrollment.findOne({
-      user: userId,
-      program: session.program,
-      status: 'active'
-    });
-
-    if (enrollment) {
-      enrollment.sessions.pull(sessionId);
-      await enrollment.save();
-    }
-
-    // Send notification
-    await Notification.createNotification({
-      recipient: userId,
-      title: 'Session Booking Cancelled',
-      message: `Your booking for "${session.title}" has been cancelled`,
-      type: 'session_cancelled',
-      category: 'info',
-      relatedModel: 'Session',
-      relatedId: session._id,
-      deliveryChannels: [{ channel: 'in_app' }]
-    });
-
-    res.json({
-      success: true,
-      message: 'Session booking cancelled successfully'
-    });
-  } catch (error) {
-    res.status(500).json({
-      success: false,
-      message: 'Error cancelling booking',
-      error: error.message
-    });
-  }
-};
-
-// Update session
+// @desc    Update session
+// @route   PUT /api/sessions/:id
+// @access  Private (Coach only)
 const updateSession = async (req, res) => {
   try {
-    const sessionId = req.params.id;
-    const updateData = req.body;
+    const session = await Session.findById(req.params.id);
 
-    const session = await Session.findById(sessionId);
     if (!session) {
       return res.status(404).json({
         success: false,
@@ -455,70 +221,61 @@ const updateSession = async (req, res) => {
       });
     }
 
-    // If rescheduling, check ground slot availability
-    if (updateData.scheduledDate || updateData.startTime || updateData.endTime || updateData.groundSlot) {
-      const checkDate = new Date(updateData.scheduledDate || session.scheduledDate);
-      const checkStartTime = updateData.startTime || session.startTime;
-      const checkEndTime = updateData.endTime || session.endTime;
-      const checkGroundId = updateData.ground || session.ground;
-      const checkGroundSlot = updateData.groundSlot || session.groundSlot;
+    // Check if user is the coach of this session
+    if (session.coach.toString() !== req.user.coachId && req.user.role !== 'admin') {
+      return res.status(403).json({
+        success: false,
+        message: 'Not authorized to update this session'
+      });
+    }
 
-      const isSlotAvailable = await Session.isSlotAvailable(
-        checkGroundId,
-        checkGroundSlot,
-        checkDate,
-        checkStartTime,
-        checkEndTime,
-        sessionId
+    // If updating time/ground, check availability
+    if (req.body.ground || req.body.groundSlot || req.body.scheduledDate || req.body.startTime || req.body.endTime) {
+      const ground = req.body.ground || session.ground;
+      const groundSlot = req.body.groundSlot || session.groundSlot;
+      const scheduledDate = req.body.scheduledDate || session.scheduledDate;
+      const startTime = req.body.startTime || session.startTime;
+      const endTime = req.body.endTime || session.endTime;
+
+      const isAvailable = await Session.isSlotAvailable(
+        ground,
+        groundSlot,
+        new Date(scheduledDate),
+        startTime,
+        endTime,
+        session._id
       );
 
-      if (!isSlotAvailable) {
+      if (!isAvailable) {
         return res.status(400).json({
           success: false,
-          message: 'Ground slot is not available for the specified time'
+          message: 'Ground slot is not available at the specified time'
         });
       }
     }
 
     const updatedSession = await Session.findByIdAndUpdate(
-      sessionId,
-      updateData,
+      req.params.id,
+      req.body,
       { new: true, runValidators: true }
-    ).populate([
-      {
-        path: 'coach',
-        populate: {
-          path: 'userId',
-          select: 'firstName lastName'
-        }
-      },
-      { path: 'program', select: 'title' },
-      { path: 'ground', select: 'description' }
-    ]);
+    ).populate('program', 'title')
+     .populate('coach', 'name email')
+     .populate('ground', 'name location');
 
-    // If session was rescheduled, notify participants
-    if (updateData.scheduledDate || updateData.startTime) {
-      for (const participant of session.participants) {
-        await Notification.createNotification({
-          recipient: participant.user,
-          title: 'Session Rescheduled',
-          message: `The session "${updatedSession.title}" has been rescheduled`,
-          type: 'session_rescheduled',
-          category: 'warning',
-          relatedModel: 'Session',
-          relatedId: session._id,
-          actionUrl: `/sessions/${session._id}`,
-          deliveryChannels: [{ channel: 'in_app' }, { channel: 'email' }]
-        });
-      }
-    }
-
-    res.json({
+    res.status(200).json({
       success: true,
-      message: 'Session updated successfully',
-      data: updatedSession
+      data: updatedSession,
+      message: 'Session updated successfully'
     });
   } catch (error) {
+    if (error.name === 'ValidationError') {
+      return res.status(400).json({
+        success: false,
+        message: 'Validation error',
+        errors: Object.values(error.errors).map(err => err.message)
+      });
+    }
+
     res.status(500).json({
       success: false,
       message: 'Error updating session',
@@ -527,11 +284,52 @@ const updateSession = async (req, res) => {
   }
 };
 
-// Mark attendance
-const markAttendance = async (req, res) => {
+// @desc    Delete/Cancel session
+// @route   DELETE /api/sessions/:id
+// @access  Private (Coach/Admin only)
+const deleteSession = async (req, res) => {
   try {
-    const { sessionId } = req.params;
-    const { attendanceData } = req.body; // Array of { userId, attended, performance }
+    const session = await Session.findById(req.params.id);
+
+    if (!session) {
+      return res.status(404).json({
+        success: false,
+        message: 'Session not found'
+      });
+    }
+
+    // Check if user is the coach of this session or admin
+    if (session.coach.toString() !== req.user.coachId && req.user.role !== 'admin') {
+      return res.status(403).json({
+        success: false,
+        message: 'Not authorized to delete this session'
+      });
+    }
+
+    // Update session status to cancelled instead of deleting
+    session.status = 'cancelled';
+    await session.save();
+
+    res.status(200).json({
+      success: true,
+      message: 'Session cancelled successfully'
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: 'Error cancelling session',
+      error: error.message
+    });
+  }
+};
+
+// @desc    Add participant to session
+// @route   POST /api/sessions/:id/participants
+// @access  Private
+const addParticipant = async (req, res) => {
+  try {
+    const { userId, enrollmentId } = req.body;
+    const sessionId = req.params.id;
 
     const session = await Session.findById(sessionId);
     if (!session) {
@@ -541,47 +339,120 @@ const markAttendance = async (req, res) => {
       });
     }
 
-    // Update attendance for each participant
-    for (const attendance of attendanceData) {
-      const participantIndex = session.participants.findIndex(
-        p => p.user.toString() === attendance.userId
-      );
-
-      if (participantIndex !== -1) {
-        session.participants[participantIndex].attended = attendance.attended;
-        session.participants[participantIndex].attendanceMarkedAt = new Date();
-        
-        if (attendance.performance) {
-          session.participants[participantIndex].performance = attendance.performance;
-        }
-
-        // Update enrollment progress if attended
-        if (attendance.attended) {
-          const enrollment = await Enrollment.findById(
-            session.participants[participantIndex].enrollment
-          );
-          
-          if (enrollment) {
-            enrollment.progress.completedSessions += 1;
-            await enrollment.save();
-          }
-        }
-      }
+    // Check if session is full
+    if (session.isFull) {
+      return res.status(400).json({
+        success: false,
+        message: 'Session is full'
+      });
     }
 
-    // Update session status to completed if all attendance is marked
-    const allMarked = session.participants.every(p => p.attendanceMarkedAt);
-    if (allMarked && session.status === 'in-progress') {
-      session.status = 'completed';
-      session.actualEndTime = new Date();
+    // Check if user can book
+    if (!session.canBook) {
+      return res.status(400).json({
+        success: false,
+        message: 'Session cannot be booked (deadline passed, cancelled, or full)'
+      });
     }
+
+    // Check if user is already a participant
+    const existingParticipant = session.participants.find(
+      p => p.user.toString() === userId
+    );
+
+    if (existingParticipant) {
+      return res.status(400).json({
+        success: false,
+        message: 'User is already a participant in this session'
+      });
+    }
+
+    // Verify enrollment exists and is active
+    const enrollment = await ProgramEnrollment.findById(enrollmentId);
+    if (!enrollment || enrollment.user.toString() !== userId || enrollment.status !== 'active') {
+      return res.status(400).json({
+        success: false,
+        message: 'Valid enrollment not found'
+      });
+    }
+
+    // Add participant
+    session.participants.push({
+      user: userId,
+      enrollment: enrollmentId
+    });
 
     await session.save();
 
-    res.json({
+    const updatedSession = await Session.findById(sessionId)
+      .populate('participants.user', 'name email')
+      .populate('participants.enrollment', 'status');
+
+    res.status(200).json({
       success: true,
-      message: 'Attendance marked successfully',
-      data: session.participants
+      data: updatedSession,
+      message: 'Participant added successfully'
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: 'Error adding participant',
+      error: error.message
+    });
+  }
+};
+
+// @desc    Mark attendance for session
+// @route   PUT /api/sessions/:id/attendance
+// @access  Private (Coach only)
+const markAttendance = async (req, res) => {
+  try {
+    const { participantId, attended } = req.body;
+    const sessionId = req.params.id;
+
+    const session = await Session.findById(sessionId);
+    if (!session) {
+      return res.status(404).json({
+        success: false,
+        message: 'Session not found'
+      });
+    }
+
+    // Check if user is the coach of this session
+    if (session.coach.toString() !== req.user.coachId && req.user.role !== 'admin') {
+      return res.status(403).json({
+        success: false,
+        message: 'Not authorized to mark attendance for this session'
+      });
+    }
+
+    // Find and update participant
+    const participant = session.participants.id(participantId);
+    if (!participant) {
+      return res.status(404).json({
+        success: false,
+        message: 'Participant not found in this session'
+      });
+    }
+
+    participant.attended = attended;
+    participant.attendanceMarkedAt = new Date();
+
+    await session.save();
+
+    // Update enrollment progress if attended
+    if (attended) {
+      const enrollment = await ProgramEnrollment.findById(participant.enrollment);
+      if (enrollment) {
+        enrollment.progress.completedSessions += 1;
+        await enrollment.save();
+      }
+    }
+
+    res.status(200).json({
+      success: true,
+      data: session,
+      message: 'Attendance marked successfully'
     });
   } catch (error) {
     res.status(500).json({
@@ -592,18 +463,111 @@ const markAttendance = async (req, res) => {
   }
 };
 
-// Get available ground slots
-const getAvailableSlots = async (req, res) => {
+// @desc    Get sessions by program
+// @route   GET /api/sessions/program/:programId
+// @access  Private
+const getSessionsByProgram = async (req, res) => {
   try {
-    const { groundId, date, duration = 60 } = req.query;
+    const { page = 1, limit = 10, status } = req.query;
+    
+    const filter = { program: req.params.programId };
+    if (status) filter.status = status;
 
-    if (!groundId || !date) {
+    const options = {
+      page: parseInt(page),
+      limit: parseInt(limit),
+      sort: { week: 1, sessionNumber: 1 },
+      populate: [
+        { path: 'coach', select: 'name email' },
+        { path: 'ground', select: 'name location' }
+      ]
+    };
+
+    const sessions = await paginateHelper(Session, filter, options);
+
+    res.status(200).json({
+      success: true,
+      data: sessions
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: 'Error fetching program sessions',
+      error: error.message
+    });
+  }
+};
+
+// @desc    Get sessions by coach
+// @route   GET /api/sessions/coach/:coachId
+// @access  Private
+const getSessionsByCoach = async (req, res) => {
+  try {
+    const { page = 1, limit = 10, status, date } = req.query;
+    
+    const filter = { coach: req.params.coachId };
+    if (status) filter.status = status;
+    
+    if (date) {
+      const startDate = new Date(date);
+      const endDate = new Date(date);
+      endDate.setDate(endDate.getDate() + 1);
+      filter.scheduledDate = { $gte: startDate, $lt: endDate };
+    }
+
+    const options = {
+      page: parseInt(page),
+      limit: parseInt(limit),
+      sort: { scheduledDate: 1, startTime: 1 },
+      populate: [
+        { path: 'program', select: 'title category' },
+        { path: 'ground', select: 'name location' }
+      ]
+    };
+
+    const sessions = await paginateHelper(Session, filter, options);
+
+    res.status(200).json({
+      success: true,
+      data: sessions
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: 'Error fetching coach sessions',
+      error: error.message
+    });
+  }
+};
+
+// @desc    Get available time slots for a ground
+// @route   GET /api/sessions/ground/:groundId/availability
+// @access  Private
+const getGroundAvailability = async (req, res) => {
+  try {
+    const { date, duration = 60 } = req.query;
+    const groundId = req.params.groundId;
+
+    if (!date) {
       return res.status(400).json({
         success: false,
-        message: 'Ground ID and date are required'
+        message: 'Date is required'
       });
     }
 
+    const searchDate = new Date(date);
+    
+    // Get all booked slots for the date
+    const bookedSessions = await Session.find({
+      ground: groundId,
+      scheduledDate: {
+        $gte: new Date(searchDate.setHours(0, 0, 0, 0)),
+        $lt: new Date(searchDate.setHours(23, 59, 59, 999))
+      },
+      status: { $nin: ['cancelled'] }
+    }).select('groundSlot startTime endTime');
+
+    // Get ground details to know total slots
     const ground = await Ground.findById(groundId);
     if (!ground) {
       return res.status(404).json({
@@ -612,161 +576,63 @@ const getAvailableSlots = async (req, res) => {
       });
     }
 
-    const targetDate = new Date(date);
-    const startOfDay = new Date(targetDate.setHours(0, 0, 0, 0));
-    const endOfDay = new Date(targetDate.setHours(23, 59, 59, 999));
+    // Generate availability for each slot
+    const totalSlots = ground.totalSlots || 12; // Default to 12 slots
+    const availability = [];
 
-    // Get all booked sessions for the date
-    const bookedSessions = await Session.find({
-      ground: groundId,
-      scheduledDate: {
-        $gte: startOfDay,
-        $lte: endOfDay
-      },
-      status: { $nin: ['cancelled'] }
-    }).select('groundSlot startTime endTime');
-
-    // Generate available slots
-    const availableSlots = [];
-    const operatingHours = { start: 6, end: 22 }; // 6 AM to 10 PM
-
-    for (let slot = 1; slot <= ground.groundSlot; slot++) {
-      const slotAvailability = [];
+    for (let slot = 1; slot <= totalSlots; slot++) {
+      const slotBookings = bookedSessions.filter(session => session.groundSlot === slot);
       
-      for (let hour = operatingHours.start; hour < operatingHours.end; hour++) {
+      // Generate time slots (assuming 8 AM to 8 PM, 1-hour slots)
+      const timeSlots = [];
+      for (let hour = 8; hour < 20; hour++) {
         const startTime = `${hour.toString().padStart(2, '0')}:00`;
-        const endHour = hour + Math.ceil(duration / 60);
-        const endTime = `${endHour.toString().padStart(2, '0')}:00`;
+        const endTime = `${(hour + 1).toString().padStart(2, '0')}:00`;
+        
+        // Check if this time slot conflicts with any booking
+        const isBooked = slotBookings.some(booking => {
+          return (startTime < booking.endTime && endTime > booking.startTime);
+        });
 
-        if (endHour <= operatingHours.end) {
-          const isAvailable = await Session.isSlotAvailable(
-            groundId,
-            slot,
-            new Date(date),
-            startTime,
-            endTime
-          );
-
-          if (isAvailable) {
-            slotAvailability.push({
-              startTime,
-              endTime,
-              duration
-            });
-          }
-        }
+        timeSlots.push({
+          startTime,
+          endTime,
+          available: !isBooked
+        });
       }
 
-      availableSlots.push({
+      availability.push({
         slot,
-        timeSlots: slotAvailability
+        timeSlots
       });
     }
 
-    res.json({
+    res.status(200).json({
       success: true,
       data: {
-        ground: {
-          id: ground._id,
-          description: ground.description,
-          totalSlots: ground.groundSlot,
-          pricePerSlot: ground.pricePerSlot
-        },
+        ground: ground.name,
         date: date,
-        availableSlots
+        availability
       }
     });
   } catch (error) {
     res.status(500).json({
       success: false,
-      message: 'Error fetching available slots',
+      message: 'Error fetching ground availability',
       error: error.message
     });
   }
-};
-
-// Get session calendar data
-const getSessionCalendar = async (req, res) => {
-  try {
-    const { coach, program, startDate, endDate, userId } = req.query;
-
-    const filter = {};
-    if (coach) filter.coach = coach;
-    if (program) filter.program = program;
-
-    // Date range filter
-    if (startDate && endDate) {
-      filter.scheduledDate = {
-        $gte: new Date(startDate),
-        $lte: new Date(endDate)
-      };
-    }
-
-    // If userId is provided, filter for user's sessions
-    if (userId) {
-      filter['participants.user'] = userId;
-    }
-
-    const sessions = await Session.find(filter)
-      .populate('coach', 'userId')
-      .populate('program', 'title category')
-      .populate('ground', 'description')
-      .select('title scheduledDate startTime endTime status program coach ground participants')
-      .sort({ scheduledDate: 1 });
-
-    // Transform sessions for calendar format
-    const calendarEvents = sessions.map(session => ({
-      id: session._id,
-      title: session.title,
-      start: new Date(`${session.scheduledDate.toISOString().split('T')[0]}T${session.startTime}:00`),
-      end: new Date(`${session.scheduledDate.toISOString().split('T')[0]}T${session.endTime}:00`),
-      status: session.status,
-      program: session.program,
-      coach: session.coach,
-      ground: session.ground,
-      participantCount: session.participants.length,
-      color: getEventColor(session.status),
-      extendedProps: {
-        sessionId: session._id,
-        programId: session.program._id,
-        coachId: session.coach._id,
-        groundId: session.ground._id
-      }
-    }));
-
-    res.json({
-      success: true,
-      data: calendarEvents
-    });
-  } catch (error) {
-    res.status(500).json({
-      success: false,
-      message: 'Error fetching calendar data',
-      error: error.message
-    });
-  }
-};
-
-// Helper function to get event color based on status
-const getEventColor = (status) => {
-  const colors = {
-    scheduled: '#3174ad',
-    'in-progress': '#f39c12',
-    completed: '#27ae60',
-    cancelled: '#e74c3c',
-    rescheduled: '#9b59b6'
-  };
-  return colors[status] || '#95a5a6';
 };
 
 module.exports = {
   getAllSessions,
-  getSessionById,
+  getSession,
   createSession,
-  bookSession,
-  cancelBooking,
   updateSession,
+  deleteSession,
+  addParticipant,
   markAttendance,
-  getAvailableSlots,
-  getSessionCalendar
+  getSessionsByProgram,
+  getSessionsByCoach,
+  getGroundAvailability
 };

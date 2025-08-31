@@ -9,9 +9,11 @@ import {
   BookOpen, 
   Calendar, 
   Award,
-  LogOut
+  LogOut,
+  Users
 } from 'lucide-react';
-import apiService from '../services/api';
+import { useAuth, mockLogin } from '../contexts/AuthContext';
+import toast from 'react-hot-toast';
 
 const Navbar = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -19,14 +21,9 @@ const Navbar = () => {
   const [notifications, setNotifications] = useState([]);
   const [unreadCount, setUnreadCount] = useState(0);
   const location = useLocation();
-
-  // Mock user data - in real app, this would come from authentication context
-  const user = {
-    id: '60f1b2b0b3b4b4b4b4b4b4b4', // Mock user ID
-    name: 'John Doe',
-    role: 'customer',
-    avatar: '/api/placeholder/32/32'
-  };
+  
+  // Use auth context
+  const { user, isAuthenticated, login, logout, isCoach, isManager } = useAuth();
 
   useEffect(() => {
     if (user?.id) {
@@ -36,16 +33,25 @@ const Navbar = () => {
 
   const fetchNotifications = async () => {
     try {
-      const [notificationsResponse, unreadResponse] = await Promise.all([
-        apiService.getUserNotifications(user.id, { limit: 5 }),
-        apiService.getUnreadCount(user.id)
-      ]);
-
-      setNotifications(notificationsResponse.data || []);
-      setUnreadCount(unreadResponse.data?.unreadCount || 0);
+      // Mock notifications for now
+      setNotifications([]);
+      setUnreadCount(0);
     } catch (error) {
       console.error('Error fetching notifications:', error);
     }
+  };
+
+  // Handle mock login for development
+  const handleMockLogin = (role = 'customer') => {
+    const { user: mockUser, token } = mockLogin(role);
+    login(mockUser, token);
+    toast.success(`Logged in as ${role}!`);
+  };
+
+  const handleLogout = () => {
+    logout();
+    toast.success('Logged out successfully!');
+    setIsProfileOpen(false);
   };
 
   const navItems = [
@@ -60,14 +66,9 @@ const Navbar = () => {
       icon: BookOpen
     },
     {
-      name: 'My Sessions',
-      path: '/sessions',
-      icon: Calendar
-    },
-    {
-      name: 'Certificates',
-      path: '/certificates',
-      icon: Award
+      name: 'Our Coaches',
+      path: '/coaches',
+      icon: Users
     }
   ];
 
@@ -87,14 +88,8 @@ const Navbar = () => {
   };
 
   const handleNotificationClick = async (notification) => {
-    if (!notification.isRead) {
-      try {
-        await apiService.markNotificationAsRead(notification._id);
-        fetchNotifications(); // Refresh notifications
-      } catch (error) {
-        console.error('Error marking notification as read:', error);
-      }
-    }
+    // Mock notification handling
+    console.log('Notification clicked:', notification);
   };
 
   return (
@@ -138,36 +133,38 @@ const Navbar = () => {
 
           {/* Right side - notifications and profile */}
           <div className="flex items-center space-x-4">
-            {/* Notifications */}
-            <div className="relative">
-              <button
-                className="p-2 text-gray-400 hover:text-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 rounded-full"
-                onClick={() => {/* Handle notifications dropdown */}}
-              >
-                <Bell size={20} />
-                {unreadCount > 0 && (
-                  <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center">
-                    {unreadCount > 9 ? '9+' : unreadCount}
-                  </span>
-                )}
-              </button>
-            </div>
+            {isAuthenticated ? (
+              <>
+                {/* Notifications */}
+                <div className="relative">
+                  <button
+                    className="p-2 text-gray-400 hover:text-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 rounded-full"
+                    onClick={() => {/* Handle notifications dropdown */}}
+                  >
+                    <Bell size={20} />
+                    {unreadCount > 0 && (
+                      <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center">
+                        {unreadCount > 9 ? '9+' : unreadCount}
+                      </span>
+                    )}
+                  </button>
+                </div>
 
-            {/* Profile dropdown */}
-            <div className="relative">
-              <button
-                onClick={toggleProfile}
-                className="flex items-center space-x-2 p-2 rounded-md hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500"
-              >
-                <img
-                  src={user.avatar}
-                  alt="Profile"
-                  className="h-8 w-8 rounded-full bg-gray-300"
-                />
-                <span className="hidden md:block text-sm font-medium text-gray-700">
-                  {user.name}
-                </span>
-              </button>
+                {/* Profile dropdown */}
+                <div className="relative">
+                  <button
+                    onClick={toggleProfile}
+                    className="flex items-center space-x-2 p-2 rounded-md hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  >
+                    <img
+                      src={user?.profileImageURL || '/api/placeholder/32/32'}
+                      alt="Profile"
+                      className="h-8 w-8 rounded-full bg-gray-300"
+                    />
+                    <span className="hidden md:block text-sm font-medium text-gray-700">
+                      {user?.firstName || user?.name || 'User'}
+                    </span>
+                  </button>
 
               {/* Profile dropdown menu */}
               {isProfileOpen && (
@@ -180,21 +177,38 @@ const Navbar = () => {
                     <User size={16} className="mr-2" />
                     My Profile
                   </Link>
-                  <Link
-                    to="/dashboard"
-                    className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-                    onClick={() => setIsProfileOpen(false)}
-                  >
-                    <BookOpen size={16} className="mr-2" />
-                    Dashboard
-                  </Link>
+                  {isCoach() ? (
+                    <Link
+                      to="/coach-dashboard"
+                      className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                      onClick={() => setIsProfileOpen(false)}
+                    >
+                      <BookOpen size={16} className="mr-2" />
+                      Coach Dashboard
+                    </Link>
+                  ) : isManager() ? (
+                    <Link
+                      to="/manager-dashboard"
+                      className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                      onClick={() => setIsProfileOpen(false)}
+                    >
+                      <BookOpen size={16} className="mr-2" />
+                      Manager Dashboard
+                    </Link>
+                  ) : (
+                    <Link
+                      to="/dashboard"
+                      className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                      onClick={() => setIsProfileOpen(false)}
+                    >
+                      <BookOpen size={16} className="mr-2" />
+                      Dashboard
+                    </Link>
+                  )}
                   <hr className="my-1" />
                   <button
                     className="flex items-center w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-                    onClick={() => {
-                      // Handle logout
-                      setIsProfileOpen(false);
-                    }}
+                    onClick={handleLogout}
                   >
                     <LogOut size={16} className="mr-2" />
                     Sign Out
@@ -202,6 +216,30 @@ const Navbar = () => {
                 </div>
               )}
             </div>
+              </>
+            ) : (
+              /* Login buttons for non-authenticated users */
+              <div className="flex space-x-2">
+                <button
+                  onClick={() => handleMockLogin('customer')}
+                  className="bg-blue-600 text-white px-3 py-2 rounded-md hover:bg-blue-700 transition-colors font-medium text-sm"
+                >
+                  Customer
+                </button>
+                <button
+                  onClick={() => handleMockLogin('coach')}
+                  className="bg-green-600 text-white px-3 py-2 rounded-md hover:bg-green-700 transition-colors font-medium text-sm"
+                >
+                  Coach
+                </button>
+                <button
+                  onClick={() => handleMockLogin('manager')}
+                  className="bg-purple-600 text-white px-3 py-2 rounded-md hover:bg-purple-700 transition-colors font-medium text-sm"
+                >
+                  Manager
+                </button>
+              </div>
+            )}
 
             {/* Mobile menu button */}
             <div className="md:hidden">
@@ -246,3 +284,5 @@ const Navbar = () => {
 };
 
 export default Navbar;
+
+

@@ -1,6 +1,6 @@
 const mongoose = require('mongoose');
 
-const enrollmentSchema = new mongoose.Schema({
+const programenrollmentSchema = new mongoose.Schema({
   user: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'User',
@@ -117,20 +117,20 @@ const enrollmentSchema = new mongoose.Schema({
 }, { timestamps: true });
 
 // Compound index for user and program (unique enrollment)
-enrollmentSchema.index({ user: 1, program: 1 }, { unique: true });
+programenrollmentSchema.index({ user: 1, program: 1 }, { unique: true });
 
 // Other indexes for performance
-enrollmentSchema.index({ status: 1 });
-enrollmentSchema.index({ enrollmentDate: -1 });
+programenrollmentSchema.index({ status: 1 });
+programenrollmentSchema.index({ enrollmentDate: -1 });
 
 // Virtual to calculate completion percentage
-enrollmentSchema.virtual('completionPercentage').get(function() {
+programenrollmentSchema.virtual('completionPercentage').get(function() {
   if (this.progress.totalSessions === 0) return 0;
   return Math.round((this.progress.completedSessions / this.progress.totalSessions) * 100);
 });
 
 // Pre-save middleware to update progress percentage
-enrollmentSchema.pre('save', function(next) {
+programenrollmentSchema.pre('save', function(next) {
   if (this.isModified('progress.completedSessions') || this.isModified('progress.totalSessions')) {
     this.progress.progressPercentage = this.completionPercentage;
     
@@ -142,4 +142,7 @@ enrollmentSchema.pre('save', function(next) {
   next();
 });
 
-module.exports = mongoose.model('Enrollment', enrollmentSchema);
+// Pagination plugin commented out - install mongoose-paginate-v2 to enable
+// programenrollmentSchema.plugin(mongoosePaginate);
+
+module.exports = mongoose.model('ProgramEnrollment', programenrollmentSchema);

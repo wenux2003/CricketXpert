@@ -188,4 +188,7 @@ sessionSchema.pre('save', function(next) {
   next();
 });
 
+// Pagination plugin commented out - install mongoose-paginate-v2 to enable
+// sessionSchema.plugin(mongoosePaginate);
+
 module.exports = mongoose.model('Session', sessionSchema);
