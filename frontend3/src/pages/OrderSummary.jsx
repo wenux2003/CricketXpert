@@ -40,7 +40,7 @@ const OrderSummary = () => {
             </div>
           </div>
           <div className="text-right">
-            <div className="font-bold">₹{order.amount}.00</div>
+                            <div className="font-bold">LKR {order.amount}.00</div>
             <div className="text-sm text-gray-500">Items: {order.items.length}</div>
           </div>
           <div className="text-center">

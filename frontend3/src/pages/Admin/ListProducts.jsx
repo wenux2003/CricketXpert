@@ -94,7 +94,7 @@ const ListProducts = () => {
                 </td>
                 <td className="p-3">{product.name}</td>
                 <td className="p-3">{product.category}</td>
-                <td className="p-3">${product.price}</td>
+                <td className="p-3">LKR {product.price}</td>
                 <td className="p-3">
                   <button onClick={() => handleDelete(product._id)} className="text-red-500 font-bold text-xl">x</button>
                 </td>

@@ -10,6 +10,7 @@ import Gaming1 from '../assets/Gaming.jpg';
 import Wearables1 from '../assets/Wearables.jpg';
 import Ball1 from '../assets/ball.jpeg';
 import Sports1 from '../assets/sports.jpg';
+import cricket1 from '../assets/crikert.jpg';
 
 const Home = () => {
   const [categories, setCategories] = useState([]);
@@ -225,7 +226,7 @@ const Home = () => {
           </p>
         </div>
         <img
-          src="https://placehold.co/500x300?text=Cricket+Gear"
+          src={cricket1}
           alt="Cricket equipment"
           className="rounded-lg shadow-lg"
           onError={(e) => { e.target.src = 'https://placehold.co/500x300'; }}
@@ -286,7 +287,7 @@ const Home = () => {
                   <div className="p-4">
                     <h3 className="text-xl font-bold text-[#000000] mb-2">{product.name}</h3>
                     <p className="text-[#36516C] mb-2">{product.description?.slice(0, 100) || 'No description'}...</p>
-                    <p className="text-[#072679] font-bold mb-4">₹{product.price || 0}</p>
+                    <p className="text-[#072679] font-bold mb-4">LKR {product.price || 0}</p>
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-2">
                         <button

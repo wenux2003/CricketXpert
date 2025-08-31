@@ -215,7 +215,7 @@ const OrderTracking = () => {
                 <h3 className="text-lg font-semibold text-[#072679] mb-3">Order Details</h3>
                 <div className="space-y-2 text-sm">
                   <p><strong>Order ID:</strong> {order._id}</p>
-                  <p><strong>Total Amount:</strong> ₹{order.amount?.toFixed(2) || '0.00'}</p>
+                  <p><strong>Total Amount:</strong> LKR {order.amount?.toFixed(2) || '0.00'}</p>
                   <p><strong>Items:</strong> {order.items?.length || 0} items</p>
                   <p><strong>Order Date:</strong> {new Date(order.date || order.createdAt).toLocaleString()}</p>
                 </div>
@@ -251,8 +251,8 @@ const OrderTracking = () => {
                         <p className="text-sm text-gray-600">Quantity: {item.quantity}</p>
                       </div>
                       <div className="text-right">
-                        <p className="font-medium">₹{(item.priceAtOrder * item.quantity).toFixed(2)}</p>
-                        <p className="text-sm text-gray-600">₹{item.priceAtOrder} each</p>
+                                          <p className="font-medium">LKR {(item.priceAtOrder * item.quantity).toFixed(2)}</p>
+                  <p className="text-sm text-gray-600">LKR {item.priceAtOrder} each</p>
                       </div>
                     </div>
                   ))}

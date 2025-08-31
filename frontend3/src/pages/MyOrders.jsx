@@ -121,7 +121,7 @@ const MyOrders = () => {
                             Items: {order.items?.length || 0}
                           </p>
                           <p className="text-lg font-bold" style={{ color: '#072679' }}>
-                            ₹{order.amount?.toFixed(2) || '0.00'}
+                            LKR {order.amount?.toFixed(2) || '0.00'}
                           </p>
                         </div>
                         <div className="text-right">

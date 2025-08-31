@@ -154,7 +154,7 @@ const Payment = () => {
         {/* Order Summary */}
         <div className="bg-white rounded-lg p-6 shadow-sm">
           <div className="text-2xl font-bold mb-4">Pay Order</div>
-          <div className="text-3xl font-bold text-green-600 mb-6">₹{totalData.total}.00</div>
+                          <div className="text-3xl font-bold text-green-600 mb-6">LKR {totalData.total}.00</div>
           
           <div className="space-y-3">
             {cart.map((item) => {
@@ -162,13 +162,13 @@ const Payment = () => {
               return (
                 <div key={item.productId} className="flex justify-between text-sm">
                   <span>{item.productId} (Qty {item.quantity})</span>
-                  <span>₹{(product.price * item.quantity).toFixed(2)}</span>
+                  <span>LKR {(product.price * item.quantity).toFixed(2)}</span>
                 </div>
               );
             })}
             <div className="flex justify-between text-sm border-t pt-2">
               <span>Delivery Charge</span>
-              <span>₹{totalData.deliveryFee}.00</span>
+                              <span>LKR {totalData.deliveryFee}.00</span>
             </div>
           </div>
         </div>

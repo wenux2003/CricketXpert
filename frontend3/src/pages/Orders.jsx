@@ -47,7 +47,7 @@ const Orders = () => {
                   <div>
                     <p><strong>Order ID:</strong> {order._id}</p>
                     <p><strong>Date:</strong> {new Date(order.createdAt).toLocaleDateString()}</p>
-                    <p><strong>Total:</strong> ₹{order.amount || 0}.00</p>
+                    <p><strong>Total:</strong> LKR {order.amount || 0}.00</p>
                   </div>
                   <button
                     onClick={() => handleViewDetails(order._id)}

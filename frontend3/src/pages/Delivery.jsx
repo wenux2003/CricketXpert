@@ -90,15 +90,15 @@ const Delivery = () => {
           <div className="space-y-2 text-sm">
             <div className="flex justify-between">
               <span>Subtotal</span>
-              <span>₹{totalData.subtotal}</span>
+                              <span>LKR {totalData.subtotal}</span>
             </div>
             <div className="flex justify-between">
               <span>Delivery Fee</span>
-              <span>₹{totalData.deliveryFee}</span>
+                              <span>LKR {totalData.deliveryFee}</span>
             </div>
             <div className="flex justify-between font-bold text-lg border-t pt-2">
               <span>Total</span>
-              <span>₹{totalData.total}</span>
+                              <span>LKR {totalData.total}</span>
             </div>
           </div>
           <button 

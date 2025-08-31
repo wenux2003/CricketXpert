@@ -227,7 +227,7 @@ const Cart = () => {
                       className="w-10 h-10 object-cover rounded" 
                     />
                     <div className="font-medium">{product.name || 'Unknown Product'}</div>
-                    <div>₹{product.price || 0}</div>
+                    <div>LKR {product.price || 0}</div>
                     <div className="flex items-center space-x-2">
                       <button 
                         onClick={() => handleQuantityChange(item.productId, -1)}
@@ -244,7 +244,7 @@ const Cart = () => {
                         <Plus className="w-3 h-3" />
                       </button>
                     </div>
-                    <div>₹{(product.price || 0) * item.quantity}</div>
+                    <div>LKR {(product.price || 0) * item.quantity}</div>
                     <button 
                       onClick={() => handleRemoveItem(item.productId)}
                       className="text-gray-400 hover:text-red-500"
@@ -266,15 +266,15 @@ const Cart = () => {
             <div className="space-y-2 text-sm">
               <div className="flex justify-between">
                 <span>Subtotal</span>
-                <span>₹{totalData.subtotal}</span>
+                <span>LKR {totalData.subtotal}</span>
               </div>
               <div className="flex justify-between">
                 <span>Delivery Fee</span>
-                <span>₹{totalData.deliveryFee}</span>
+                <span>LKR {totalData.deliveryFee}</span>
               </div>
               <div className="flex justify-between font-bold text-lg border-t pt-2">
                 <span>Total</span>
-                <span>₹{totalData.total}</span>
+                <span>LKR {totalData.total}</span>
               </div>
             </div>
             <button 

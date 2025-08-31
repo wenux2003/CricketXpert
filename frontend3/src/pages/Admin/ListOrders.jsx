@@ -211,7 +211,7 @@ const ListOrders = () => {
                         {order.items?.length || 0} items
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-[#072679]">
-                        ₹{order.amount?.toFixed(2) || '0.00'}
+                        LKR {order.amount?.toFixed(2) || '0.00'}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusColor(order.status)}`}>
@@ -293,7 +293,7 @@ const ListOrders = () => {
                     </span>
                   </p>
                   <p><strong>Address:</strong> {selectedOrder.address}</p>
-                  <p><strong>Total Amount:</strong> ₹{selectedOrder.amount?.toFixed(2) || '0.00'}</p>
+                  <p><strong>Total Amount:</strong> LKR {selectedOrder.amount?.toFixed(2) || '0.00'}</p>
                 </div>
 
                 <div>
@@ -304,7 +304,7 @@ const ListOrders = () => {
                         <div key={index} className="flex justify-between text-sm border-b pb-2">
                           <span>Product ID: {item.productId}</span>
                           <span>Qty: {item.quantity}</span>
-                          <span>₹{(item.priceAtOrder * item.quantity).toFixed(2)}</span>
+                          <span>LKR {(item.priceAtOrder * item.quantity).toFixed(2)}</span>
                         </div>
                       ))}
                     </div>
@@ -360,7 +360,7 @@ const ListOrders = () => {
                 <strong>Customer:</strong> {orderToDelete.customerId?.slice(-8)}...
               </p>
               <p className="text-sm text-gray-700">
-                <strong>Amount:</strong> ₹{orderToDelete.amount?.toFixed(2) || '0.00'}
+                <strong>Amount:</strong> LKR {orderToDelete.amount?.toFixed(2) || '0.00'}
               </p>
               <p className="text-sm text-gray-700">
                 <strong>Status:</strong> 

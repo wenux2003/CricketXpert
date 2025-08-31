@@ -58,7 +58,7 @@ const OrderDetails = () => {
           <p><strong>Date:</strong> {new Date(order.createdAt || Date.now()).toLocaleDateString()}</p>
           <p><strong>Status:</strong> {order.status || 'N/A'}</p>
           <p><strong>Address:</strong> {order.address || 'N/A'}</p>
-          <p><strong>Total Amount:</strong> ₹{order.amount || 0}.00</p>
+                          <p><strong>Total Amount:</strong> LKR {order.amount || 0}.00</p>
         </div>
 
         {/* Order Items */}
@@ -69,7 +69,7 @@ const OrderDetails = () => {
               {order.items.map((item, index) => (
                 <li key={index} className="flex justify-between text-sm">
                   <span>{item.productId} (Qty: {item.quantity})</span>
-                  <span>₹{(item.priceAtOrder * item.quantity).toFixed(2)}</span>
+                                            <span>LKR {(item.priceAtOrder * item.quantity).toFixed(2)}</span>
                 </li>
               ))}
             </ul>
@@ -82,7 +82,7 @@ const OrderDetails = () => {
         <div className="mb-6">
           <h3 className="font-semibold text-lg mb-2">Payment Information</h3>
           <p><strong>Payment ID:</strong> {payment._id || 'N/A'}</p>
-          <p><strong>Amount Paid:</strong> ₹{payment.amount || 0}.00</p>
+                          <p><strong>Amount Paid:</strong> LKR {payment.amount || 0}.00</p>
           <p><strong>Payment Status:</strong> {payment.status || 'N/A'}</p>
           <p><strong>Payment Date:</strong> {new Date(payment.paymentDate || Date.now()).toLocaleDateString()}</p>
         </div>
