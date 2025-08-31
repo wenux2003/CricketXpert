@@ -1,7 +1,7 @@
 import { useEffect, useState, useMemo } from 'react';
 import axios from 'axios';
 import { debounce } from 'lodash';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { ShoppingCart } from 'lucide-react';
 import bat1 from '../assets/merch1.png';
 import Accessories1 from '../assets/Accessories1.jpg';
@@ -182,11 +182,10 @@ const Home = () => {
       <nav className="bg-white shadow-md p-4 flex justify-between items-center sticky top-0 z-10">
         <div className="text-2xl font-bold text-[#072679]">CricketExpert.</div>
         <div className="flex gap-6">
-          <a href="/" className="hover:text-[#42ADF5]" aria-label="Home">Home</a>
-          <a href="/menu" className="hover:text-[#42ADF5]" aria-label="Menu">Menu</a>
-          <a href="/app" className="hover:text-[#42ADF5]" aria-label="Mobile App">Mobile App</a>
-          <a href="/contact" className="hover:text-[#42ADF5]" aria-label="Contact Us">Contact Us</a>
-          <a href="/admin" className="hover:text-[#42ADF5]" aria-label="Admin">Admin</a>
+          <Link to="/" className="hover:text-[#42ADF5] transition-colors">Home</Link>
+          <Link to="/my-orders" className="hover:text-[#42ADF5] transition-colors">My Orders</Link>
+          <Link to="/track-order" className="hover:text-[#42ADF5] transition-colors">Track Order</Link>
+          <Link to="/admin" className="hover:text-[#42ADF5] transition-colors">Admin</Link>
         </div>
         <div className="flex gap-4 items-center">
           <input
@@ -198,7 +197,7 @@ const Home = () => {
           />
           <button
             onClick={goToCart}
-            className="relative bg-[#42ADF5] text-white px-4 py-2 rounded hover:bg-[#2C8ED1] flex items-center"
+            className="relative bg-[#42ADF5] text-white px-4 py-2 rounded hover:bg-[#2C8ED1] flex items-center transition-colors"
           >
             <ShoppingCart size={20} />
             {cartItemCount > 0 && (
