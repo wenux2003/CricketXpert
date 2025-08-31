@@ -410,15 +410,50 @@ const TechnicianDashboard = () => {
           </div>
           <nav className="space-y-2 flex-1">
             <button
-              onClick={() => {
-                navigate('/');
-                setShowSidebar(false);
+              onClick={() => setGlobalFilter('technicians')}
+              className={`w-full text-left px-4 py-3 rounded-lg font-medium transition-colors ${
+                globalFilter === 'technicians' 
+                  ? 'text-white' 
+                  : 'text-gray-700 hover:text-white'
+              }`}
+              onMouseOver={(e) => { 
+                if (globalFilter !== 'technicians') {
+                  e.currentTarget.style.backgroundColor = '#42ADF5'; 
+                }
               }}
-              className="w-full text-left px-4 py-3 rounded-lg font-medium text-gray-700 hover:text-white transition-colors"
-              onMouseOver={(e) => { e.currentTarget.style.backgroundColor = '#42ADF5'; }}
-              onMouseOut={(e) => { e.currentTarget.style.backgroundColor = 'transparent'; }}
+              onMouseOut={(e) => { 
+                if (globalFilter !== 'technicians') {
+                  e.currentTarget.style.backgroundColor = 'transparent'; 
+                }
+              }}
+              style={{
+                backgroundColor: globalFilter === 'technicians' ? '#42ADF5' : 'transparent'
+              }}
             >
-              Overview of Repair
+              Technician Details
+            </button>
+            <button
+              onClick={() => setGlobalFilter('repair_requests')}
+              className={`w-full text-left px-4 py-3 rounded-lg font-medium transition-colors ${
+                globalFilter === 'repair_requests' 
+                  ? 'text-white' 
+                  : 'text-gray-700 hover:text-white'
+              }`}
+              onMouseOver={(e) => { 
+                if (globalFilter !== 'repair_requests') {
+                  e.currentTarget.style.backgroundColor = '#42ADF5'; 
+                }
+              }}
+              onMouseOut={(e) => { 
+                if (globalFilter !== 'repair_requests') {
+                  e.currentTarget.style.backgroundColor = 'transparent'; 
+                }
+              }}
+              style={{
+                backgroundColor: globalFilter === 'repair_requests' ? '#42ADF5' : 'transparent'
+              }}
+            >
+              Assign Repair Request
             </button>
           </nav>
           
