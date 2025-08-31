@@ -411,7 +411,7 @@ const TechnicianDashboard = () => {
           <nav className="space-y-2 flex-1">
             <button
               onClick={() => setGlobalFilter('technicians')}
-              className={`w-full text-left px-4 py-3 rounded-lg font-medium transition-colors ${
+              className={`w-full text-left px-4 py-3 rounded-lg font-medium transition-colors flex items-center space-x-3 ${
                 globalFilter === 'technicians' 
                   ? 'text-white' 
                   : 'text-gray-700 hover:text-white'
@@ -430,11 +430,14 @@ const TechnicianDashboard = () => {
                 backgroundColor: globalFilter === 'technicians' ? '#42ADF5' : 'transparent'
               }}
             >
-              Technician Details
+              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+              </svg>
+              <span>Technician Details</span>
             </button>
             <button
               onClick={() => setGlobalFilter('repair_requests')}
-              className={`w-full text-left px-4 py-3 rounded-lg font-medium transition-colors ${
+              className={`w-full text-left px-4 py-3 rounded-lg font-medium transition-colors flex items-center space-x-3 ${
                 globalFilter === 'repair_requests' 
                   ? 'text-white' 
                   : 'text-gray-700 hover:text-white'
@@ -453,7 +456,10 @@ const TechnicianDashboard = () => {
                 backgroundColor: globalFilter === 'repair_requests' ? '#42ADF5' : 'transparent'
               }}
             >
-              Assign Repair Request
+              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+              </svg>
+              <span>Assign Repair Request</span>
             </button>
           </nav>
           
@@ -465,11 +471,14 @@ const TechnicianDashboard = () => {
                 navigate('/');
                 setShowSidebar(false);
               }}
-              className="w-full text-left px-4 py-3 rounded-lg font-medium text-gray-700 hover:text-white transition-colors"
-              onMouseOver={(e) => { e.currentTarget.style.backgroundColor = '#42ADF5'; }}
+              className="w-full text-left px-4 py-3 rounded-lg font-medium text-gray-700 hover:text-white transition-colors flex items-center space-x-3"
+              onMouseOver={(e) => { e.currentTarget.style.backgroundColor = '#fecaca'; }}
               onMouseOut={(e) => { e.currentTarget.style.backgroundColor = 'transparent'; }}
             >
-              Logout
+              <svg className="w-6 h-6" fill="none" stroke="#ef4444" viewBox="0 0 24 24" strokeWidth="3">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M8.25 9V5.25A2.25 2.25 0 0 1 10.5 3h6a2.25 2.25 0 0 1 2.25 2.25v13.5A2.25 2.25 0 0 1 16.5 21h-6a2.25 2.25 0 0 1-2.25-2.25V15m-3 0-3-3m0 0 3-3m-3 3H15" />
+              </svg>
+              <span style={{ color: '#ef4444', fontWeight: 'bold' }}>Logout</span>
             </button>
           </div>
         </div>
