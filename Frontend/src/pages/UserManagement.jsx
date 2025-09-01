@@ -202,7 +202,7 @@ export default function UserManagement() {
                         onChange={(e) => setRoleFilter(e.target.value)}
                         className="w-full px-3 py-2 border rounded"
                     >
-                        <option value="all">All Users (No Admins)</option>
+                        <option value="all">All Users</option>
                         <option value="managers">All Managers</option>
                         {allRoles.map(role => <option key={role} value={role}>{role.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase())}</option>)}
                     </select>

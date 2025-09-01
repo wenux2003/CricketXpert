@@ -10,10 +10,10 @@ dotenv.config();
 // Connect to DB
 connectDB();
 
-// --- IMPORT YOUR ROUTES ---
+// --- IMPORTED ROUTES ---
 const authRoutes = require('./routes/authRoutes');
 const uploadRoutes = require('./routes/uploadRoutes');
-const userRoutes = require('./routes/userRoutes'); // <-- IMPORT THIS
+const userRoutes = require('./routes/userRoutes'); 
 
 const app = express();
 
@@ -21,13 +21,13 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
-// --- DEFINE YOUR ROUTES ---
+// --- MY ROUTES ---
 app.use('/api/auth', authRoutes);
 app.use('/api/upload', uploadRoutes);
-app.use('/api/users', userRoutes); // <-- USE THE NEW ROUTES
+app.use('/api/users', userRoutes); 
 
 // --- SERVE STATIC UPLOADED FILES ---
-// This makes the 'uploads' folder public
+// makes the 'uploads' folder public //
 const dirname = path.resolve();
 app.use('/uploads', express.static(path.join(dirname, '/uploads')));
 

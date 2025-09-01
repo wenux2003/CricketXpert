@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 
-// A simple profile icon component using SVG.
 const ProfileIcon = () => (
   <svg
     xmlns="http://www.w3.org/2000/svg"
@@ -24,7 +23,6 @@ export default function App() {
   return <HomePage />;
 }
 
-// This is the main component for your home page, updated with the new color palette.
 function HomePage() {
     const [userInfo, setUserInfo] = useState(null);
     const navigate = useNavigate();

@@ -1,10 +1,10 @@
 const User = require('../models/User.js');
 const bcrypt = require('bcryptjs');
-const jwt = require('jsonwebtoken'); // <-- Make sure JWT is imported
+const jwt = require('jsonwebtoken'); // <-- JWT is imported
 const { sendWelcomeEmail, sendNewUserNotification } = require('../utils/wemailService');
 const { sendPasswordResetCodeEmail } = require('../utils/wemailService');
 
-// This function is new or was missing from previous versions
+// cookie and token 
 const generateToken = (id) => {
     return jwt.sign({ id }, process.env.JWT_SECRET, {
         expiresIn: '30d',
@@ -48,7 +48,6 @@ const registerUser = async (req, res) => {
                 console.error("Failed to send registration emails:", err);
             });
 
-            // --- THIS IS THE FIX ---
             // Send back the full user object AND a token, just like the login function
             res.status(201).json({
                 _id: newUser._id,

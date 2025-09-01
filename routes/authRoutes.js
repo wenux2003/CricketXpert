@@ -8,7 +8,7 @@ router.post('/register', registerUser);
 router.post('/login', loginUser);
 router.post('/forgot-password', forgotPassword);
 
-// This route will now work because resetPassword is imported
+// This route work after resetPassword is imported
 router.post('/reset-password', resetPassword);
 
 module.exports = router;
