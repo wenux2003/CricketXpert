@@ -88,6 +88,9 @@ exports.completeCartOrder = async (req, res) => {
     order.date = new Date();
     await order.save();
     
+    // Reduce stock quantities for all products in the order
+    await reduceProductStock(order.items);
+    
     res.json(order);
   } catch (error) {
     res.status(500).json({ message: error.message });
@@ -157,16 +160,53 @@ exports.updateOrderStatus = async (req, res) => {
       return res.status(400).json({ message: 'Invalid order status' });
     }
 
-    const order = await Order.findByIdAndUpdate(
-      req.params.id,
-      { status },
-      { new: true }
-    );
-
+    const order = await Order.findById(req.params.id);
     if (!order) return res.status(404).json({ message: 'Order not found' });
+
+    // If order is being marked as completed, reduce stock
+    if (status === 'completed' && order.status !== 'completed') {
+      await reduceProductStock(order.items);
+    }
+
+    // Update order status
+    order.status = status;
+    await order.save();
 
     res.json(order);
   } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+// Update order details (address, amount, status, items)
+exports.updateOrder = async (req, res) => {
+  try {
+    const { address, amount, status, items } = req.body;
+    const validStatuses = ['created', 'processing', 'completed', 'cancelled', 'cart_pending'];
+
+    const order = await Order.findById(req.params.id);
+    if (!order) return res.status(404).json({ message: 'Order not found' });
+
+    // Validate status if provided
+    if (status && !validStatuses.includes(status)) {
+      return res.status(400).json({ message: 'Invalid order status' });
+    }
+
+    // Update fields if provided
+    if (address !== undefined) order.address = address;
+    if (amount !== undefined) order.amount = amount;
+    if (status !== undefined) order.status = status;
+    if (items !== undefined) order.items = items;
+
+    // If order is being marked as completed, reduce stock
+    if (status === 'completed' && order.status !== 'completed') {
+      await reduceProductStock(order.items);
+    }
+
+    await order.save();
+    res.json(order);
+  } catch (error) {
+    console.error('Error updating order:', error);
     res.status(500).json({ message: error.message });
   }
 };
@@ -224,5 +264,32 @@ exports.getOrdersByStatus = async (req, res) => {
     res.json(orders);
   } catch (error) {
     res.status(500).json({ message: error.message });
+  }
+};
+
+// Function to reduce product stock when order is completed
+const reduceProductStock = async (orderItems) => {
+  try {
+    for (const item of orderItems) {
+      const product = await Product.findById(item.productId);
+      if (product) {
+        // Reduce stock quantity
+        const newStock = Math.max(0, product.stock_quantity - item.quantity);
+        product.stock_quantity = newStock;
+        
+        // Log stock reduction
+        console.log(`📦 Stock reduced for ${product.name}: ${product.stock_quantity + item.quantity} → ${newStock}`);
+        
+        // Log low stock warning if stock is low
+        if (newStock <= 10) {
+          console.log(`⚠️ LOW STOCK WARNING: ${product.name} (ID: ${product.productId}) - Current stock: ${newStock}`);
+        }
+        
+        await product.save();
+      }
+    }
+  } catch (error) {
+    console.error('Error reducing product stock:', error);
+    throw error;
   }
 };

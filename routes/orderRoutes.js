@@ -5,6 +5,7 @@ const {
   getOrders, 
   getOrder, 
   updateOrderStatus, 
+  updateOrder,
   deleteOrder, 
   calculateOrderTotal, 
   getOrdersByStatus,
@@ -19,6 +20,7 @@ router.post('/', createOrder);
 router.get('/', getOrders);
 router.get('/:id', getOrder);
 router.put('/:id', updateOrderStatus);
+router.put('/:id/details', updateOrder);
 router.delete('/:id', deleteOrder);
 
 // Cart order routes

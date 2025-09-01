@@ -12,6 +12,13 @@ const ListOrders = () => {
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [orderToDelete, setOrderToDelete] = useState(null);
   const [deleting, setDeleting] = useState(false);
+  const [editingOrder, setEditingOrder] = useState(null);
+  const [editForm, setEditForm] = useState({
+    address: '',
+    amount: '',
+    status: '',
+    items: []
+  });
 
   useEffect(() => {
     fetchOrders();
@@ -63,6 +70,132 @@ const ListOrders = () => {
     } finally {
       setDeleting(false);
     }
+  };
+
+  const handleEdit = (order) => {
+    console.log('Opening edit modal for order:', order);
+    setEditingOrder(order);
+    const formData = {
+      address: order.address || '',
+      amount: order.amount || '',
+      status: order.status || '',
+      items: order.items ? [...order.items] : []
+    };
+    console.log('Setting edit form data:', formData);
+    setEditForm(formData);
+  };
+
+  const handleEditSubmit = async (e) => {
+    e.preventDefault();
+    
+    // Basic validation
+    if (!editForm.address.trim()) {
+      alert('Address is required');
+      return;
+    }
+    if (!editForm.amount || editForm.amount <= 0) {
+      alert('Amount must be greater than 0');
+      return;
+    }
+
+    // Validate items
+    if (editForm.items.length > 0) {
+      for (let i = 0; i < editForm.items.length; i++) {
+        const item = editForm.items[i];
+        if (!item.productId || !item.productId.trim()) {
+          alert(`Product ID is required for item ${i + 1}`);
+          return;
+        }
+        if (!item.quantity || item.quantity < 1) {
+          alert(`Quantity must be at least 1 for item ${i + 1}`);
+          return;
+        }
+        if (!item.priceAtOrder || item.priceAtOrder < 0) {
+          alert(`Price must be 0 or greater for item ${i + 1}`);
+          return;
+        }
+      }
+    }
+
+    try {
+      console.log('Submitting order update:', editForm);
+      await axios.put(`http://localhost:5000/api/orders/${editingOrder._id}/details`, editForm);
+      setEditingOrder(null);
+      setEditForm({
+        address: '',
+        amount: '',
+        status: '',
+        items: []
+      });
+      fetchOrders();
+      alert('Order updated successfully!');
+    } catch (err) {
+      console.error('Error updating order:', err);
+      alert('Error updating order: ' + err.message);
+    }
+  };
+
+  const handleInputChange = (e) => {
+    const { name, value } = e.target;
+    setEditForm(prev => ({
+      ...prev,
+      [name]: value
+    }));
+  };
+
+  const closeEditModal = () => {
+    setEditingOrder(null);
+    setEditForm({
+      address: '',
+      amount: '',
+      status: '',
+      items: []
+    });
+  };
+
+  const handleItemChange = (index, field, value) => {
+    const newItems = [...editForm.items];
+    newItems[index] = { ...newItems[index], [field]: value };
+    setEditForm(prev => ({ ...prev, items: newItems }));
+    console.log(`Item ${index} updated:`, { field, value, newItems });
+    
+    // Auto-calculate total amount when quantity or price changes
+    if (field === 'quantity' || field === 'priceAtOrder') {
+      setTimeout(() => {
+        const total = newItems.reduce((sum, item) => {
+          return sum + (item.quantity * item.priceAtOrder);
+        }, 0);
+        setEditForm(prev => ({ ...prev, amount: total }));
+      }, 100);
+    }
+  };
+
+  const removeItem = (index) => {
+    const newItems = editForm.items.filter((_, i) => i !== index);
+    setEditForm(prev => ({ ...prev, items: newItems }));
+    console.log(`Item ${index} removed, new items:`, newItems);
+  };
+
+  const addItem = () => {
+    const newItem = {
+      productId: '',
+      quantity: 1,
+      priceAtOrder: 0
+    };
+    setEditForm(prev => ({ ...prev, items: [...prev.items, newItem] }));
+    console.log('Item added:', newItem);
+  };
+
+  const calculateTotalAmount = () => {
+    const total = editForm.items.reduce((sum, item) => {
+      return sum + (item.quantity * item.priceAtOrder);
+    }, 0);
+    return total;
+  };
+
+  const updateAmountFromItems = () => {
+    const total = calculateTotalAmount();
+    setEditForm(prev => ({ ...prev, amount: total }));
   };
 
   const getStatusColor = (status) => {
@@ -231,6 +364,13 @@ const ListOrders = () => {
                           >
                             <Eye className="w-4 h-4" />
                           </button>
+                          <button
+                            onClick={() => handleEdit(order)}
+                            className="text-green-600 hover:text-green-700 p-1"
+                            title="Edit Order"
+                          >
+                            <Edit className="w-4 h-4" />
+                          </button>
                           <select
                             value={order.status}
                             onChange={(e) => handleUpdateStatus(order._id, e.target.value)}
@@ -332,6 +472,171 @@ const ListOrders = () => {
                 </div>
               </div>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Edit Order Modal */}
+      {editingOrder && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-lg max-w-4xl w-full max-h-[90vh] overflow-y-auto p-6">
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="text-lg font-medium text-gray-900">Edit Order</h3>
+              <button
+                onClick={closeEditModal}
+                className="text-gray-400 hover:text-gray-600"
+              >
+                <XCircle className="w-6 h-6" />
+              </button>
+            </div>
+            
+            <form onSubmit={handleEditSubmit} className="space-y-6">
+              {/* Basic Order Information */}
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div>
+                  <label htmlFor="edit-address" className="block text-sm font-medium text-gray-700">Address</label>
+                  <input
+                    type="text"
+                    id="edit-address"
+                    name="address"
+                    value={editForm.address}
+                    onChange={handleInputChange}
+                    className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                  />
+                </div>
+                                 <div>
+                   <label htmlFor="edit-amount" className="block text-sm font-medium text-gray-700">Amount (LKR)</label>
+                   <div className="flex gap-2">
+                     <input
+                       type="number"
+                       id="edit-amount"
+                       name="amount"
+                       value={editForm.amount}
+                       onChange={handleInputChange}
+                       step="0.01"
+                       min="0"
+                       className="flex-1 border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                     />
+                     <button
+                       type="button"
+                       onClick={updateAmountFromItems}
+                       className="px-3 py-2 text-sm bg-blue-600 text-white rounded hover:bg-blue-700"
+                       title="Calculate total from items"
+                     >
+                       Calculate
+                     </button>
+                   </div>
+                 </div>
+                <div>
+                  <label htmlFor="edit-status" className="block text-sm font-medium text-gray-700">Status</label>
+                  <select
+                    id="edit-status"
+                    name="status"
+                    value={editForm.status}
+                    onChange={handleInputChange}
+                    className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                  >
+                    <option value="cart_pending">Cart Pending</option>
+                    <option value="created">Created</option>
+                    <option value="processing">Processing</option>
+                    <option value="completed">Completed</option>
+                    <option value="cancelled">Cancelled</option>
+                  </select>
+                </div>
+              </div>
+
+              {/* Order Items */}
+              <div>
+                <div className="flex justify-between items-center mb-3">
+                  <h4 className="text-sm font-medium text-gray-700">Order Items</h4>
+                  <button
+                    type="button"
+                    onClick={addItem}
+                    className="px-3 py-1 text-sm bg-green-600 text-white rounded hover:bg-green-700"
+                  >
+                    + Add Item
+                  </button>
+                </div>
+                
+                {editForm.items.length === 0 ? (
+                  <p className="text-gray-500 text-sm">No items in this order.</p>
+                ) : (
+                  <div className="space-y-3">
+                    {editForm.items.map((item, index) => (
+                      <div key={index} className="border border-gray-200 rounded-lg p-3 bg-gray-50">
+                        <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
+                          <div>
+                            <label className="block text-xs font-medium text-gray-600 mb-1">Product ID</label>
+                            <input
+                              type="text"
+                              value={item.productId}
+                              onChange={(e) => handleItemChange(index, 'productId', e.target.value)}
+                              className="w-full text-sm border border-gray-300 rounded px-2 py-1"
+                              placeholder="Product ID"
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-xs font-medium text-gray-600 mb-1">Quantity</label>
+                            <input
+                              type="number"
+                              value={item.quantity}
+                              onChange={(e) => handleItemChange(index, 'quantity', parseInt(e.target.value) || 0)}
+                              min="1"
+                              className="w-full text-sm border border-gray-300 rounded px-2 py-1"
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-xs font-medium text-gray-600 mb-1">Price (LKR)</label>
+                            <input
+                              type="number"
+                              value={item.priceAtOrder}
+                              onChange={(e) => handleItemChange(index, 'priceAtOrder', parseFloat(e.target.value) || 0)}
+                              step="0.01"
+                              min="0"
+                              className="w-full text-sm border border-gray-300 rounded px-2 py-1"
+                            />
+                          </div>
+                          <div className="flex items-end">
+                            <button
+                              type="button"
+                              onClick={() => removeItem(index)}
+                              className="px-2 py-1 text-xs bg-red-600 text-white rounded hover:bg-red-700"
+                            >
+                              Remove
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              {/* Action Buttons */}
+              <div className="flex justify-end space-x-3 pt-4 border-t">
+                <button
+                  type="button"
+                  onClick={closeEditModal}
+                  className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#42ADF5]"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="px-4 py-2 text-sm font-medium text-white bg-blue-600 border border-transparent rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50"
+                  disabled={deleting}
+                >
+                  {deleting ? (
+                    <div className="flex items-center">
+                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                      Updating...
+                    </div>
+                  ) : (
+                    'Update Order'
+                  )}
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       )}
