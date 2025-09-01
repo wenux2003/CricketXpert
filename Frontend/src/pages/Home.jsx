@@ -69,43 +69,43 @@ const Home = () => {
   return (
     <div className="min-h-screen bg-white">
       {/* Hero Section */}
-      <section className="bg-gradient-to-br from-blue-600 via-blue-700 to-blue-800 text-white">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
-            <div>
-              <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold leading-tight mb-6">
+      <section className="bg-gradient-to-br from-blue-600 via-blue-700 to-blue-800 text-white overflow-hidden">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 sm:py-16 lg:py-20">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-12 items-center">
+            <div className="text-center lg:text-left">
+              <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold leading-tight mb-4 sm:mb-6">
                 Master Your Cricket Skills with 
                 <span className="text-blue-200"> Expert Coaching</span>
               </h1>
-              <p className="text-xl text-blue-100 mb-8 leading-relaxed">
+              <p className="text-lg sm:text-xl text-blue-100 mb-6 sm:mb-8 leading-relaxed max-w-2xl mx-auto lg:mx-0">
                 Join thousands of players who have transformed their game through our comprehensive 
                 cricket coaching programs. From beginners to advanced players, we have the perfect 
                 program for you.
               </p>
-              <div className="flex flex-col sm:flex-row space-y-4 sm:space-y-0 sm:space-x-4">
+              <div className="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start">
                 <Link
                   to="/programs"
-                  className="bg-white text-blue-600 px-8 py-4 rounded-lg font-semibold hover:bg-blue-50 transition-colors flex items-center justify-center space-x-2"
+                  className="bg-white text-blue-600 px-6 sm:px-8 py-3 sm:py-4 rounded-lg font-semibold hover:bg-blue-50 transition-colors flex items-center justify-center space-x-2 min-h-[44px]"
                 >
                   <span>Explore Programs</span>
-                  <ArrowRight size={20} />
+                  <ArrowRight size={18} className="sm:w-5 sm:h-5" />
                 </Link>
-                <button className="border-2 border-white text-white px-8 py-4 rounded-lg font-semibold hover:bg-white hover:text-blue-600 transition-colors flex items-center justify-center space-x-2">
-                  <Play size={20} />
+                <button className="border-2 border-white text-white px-6 sm:px-8 py-3 sm:py-4 rounded-lg font-semibold hover:bg-white hover:text-blue-600 transition-colors flex items-center justify-center space-x-2 min-h-[44px]">
+                  <Play size={18} className="sm:w-5 sm:h-5" />
                   <span>Watch Demo</span>
                 </button>
               </div>
             </div>
-            <div className="relative">
+            <div className="relative mt-8 lg:mt-0">
               <img
                 src="/api/placeholder/600/400"
                 alt="Cricket Coaching"
-                className="rounded-lg shadow-2xl"
+                className="w-full h-auto rounded-lg shadow-2xl"
               />
-              <div className="absolute -bottom-6 -left-6 bg-white text-gray-900 p-4 rounded-lg shadow-lg">
+              <div className="absolute -bottom-4 sm:-bottom-6 -left-4 sm:-left-6 bg-white text-gray-900 p-3 sm:p-4 rounded-lg shadow-lg max-w-xs">
                 <div className="flex items-center space-x-2">
-                  <CheckCircle className="text-green-500" size={20} />
-                  <span className="font-semibold">Trusted by 500+ students</span>
+                  <CheckCircle className="text-green-500 flex-shrink-0" size={18} />
+                  <span className="font-semibold text-sm sm:text-base">Trusted by 500+ students</span>
                 </div>
               </div>
             </div>
@@ -114,15 +114,15 @@ const Home = () => {
       </section>
 
       {/* Stats Section */}
-      <section className="py-16 bg-gray-50">
+      <section className="py-12 sm:py-16 bg-gray-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-8">
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-6 sm:gap-8">
             {stats.map((stat, index) => (
               <div key={index} className="text-center">
-                <div className="text-3xl md:text-4xl font-bold text-blue-600 mb-2">
+                <div className="text-2xl sm:text-3xl md:text-4xl font-bold text-blue-600 mb-1 sm:mb-2">
                   {stat.number}
                 </div>
-                <div className="text-gray-600 font-medium">{stat.label}</div>
+                <div className="text-gray-600 font-medium text-sm sm:text-base">{stat.label}</div>
               </div>
             ))}
           </div>
@@ -130,28 +130,28 @@ const Home = () => {
       </section>
 
       {/* Features Section */}
-      <section className="py-20">
+      <section className="py-12 sm:py-16 lg:py-20">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-16">
-            <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">
+          <div className="text-center mb-12 sm:mb-16">
+            <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold text-gray-900 mb-4">
               Why Choose CricketXpert?
             </h2>
-            <p className="text-xl text-gray-600 max-w-3xl mx-auto">
+            <p className="text-lg sm:text-xl text-gray-600 max-w-3xl mx-auto leading-relaxed">
               We offer comprehensive cricket coaching programs designed to help players 
               of all levels improve their skills and achieve their goals.
             </p>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 sm:gap-8">
             {features.map((feature, index) => {
               const IconComponent = feature.icon;
               return (
-                <div key={index} className="text-center p-6 bg-white rounded-lg shadow-lg hover:shadow-xl transition-shadow">
-                  <div className="inline-flex items-center justify-center w-16 h-16 bg-blue-100 text-blue-600 rounded-full mb-4">
-                    <IconComponent size={24} />
+                <div key={index} className="text-center p-4 sm:p-6 bg-white rounded-lg shadow-lg hover:shadow-xl transition-shadow duration-300">
+                  <div className="inline-flex items-center justify-center w-14 h-14 sm:w-16 sm:h-16 bg-blue-100 text-blue-600 rounded-full mb-3 sm:mb-4">
+                    <IconComponent size={20} className="sm:w-6 sm:h-6" />
                   </div>
-                  <h3 className="text-xl font-semibold text-gray-900 mb-3">{feature.title}</h3>
-                  <p className="text-gray-600">{feature.description}</p>
+                  <h3 className="text-lg sm:text-xl font-semibold text-gray-900 mb-2 sm:mb-3">{feature.title}</h3>
+                  <p className="text-gray-600 text-sm sm:text-base leading-relaxed">{feature.description}</p>
                 </div>
               );
             })}
@@ -160,18 +160,18 @@ const Home = () => {
       </section>
 
       {/* Programs Preview */}
-      <section className="py-20 bg-gray-50">
+      <section className="py-12 sm:py-16 lg:py-20 bg-gray-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-16">
-            <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">
+          <div className="text-center mb-12 sm:mb-16">
+            <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold text-gray-900 mb-4">
               Popular Programs
             </h2>
-            <p className="text-xl text-gray-600 max-w-3xl mx-auto">
+            <p className="text-lg sm:text-xl text-gray-600 max-w-3xl mx-auto leading-relaxed">
               Discover our most popular coaching programs designed for different skill levels and specializations.
             </p>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 mb-12">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8 mb-8 sm:mb-12">
             {[
               {
                 title: 'Beginner Batting Fundamentals',
@@ -198,26 +198,26 @@ const Home = () => {
                 image: '/api/placeholder/300/200'
               }
             ].map((program, index) => (
-              <div key={index} className="bg-white rounded-lg shadow-lg overflow-hidden hover:shadow-xl transition-shadow">
+              <div key={index} className="bg-white rounded-lg shadow-lg overflow-hidden hover:shadow-xl transition-shadow duration-300">
                 <img
                   src={program.image}
                   alt={program.title}
-                  className="w-full h-48 object-cover"
+                  className="w-full h-40 sm:h-48 object-cover"
                 />
-                <div className="p-6">
+                <div className="p-4 sm:p-6">
                   <div className="flex items-center justify-between mb-2">
-                    <span className="px-2 py-1 bg-blue-100 text-blue-800 text-sm rounded-full">
+                    <span className="px-2 py-1 bg-blue-100 text-blue-800 text-xs sm:text-sm rounded-full">
                       {program.level}
                     </span>
-                    <span className="text-sm text-gray-600">{program.duration}</span>
+                    <span className="text-xs sm:text-sm text-gray-600">{program.duration}</span>
                   </div>
-                  <h3 className="text-xl font-semibold text-gray-900 mb-2">{program.title}</h3>
-                  <p className="text-gray-600 mb-4">{program.description}</p>
+                  <h3 className="text-lg sm:text-xl font-semibold text-gray-900 mb-2 line-clamp-2">{program.title}</h3>
+                  <p className="text-gray-600 mb-4 text-sm sm:text-base line-clamp-2">{program.description}</p>
                   <div className="flex items-center justify-between">
-                    <span className="text-2xl font-bold text-blue-600">{program.price}</span>
+                    <span className="text-xl sm:text-2xl font-bold text-blue-600">{program.price}</span>
                     <Link
                       to="/programs"
-                      className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 transition-colors"
+                      className="bg-blue-600 text-white px-3 sm:px-4 py-2 rounded-md hover:bg-blue-700 transition-colors text-sm sm:text-base"
                     >
                       Learn More
                     </Link>
@@ -230,45 +230,45 @@ const Home = () => {
           <div className="text-center">
             <Link
               to="/programs"
-              className="bg-blue-600 text-white px-8 py-4 rounded-lg font-semibold hover:bg-blue-700 transition-colors inline-flex items-center space-x-2"
+              className="bg-blue-600 text-white px-6 sm:px-8 py-3 sm:py-4 rounded-lg font-semibold hover:bg-blue-700 transition-colors inline-flex items-center space-x-2 min-h-[44px]"
             >
               <span>View All Programs</span>
-              <ArrowRight size={20} />
+              <ArrowRight size={18} className="sm:w-5 sm:h-5" />
             </Link>
           </div>
         </div>
       </section>
 
       {/* Testimonials */}
-      <section className="py-20">
+      <section className="py-12 sm:py-16 lg:py-20">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-16">
-            <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">
+          <div className="text-center mb-12 sm:mb-16">
+            <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold text-gray-900 mb-4">
               What Our Students Say
             </h2>
-            <p className="text-xl text-gray-600 max-w-3xl mx-auto">
+            <p className="text-lg sm:text-xl text-gray-600 max-w-3xl mx-auto leading-relaxed">
               Don't just take our word for it. Here's what our students and their families have to say about our programs.
             </p>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8">
             {testimonials.map((testimonial, index) => (
-              <div key={index} className="bg-white p-6 rounded-lg shadow-lg">
-                <div className="flex items-center space-x-1 mb-4">
+              <div key={index} className="bg-white p-4 sm:p-6 rounded-lg shadow-lg hover:shadow-xl transition-shadow duration-300">
+                <div className="flex items-center space-x-1 mb-3 sm:mb-4">
                   {[...Array(testimonial.rating)].map((_, i) => (
-                    <Star key={i} className="text-yellow-400 fill-current" size={16} />
+                    <Star key={i} className="text-yellow-400 fill-current" size={14} />
                   ))}
                 </div>
-                <p className="text-gray-700 mb-6 italic">"{testimonial.content}"</p>
+                <p className="text-gray-700 mb-4 sm:mb-6 italic text-sm sm:text-base leading-relaxed">"{testimonial.content}"</p>
                 <div className="flex items-center space-x-3">
                   <img
                     src={testimonial.avatar}
                     alt={testimonial.name}
-                    className="w-12 h-12 rounded-full bg-gray-300"
+                    className="w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-gray-300 object-cover"
                   />
                   <div>
-                    <h4 className="font-semibold text-gray-900">{testimonial.name}</h4>
-                    <p className="text-sm text-gray-600">{testimonial.role}</p>
+                    <h4 className="font-semibold text-gray-900 text-sm sm:text-base">{testimonial.name}</h4>
+                    <p className="text-xs sm:text-sm text-gray-600">{testimonial.role}</p>
                   </div>
                 </div>
               </div>
@@ -278,25 +278,25 @@ const Home = () => {
       </section>
 
       {/* CTA Section */}
-      <section className="py-20 bg-blue-600 text-white">
+      <section className="py-12 sm:py-16 lg:py-20 bg-blue-600 text-white">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-          <h2 className="text-3xl md:text-4xl font-bold mb-4">
+          <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold mb-4">
             Ready to Start Your Cricket Journey?
           </h2>
-          <p className="text-xl text-blue-100 mb-8">
+          <p className="text-lg sm:text-xl text-blue-100 mb-6 sm:mb-8 leading-relaxed max-w-2xl mx-auto">
             Join thousands of players who have improved their game with our expert coaching programs.
           </p>
-          <div className="flex flex-col sm:flex-row justify-center space-y-4 sm:space-y-0 sm:space-x-4">
+          <div className="flex flex-col sm:flex-row justify-center gap-4">
             <Link
               to="/programs"
-              className="bg-white text-blue-600 px-8 py-4 rounded-lg font-semibold hover:bg-blue-50 transition-colors inline-flex items-center justify-center space-x-2"
+              className="bg-white text-blue-600 px-6 sm:px-8 py-3 sm:py-4 rounded-lg font-semibold hover:bg-blue-50 transition-colors inline-flex items-center justify-center space-x-2 min-h-[44px]"
             >
               <span>Browse Programs</span>
-              <ArrowRight size={20} />
+              <ArrowRight size={18} className="sm:w-5 sm:h-5" />
             </Link>
             <Link
               to="/profile"
-              className="border-2 border-white text-white px-8 py-4 rounded-lg font-semibold hover:bg-white hover:text-blue-600 transition-colors"
+              className="border-2 border-white text-white px-6 sm:px-8 py-3 sm:py-4 rounded-lg font-semibold hover:bg-white hover:text-blue-600 transition-colors min-h-[44px] flex items-center justify-center"
             >
               Sign Up Free
             </Link>
@@ -308,6 +308,7 @@ const Home = () => {
 };
 
 export default Home;
+
 
 
 

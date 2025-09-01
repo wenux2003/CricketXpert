@@ -93,18 +93,18 @@ const Navbar = () => {
   };
 
   return (
-    <nav className="bg-white shadow-lg border-b border-gray-200 sticky top-0 z-50">
+    <nav className="bg-white shadow-lg border-b border-gray-200 sticky top-0 z-50 w-full">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex justify-between h-16">
+        <div className="flex justify-between items-center h-16">
           {/* Logo and brand */}
-          <div className="flex items-center">
+          <div className="flex items-center flex-shrink-0">
             <Link to="/" className="flex items-center space-x-2">
               <img 
                 src="/Logo.jpg" 
                 alt="CricketXpert Logo" 
-                className="h-8 w-8 rounded-full"
+                className="h-8 w-8 rounded-full object-cover"
               />
-              <span className="text-xl font-bold text-gray-800">
+              <span className="text-lg sm:text-xl font-bold text-gray-800 whitespace-nowrap">
                 CricketXpert
               </span>
             </Link>
@@ -132,18 +132,18 @@ const Navbar = () => {
           </div>
 
           {/* Right side - notifications and profile */}
-          <div className="flex items-center space-x-4">
+          <div className="flex items-center space-x-2 sm:space-x-4">
             {isAuthenticated ? (
               <>
-                {/* Notifications */}
-                <div className="relative">
+                {/* Notifications - hidden on very small screens */}
+                <div className="relative hidden xs:block">
                   <button
-                    className="p-2 text-gray-400 hover:text-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 rounded-full"
+                    className="p-2 text-gray-400 hover:text-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 rounded-full transition-colors duration-200"
                     onClick={() => {/* Handle notifications dropdown */}}
                   >
-                    <Bell size={20} />
+                    <Bell size={18} className="sm:w-5 sm:h-5" />
                     {unreadCount > 0 && (
-                      <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center">
+                      <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full h-4 w-4 sm:h-5 sm:w-5 flex items-center justify-center text-xs">
                         {unreadCount > 9 ? '9+' : unreadCount}
                       </span>
                     )}
@@ -154,14 +154,14 @@ const Navbar = () => {
                 <div className="relative">
                   <button
                     onClick={toggleProfile}
-                    className="flex items-center space-x-2 p-2 rounded-md hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="flex items-center space-x-1 sm:space-x-2 p-1 sm:p-2 rounded-md hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors duration-200"
                   >
                     <img
                       src={user?.profileImageURL || '/api/placeholder/32/32'}
                       alt="Profile"
-                      className="h-8 w-8 rounded-full bg-gray-300"
+                      className="h-7 w-7 sm:h-8 sm:w-8 rounded-full bg-gray-300 object-cover"
                     />
-                    <span className="hidden md:block text-sm font-medium text-gray-700">
+                    <span className="hidden sm:block text-xs sm:text-sm font-medium text-gray-700 truncate max-w-20 sm:max-w-none">
                       {user?.firstName || user?.name || 'User'}
                     </span>
                   </button>
@@ -219,22 +219,22 @@ const Navbar = () => {
               </>
             ) : (
               /* Login buttons for non-authenticated users */
-              <div className="flex space-x-2">
+              <div className="flex flex-col xs:flex-row space-y-1 xs:space-y-0 xs:space-x-1 sm:space-x-2">
                 <button
                   onClick={() => handleMockLogin('customer')}
-                  className="bg-blue-600 text-white px-3 py-2 rounded-md hover:bg-blue-700 transition-colors font-medium text-sm"
+                  className="bg-blue-600 text-white px-2 xs:px-3 py-1.5 xs:py-2 rounded-md hover:bg-blue-700 transition-colors font-medium text-xs sm:text-sm whitespace-nowrap"
                 >
                   Customer
                 </button>
                 <button
                   onClick={() => handleMockLogin('coach')}
-                  className="bg-green-600 text-white px-3 py-2 rounded-md hover:bg-green-700 transition-colors font-medium text-sm"
+                  className="bg-green-600 text-white px-2 xs:px-3 py-1.5 xs:py-2 rounded-md hover:bg-green-700 transition-colors font-medium text-xs sm:text-sm whitespace-nowrap"
                 >
                   Coach
                 </button>
                 <button
                   onClick={() => handleMockLogin('manager')}
-                  className="bg-purple-600 text-white px-3 py-2 rounded-md hover:bg-purple-700 transition-colors font-medium text-sm"
+                  className="bg-purple-600 text-white px-2 xs:px-3 py-1.5 xs:py-2 rounded-md hover:bg-purple-700 transition-colors font-medium text-xs sm:text-sm whitespace-nowrap"
                 >
                   Manager
                 </button>
@@ -255,17 +255,17 @@ const Navbar = () => {
 
         {/* Mobile Navigation Menu */}
         {isMenuOpen && (
-          <div className="md:hidden">
-            <div className="px-2 pt-2 pb-3 space-y-1 sm:px-3 border-t border-gray-200">
+          <div className="md:hidden border-t border-gray-200 bg-white">
+            <div className="px-2 pt-2 pb-3 space-y-1 sm:px-3">
               {navItems.map((item) => {
                 const IconComponent = item.icon;
                 return (
                   <Link
                     key={item.path}
                     to={item.path}
-                    className={`flex items-center space-x-2 px-3 py-2 rounded-md text-base font-medium ${
+                    className={`flex items-center space-x-3 px-3 py-3 rounded-md text-base font-medium transition-colors duration-200 ${
                       isActivePath(item.path)
-                        ? 'text-blue-600 bg-blue-50'
+                        ? 'text-blue-600 bg-blue-50 border-l-4 border-blue-600'
                         : 'text-gray-700 hover:text-blue-600 hover:bg-gray-50'
                     }`}
                     onClick={() => setIsMenuOpen(false)}
@@ -275,6 +275,27 @@ const Navbar = () => {
                   </Link>
                 );
               })}
+              
+              {/* Mobile-only notifications for authenticated users */}
+              {isAuthenticated && (
+                <div className="pt-2 mt-2 border-t border-gray-200">
+                  <button
+                    className="flex items-center space-x-3 px-3 py-3 rounded-md text-base font-medium text-gray-700 hover:text-blue-600 hover:bg-gray-50 w-full transition-colors duration-200"
+                    onClick={() => {
+                      setIsMenuOpen(false);
+                      /* Handle notifications */
+                    }}
+                  >
+                    <Bell size={20} />
+                    <span>Notifications</span>
+                    {unreadCount > 0 && (
+                      <span className="ml-auto bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center">
+                        {unreadCount > 9 ? '9+' : unreadCount}
+                      </span>
+                    )}
+                  </button>
+                </div>
+              )}
             </div>
           </div>
         )}
