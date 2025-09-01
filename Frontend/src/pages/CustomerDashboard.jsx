@@ -385,7 +385,7 @@ const CustomerDashboard = ({ customerId }) => {
                     {request.equipmentType?.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase())} - {request.damageType}
                   </h3>
                   <p className="text-sm" style={{ color: Brand.body }}>
-                    Request ID: {request._id} • Submitted: {new Date(request.createdAt).toLocaleDateString()}
+                    Submitted: {new Date(request.createdAt).toLocaleDateString()}
                   </p>
                   <p className="text-sm mt-1" style={{ color: Brand.secondary }}>
                     <strong>Current Status:</strong> {request.status}
