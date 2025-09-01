@@ -20,7 +20,7 @@ const AddProduct = () => {
     setFormData({ ...formData, [e.target.name]: value });
   };
 
-  // --- NEW: Handler for the dropzone ---
+  //  Handler for the dropzone 
   const onDrop = useCallback((acceptedFiles) => {
     // We only take the first file
     if (acceptedFiles.length > 0) {
@@ -28,7 +28,7 @@ const AddProduct = () => {
     }
   }, []);
 
-  // --- NEW: Initialize react-dropzone ---
+  //Initialize react-dropzone 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
     onDrop,
     accept: {
@@ -40,7 +40,7 @@ const AddProduct = () => {
     multiple: false, // Ensure only one file can be selected
   });
 
-  // --- MODIFIED: Handle submission with file upload ---
+  // Handle submission with file upload
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!imageFile) {

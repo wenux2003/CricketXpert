@@ -23,7 +23,7 @@ const ListProducts = () => {
       console.error('Error fetching categories:', err);
     }
   };
-
+//search quary 
   const fetchProducts = async () => {
     try {
       let url = 'http://localhost:5000/api/products/';
@@ -37,6 +37,7 @@ const ListProducts = () => {
     }
   };
 
+  //hedale the delete
   const handleDelete = async (id) => {
     if (window.confirm('Are you sure you want to delete this product?')) {
       try {

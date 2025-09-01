@@ -1,7 +1,7 @@
 const mongoose = require('mongoose');
 const Product = require('../models/Product');
 
-// --- MODIFIED: Create product function ---
+
 exports.createProduct = async (req, res) => {
   try {
     // The text fields are in req.body
@@ -9,13 +9,11 @@ exports.createProduct = async (req, res) => {
 
     // The uploaded file info is in req.file
     if (req.file) {
-      // Construct the URL for the image.
-      // This assumes your server is running on localhost:5000.
-      // The path will be something like: http://localhost:5000/uploads/image-1678886400000-uniquesuffix-filename.jpg
+     
       productData.image_url = `${req.protocol}://${req.get('host')}/${req.file.path.replace(/\\/g, "/")}`;
     } else {
-        // Optionally handle cases where no image is uploaded
-        productData.image_url = ''; // or a default image URL
+        
+        productData.image_url = '';
     }
 
     const product = new Product(productData);
@@ -28,7 +26,7 @@ exports.createProduct = async (req, res) => {
 };
 
 
-// ... (The rest of your controller functions: getProducts, getProduct, etc. remain unchanged) ...
+
 
 // Get all products
 exports.getProducts = async (req, res) => {

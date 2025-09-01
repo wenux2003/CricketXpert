@@ -3,7 +3,7 @@ import axios from 'axios';
 import { debounce } from 'lodash';
 import { useNavigate, Link } from 'react-router-dom';
 import { ShoppingCart } from 'lucide-react';
-import bat1 from '../assets/merch1.png';
+import bat1 from '../assets/Bat.webp';
 import Accessories1 from '../assets/Accessories1.jpg';
 import Electronics1 from '../assets/electronic.jpg';
 import Gaming1 from '../assets/Gaming.jpg';
