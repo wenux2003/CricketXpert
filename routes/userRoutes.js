@@ -10,6 +10,7 @@ const {
     createUserByAdmin,
     updateUserByAdmin,
     deleteUserByAdmin,
+    updateUserStatusByAdmin,
 } = require('../controllers/userController.js');
 
 // Import the security middleware
@@ -32,6 +33,8 @@ router.route('/:id')
     .put(protect, authorizeRoles('admin'), updateUserByAdmin)
     .delete(protect, authorizeRoles('admin'), deleteUserByAdmin);
 
+// --- ADMIN-ONLY ROUTE TO UPDATE USER STATUS ---
+router.put('/:id/status', protect, authorizeRoles('admin'), updateUserStatusByAdmin);
+
 
 module.exports = router;
-

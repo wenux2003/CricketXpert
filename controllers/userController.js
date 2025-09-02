@@ -95,6 +95,15 @@ const updateUserByAdmin = async (req, res) => {
         user.lastName = req.body.lastName || user.lastName;
         user.role = req.body.role || user.role;
         user.status = req.body.status || user.status;
+        user.email = req.body.email || user.email;
+
+        if (req.body.email) {
+            const existingUser = await User.findOne({ email: req.body.email });
+            if (existingUser && existingUser._id.toString() !== req.params.id) {
+                return res.status(400).json({ message: 'Email is already in use.' });
+            }
+            user.email = req.body.email;
+        }
 
         const updatedUser = await user.save();
         res.json(updatedUser);
@@ -117,6 +126,20 @@ const deleteUserByAdmin = async (req, res) => {
 };
 
 
+// @desc    Update user status by admin
+// @route   PUT /api/users/:id/status
+// @access  Private/Admin
+const updateUserStatusByAdmin = async (req, res) => {
+    const user = await User.findById(req.params.id);
+    if (user) {
+        user.status = req.body.status;
+        const updatedUser = await user.save();
+        res.json(updatedUser);
+    } else {
+        res.status(404).json({ message: 'User not found' });
+    }
+};
+
 module.exports = {
     // Functions for regular users
     getUserProfile,
@@ -127,4 +150,5 @@ module.exports = {
     createUserByAdmin,
     updateUserByAdmin,
     deleteUserByAdmin,
+    updateUserStatusByAdmin,
 };
