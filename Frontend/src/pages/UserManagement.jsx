@@ -164,7 +164,7 @@ export default function UserManagement() {
                 await axios.delete(`http://localhost:5000/api/users/${user._id}`, config);
             } else if (type === 'block') {
                 const newStatus = user.status === 'active' ? 'suspended' : 'active';
-                await axios.put(`http://localhost:5000/api/users/${user._id}`, { status: newStatus }, config);
+                await axios.put(`http://localhost:5000/api/users/${user._id}/status`, { status: newStatus }, config);
             }
             fetchUsers();
         } catch (err) {

@@ -76,6 +76,9 @@ const loginUser = async (req, res) => {
         });
 
         if (user && (await bcrypt.compare(password, user.passwordHash))) {
+            if (user.status === 'suspended') {
+                return res.status(403).json({ message: 'Your account has been suspended.' });
+            }
             res.json({
                 _id: user._id,
                 username: user.username,
@@ -152,4 +155,3 @@ module.exports = {
     forgotPassword,
     resetPassword,
 };
-

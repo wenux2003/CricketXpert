@@ -7,6 +7,7 @@ const bcrypt = require('bcryptjs');
 // @route   GET /api/users/profile
 // @access  Private
 const getUserProfile = async (req, res) => {
+    // This correctly uses the ID from the secure token
     const user = await User.findById(req.user._id);
     if (user) {
         res.json(user);
@@ -42,7 +43,7 @@ const updateUserProfile = async (req, res) => {
 
 // --- ADMIN-ONLY Functions ---
 
-// @desc    Get all users
+// @desc    Get all users (by admin)
 // @route   GET /api/users
 // @access  Private/Admin
 const getAllUsers = async (req, res) => {
@@ -50,7 +51,19 @@ const getAllUsers = async (req, res) => {
     res.json(users);
 };
 
-// @desc    Create a new user/staff by admin
+// @desc    Get user by ID (by admin)
+// @route   GET /api/users/:id
+// @access  Private/Admin
+const getUserById = async (req, res) => {
+    const user = await User.findById(req.params.id).select('-passwordHash');
+    if (user) {
+        res.json(user);
+    } else {
+        res.status(404).json({ message: 'User not found' });
+    }
+};
+
+// @desc    Create a new user/staff (by admin)
 // @route   POST /api/users
 // @access  Private/Admin
 const createUserByAdmin = async (req, res) => {
@@ -72,7 +85,7 @@ const createUserByAdmin = async (req, res) => {
     res.status(201).json(createdUser);
 };
 
-// @desc    Update any user by admin
+// @desc    Update any user (by admin)
 // @route   PUT /api/users/:id
 // @access  Private/Admin
 const updateUserByAdmin = async (req, res) => {
@@ -90,7 +103,7 @@ const updateUserByAdmin = async (req, res) => {
     }
 };
 
-// @desc    Delete a user by admin
+// @desc    Delete a user (by admin)
 // @route   DELETE /api/users/:id
 // @access  Private/Admin
 const deleteUserByAdmin = async (req, res) => {
@@ -105,10 +118,12 @@ const deleteUserByAdmin = async (req, res) => {
 
 
 module.exports = {
+    // Functions for regular users
     getUserProfile,
     updateUserProfile,
-    // Admin functions
+    // Functions for Admins
     getAllUsers,
+    getUserById,
     createUserByAdmin,
     updateUserByAdmin,
     deleteUserByAdmin,

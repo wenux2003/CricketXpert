@@ -1,22 +1,6 @@
-import React, { useState, useEffect } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
-
-const ProfileIcon = () => (
-  <svg
-    xmlns="http://www.w3.org/2000/svg"
-    className="h-8 w-8 text-text-on-dark/80 group-hover:text-text-on-dark transition-colors duration-300"
-    fill="none"
-    viewBox="0 0 24 24"
-    stroke="currentColor"
-    strokeWidth={2}
-  >
-    <path
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      d="M5.121 17.804A13.937 13.937 0 0112 16c2.5 0 4.847.655 6.879 1.804M15 10a3 3 0 11-6 0 3 3 0 016 0zm6 2a9 9 0 11-18 0 9 9 0 0118 0z"
-    />
-  </svg>
-);
+import React from 'react';
+import Header from './Header';
+import Footer from './Footer';
 
 // The main App component which renders the HomePage.
 export default function App() {
@@ -24,65 +8,11 @@ export default function App() {
 }
 
 function HomePage() {
-    const [userInfo, setUserInfo] = useState(null);
-    const navigate = useNavigate();
-
-    useEffect(() => {
-        const storedUserInfo = localStorage.getItem('userInfo');
-        if (storedUserInfo) {
-            setUserInfo(JSON.parse(storedUserInfo));
-        }
-    }, []);
-
-    const handleProfileClick = () => {
-        if (userInfo) {
-            if (userInfo.role === 'admin') {
-                navigate('/admin/dashboard');
-            } else {
-                navigate('/customer/profile');
-            }
-        } else {
-            navigate('/login');
-        }
-    };
-
   return (
     // Main background color updated to light gray
     <div className="bg-background min-h-screen font-sans">
       
-      {/* Navigation Bar Section - Updated with primary brand color */}
-      <nav className="bg-primary shadow-lg">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between h-20">
-            
-            {/* Logo or Brand Name - Text color updated for dark backgrounds */}
-            <div className="flex-shrink-0">
-              <h1 className="text-2xl font-bold text-text-on-dark">CricketExpert</h1>
-            </div>
-
-            {/* Primary Navigation Links - Text colors updated */}
-            <div className="hidden md:block">
-              <div className="ml-10 flex items-baseline space-x-4">
-                <a href="SignUpMultiStep.js" className="text-text-on-dark/80 hover:text-text-on-dark px-3 py-2 rounded-md text-sm font-medium transition-colors">Home</a>
-                <a href="#" className="text-text-on-dark/80 hover:text-text-on-dark px-3 py-2 rounded-md text-sm font-medium transition-colors">Buy Products</a>
-                <a href="#" className="text-text-on-dark/80 hover:text-text-on-dark px-3 py-2 rounded-md text-sm font-medium transition-colors">Bookings</a>
-                <a href="#" className="text-text-on-dark/80 hover:text-text-on-dark px-3 py-2 rounded-md text-sm font-medium transition-colors">Repairs</a>
-                <a href="#" className="text-text-on-dark/80 hover:text-text-on-dark px-3 py-2 rounded-md text-sm font-medium transition-colors">Programs</a>
-              </div>
-            </div>
-
-            {/* Profile Icon */}
-            <div className="hidden md:block">
-              <div className="ml-4 flex items-center md:ml-6">
-                <button onClick={handleProfileClick} className="group p-1 rounded-full focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-primary focus:ring-white">
-                  <span className="sr-only">View profile</span>
-                  <ProfileIcon />
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      </nav>
+      <Header />
 
       {/* Main Content Section */}
       <main>
@@ -119,6 +49,8 @@ function HomePage() {
           </div>
         </div>
       </main>
+
+      <Footer />
     </div>
   );
 }
