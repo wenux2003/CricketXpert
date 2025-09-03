@@ -72,7 +72,7 @@ export default function AdminLayout() {
                         <a href="#" className="flex items-center px-4 py-2 rounded-lg font-medium text-text-body hover:bg-gray-100">
                            <CreditCardIcon /> All Payments
                         </a>
-                        <a href="#" className="flex items-center px-4 py-2 rounded-lg font-medium text-text-body hover:bg-gray-100">
+                        <a href="/admin/orders" className="flex items-center px-4 py-2 rounded-lg font-medium text-text-body hover:bg-gray-100">
                            <ShoppingBagIcon /> Orders
                         </a>
                          <a href="#" className="flex items-center px-4 py-2 rounded-lg font-medium text-text-body hover:bg-gray-100">

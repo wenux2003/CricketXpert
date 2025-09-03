@@ -178,6 +178,8 @@ export default function EditAccount() {
 
             if (userInfo.role === 'admin') {
                 navigate('/admin/profile');
+            } else if (userInfo.role === 'order_manager') {
+                navigate('/order_manager/profile');
             } else {
                 navigate('/customer/profile');
             }
@@ -266,6 +268,8 @@ export default function EditAccount() {
                             const userInfo = JSON.parse(localStorage.getItem('userInfo'));
                             if (userInfo.role === 'admin') {
                                 navigate('/admin/profile');
+                            } else if (userInfo.role === 'order_manager') {
+                                navigate('/order_manager/profile');
                             } else {
                                 navigate('/customer/profile');
                             }

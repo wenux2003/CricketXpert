@@ -59,6 +59,7 @@ export default function App() {
                 <Route path="profile" element={<Profile />} />
                 <Route path="edit-account" element={<EditAccount />} />
                 <Route path="payments" element={<Payments />} />
+                <Route path="orders" element={<ListOrders />} />
             </Route>
         </Route>
         
