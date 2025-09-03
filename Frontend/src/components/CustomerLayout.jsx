@@ -61,7 +61,7 @@ export default function CustomerLayout() {
                          <Link to="/customer/edit-account" className="flex items-center px-4 py-3 rounded-lg font-medium text-text-body hover:bg-secondary hover:text-white transition-colors">
                            <CogIcon /> Edit Account
                         </Link>
-                         <a href="#" className="flex items-center px-4 py-3 rounded-lg font-medium text-text-body hover:bg-secondary hover:text-white transition-colors">
+                         <a href="/customer/my-orders" className="flex items-center px-4 py-3 rounded-lg font-medium text-text-body hover:bg-secondary hover:text-white transition-colors">
                            <ClipboardListIcon /> My Orders
                         </a>
                          <a href="#" className="flex items-center px-4 py-3 rounded-lg font-medium text-text-body hover:bg-secondary hover:text-white transition-colors">

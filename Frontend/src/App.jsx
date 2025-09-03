@@ -5,7 +5,8 @@ import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-d
 import ProtectedRoute from './components/ProtectedRoute.jsx';
 import PublicRoute from './components/PublicRoute.jsx';
 import CustomerLayout from './components/CustomerLayout.jsx';
-import AdminLayout from './components/AdminLayout.jsx'; // <-- Import the AdminLayout
+import AdminLayout from './components/AdminLayout.jsx'; 
+import OrderManagerLayout from './components/OrderManagerLayout.jsx'; 
 
 // --- Page Components ---
 import Login from './components/Login.jsx';
@@ -14,12 +15,18 @@ import HomePage from './components/HomePage.jsx';
 import Profile from './pages/Profile.jsx';
 import EditAccount from './pages/EditAccount.jsx';
 import ForgotPassword from './pages/ForgotPassword.jsx';
-import UserManagement from './pages/UserManagement.jsx'; // <-- Import the real page
+import UserManagement from './pages/UserManagement.jsx'; 
+import MyOrders from './pages/MyOrders.jsx';
+
+// --- Order Manager Pages ---
+import ListOrders from './pages/OrderManager/ListOrders.jsx';
+import ListProducts from './pages/OrderManager/ListProducts.jsx';
+import AddProducts from './pages/OrderManager/AddProduct.jsx';
+// Add other Order Manager page imports here
 
 // --- Placeholder Pages for Admin Dashboard ---
 const AdminDashboardOverview = () => <div className="p-4 bg-white rounded-lg shadow"><h2>Admin Dashboard Overview</h2><p>Here you can see site statistics.</p></div>;
 const Payments = () => <div className="p-4 bg-white rounded-lg shadow"><h2>All Payments</h2></div>;
-// ... (other placeholders)
 
 export default function App() {
   return (
@@ -36,13 +43,14 @@ export default function App() {
         {/* --- CUSTOMER ROUTES --- */}
         <Route element={<ProtectedRoute allowedRoles={['customer']} />}>
             <Route path="/customer" element={<CustomerLayout />}>
-                <Route index element={<Navigate to="/profile" />} />
+                <Route index element={<Navigate to="/customer/profile" />} />
                 <Route path="profile" element={<Profile />} />
                 <Route path="edit-account" element={<EditAccount />} />
+                <Route path="my-orders" element={<MyOrders />} />
             </Route>
         </Route>
 
-        {/* --- ADMIN ROUTES (NOW USING THE ADMIN LAYOUT) --- */}
+        {/* --- ADMIN ROUTES --- */}
         <Route element={<ProtectedRoute allowedRoles={['admin']} />}>
             <Route path="/admin" element={<AdminLayout />}>
                 <Route index element={<Navigate to="/admin/dashboard" />} />
@@ -51,9 +59,22 @@ export default function App() {
                 <Route path="profile" element={<Profile />} />
                 <Route path="edit-account" element={<EditAccount />} />
                 <Route path="payments" element={<Payments />} />
-                {/* ... (add all other admin routes here) */}
             </Route>
         </Route>
+        
+        {/* --- 📦 ORDER MANAGER ROUTES --- */}
+        <Route element={<ProtectedRoute allowedRoles={['order_manager']} />}>
+            <Route path="/order_manager" element={<OrderManagerLayout />}>
+                <Route index element={<Navigate to="/order_manager/orders" />} />
+                <Route path="profile" element={<Profile />} />
+                <Route path="edit-account" element={<EditAccount />} />
+                <Route path="orders" element={<ListOrders />} />
+                <Route path="products" element={<ListProducts />} />
+                <Route path="add_product" element={<AddProducts />} />
+                {/* You can add more routes for the order manager here */}
+            </Route>
+        </Route>
+
       </Routes>
     </Router>
   );

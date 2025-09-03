@@ -29,11 +29,15 @@ export default function Login() {
             const { data } = await axios.post('http://localhost:5000/api/auth/login', formData);
             localStorage.setItem('userInfo', JSON.stringify(data));
             
-            // Role-based redirection
+            // Correct Logic
             if (data.role === 'admin') {
                 navigate('/admin/dashboard');
+            } else if (data.role === 'order_manager') {
+                    // Redirecting to the default page we set up in App.jsx
+                navigate('/order_manager/orders'); 
             } else {
-                navigate('/'); // Redirect customers and all other roles to home
+                     // Redirect customers and all other roles to home
+                 navigate('/'); 
             }
 
         } catch (err) {

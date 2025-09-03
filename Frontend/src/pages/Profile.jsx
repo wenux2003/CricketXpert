@@ -77,7 +77,7 @@ export default function Profile() {
                     <p className="text-lg text-text-body mt-1">@{user.username}</p>
                 </div>
                 <Link 
-                    to={user.role === 'admin' ? '/admin/edit-account' : '/customer/edit-account'} 
+                    to={user.role === 'admin' ? '/admin/edit-account' : user.role === 'order_manager' ? '/order_manager/edit-account' : '/customer/edit-account'} 
                     className="bg-secondary hover:bg-secondary-hover text-white font-bold py-2 px-6 rounded-lg shadow-lg transition-colors"
                 >
                     Edit Profile
