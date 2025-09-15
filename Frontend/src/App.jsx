@@ -9,6 +9,7 @@ import Dashboard from './pages/Dashboard';
 import AboutUs from './pages/AboutUs';
 import PrivacyPolicy from './pages/PrivacyPolicy';
 import TermsAndConditions from './pages/TermsAndConditions';
+import FAQ from './pages/FAQ';
 import Header from './components/Header';
 import Footer from './components/Footer';
 import NewTechnicianForm from './pages/NewTechnicianForm';
@@ -30,6 +31,7 @@ function App() {
             <Route path="/about" element={<AboutUs />} />
             <Route path="/privacy-policy" element={<PrivacyPolicy />} />
             <Route path="/terms" element={<TermsAndConditions />} />
+            <Route path="/faq" element={<FAQ />} />
             <Route path="/repair" element={<RepairRequestForm />} />
             <Route path="/my-requests" element={<MyRequestsPage />} />
             <Route path="/coaching" element={<Dashboard />} />
