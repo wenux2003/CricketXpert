@@ -58,3 +58,31 @@
   opacity: 0.9;
   transform: translateY(-1px);
 }
+
+/* Hide scrollbar for testimonials */
+.scrollbar-hide {
+  -ms-overflow-style: none;  /* Internet Explorer 10+ */
+  scrollbar-width: none;  /* Firefox */
+  overflow-x: auto;
+  overflow-y: hidden;
+}
+.scrollbar-hide::-webkit-scrollbar { 
+  display: none;  /* Safari and Chrome */
+}
+
+/* Ensure horizontal scrolling works */
+.testimonials-container {
+  overflow-x: auto;
+  overflow-y: hidden;
+  white-space: nowrap;
+  scroll-behavior: smooth;
+}
+
+.testimonials-container::-webkit-scrollbar {
+  display: none;
+}
+
+.testimonials-container {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
