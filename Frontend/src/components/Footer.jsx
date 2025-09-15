@@ -73,7 +73,7 @@ const Footer = () => {
              <h3 className="text-lg font-bold" style={{ color: '#D88717' }}>Other Links</h3>
                          <ul className="space-y-2">
                <li>
-                 <Link to="/privacy" className="text-gray-300 hover:text-white transition-colors text-sm">
+                 <Link to="/privacy-policy" className="text-gray-300 hover:text-white transition-colors text-sm">
                    Privacy Policy
                  </Link>
                </li>

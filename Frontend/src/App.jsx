@@ -7,6 +7,7 @@ import ServiceManagerDashboard from './pages/ServiceManagerDashboard';
 import TechnicianDashboard from './pages/TechnicianDashboard';
 import Dashboard from './pages/Dashboard';
 import AboutUs from './pages/AboutUs';
+import PrivacyPolicy from './pages/PrivacyPolicy';
 import Header from './components/Header';
 import Footer from './components/Footer';
 import NewTechnicianForm from './pages/NewTechnicianForm';
@@ -26,6 +27,7 @@ function App() {
           <Routes>
             <Route path="/" element={<Dashboard />} />
             <Route path="/about" element={<AboutUs />} />
+            <Route path="/privacy-policy" element={<PrivacyPolicy />} />
             <Route path="/repair" element={<RepairRequestForm />} />
             <Route path="/my-requests" element={<MyRequestsPage />} />
             <Route path="/coaching" element={<Dashboard />} />
