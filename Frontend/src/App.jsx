@@ -10,6 +10,9 @@ import AboutUs from './pages/AboutUs';
 import PrivacyPolicy from './pages/PrivacyPolicy';
 import TermsAndConditions from './pages/TermsAndConditions';
 import FAQ from './pages/FAQ';
+import ContactUs from './pages/ContactUs';
+import ContactSuccess from './pages/ContactSuccess';
+import AdminMessages from './pages/AdminMessages';
 import Header from './components/Header';
 import Footer from './components/Footer';
 import NewTechnicianForm from './pages/NewTechnicianForm';
@@ -32,6 +35,9 @@ function App() {
             <Route path="/privacy-policy" element={<PrivacyPolicy />} />
             <Route path="/terms" element={<TermsAndConditions />} />
             <Route path="/faq" element={<FAQ />} />
+            <Route path="/contact" element={<ContactUs />} />
+            <Route path="/contact-success" element={<ContactSuccess />} />
+            <Route path="/admin-messages" element={<AdminMessages />} />
             <Route path="/repair" element={<RepairRequestForm />} />
             <Route path="/my-requests" element={<MyRequestsPage />} />
             <Route path="/coaching" element={<Dashboard />} />
