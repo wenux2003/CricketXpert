@@ -8,7 +8,7 @@ import errorMiddleware from './middleware/errorMiddleware.js';
 // Import all your route files
 import authRoutes from './routes/authRoutes.js';
 import uploadRoutes from './routes/uploadRoutes.js';
-import userRoutes from './routes/userRoutes.js';
+import userRoutes from './routes/usersRoutes.js';
 import productRoutes from './routes/productRoutes.js';
 import orderRoutes from './routes/orderRoutes.js';
 import paymentRoutes from './routes/paymentRoutes.js';

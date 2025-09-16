@@ -11,7 +11,7 @@ const {
     updateUserByAdmin,
     deleteUserByAdmin,
     updateUserStatusByAdmin,
-} = require('../controllers/userController.js');
+} = require('../controllers/usersController.js');
 
 // Import the security middleware
 const { protect, authorizeRoles } = require('../utils/protect.js');
