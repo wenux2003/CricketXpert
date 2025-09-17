@@ -32,14 +32,13 @@ export default function OrderManagerLayout() {
     const isActive = (path) => location.pathname.startsWith(path);
 
     return (
-        <div className="min-h-screen bg-[#F1F2F7]">
+        <div className="min-h-screen flex bg-[#F1F2F7]">
             {showSidebar && <div className="fixed inset-0 bg-black bg-opacity-50 z-30 lg:hidden" onClick={() => setShowSidebar(false)}></div>}
 
-            {/* Fixed Sidebar */}
-            <aside className={`fixed top-0 left-0 h-screen w-64 bg-white shadow-xl transform transition-transform duration-300 z-40 ${
+            <aside className={`fixed top-0 left-0 h-full w-64 bg-white shadow-xl transform transition-transform duration-300 z-40 ${
                 showSidebar ? 'translate-x-0' : '-translate-x-full'
-            } lg:translate-x-0`}>
-                <div className="p-4 flex flex-col h-screen">
+            } lg:translate-x-0 lg:relative lg:flex-shrink-0`}>
+                <div className="p-4 flex flex-col h-full">
                     <div className="mb-8 text-center">
                          <img 
                             src={userInfo?.profileImageURL ? `http://localhost:5000${userInfo.profileImageURL}` : `https://placehold.co/100x100/072679/FFFFFF?text=${userInfo?.username?.charAt(0).toUpperCase()}`}
@@ -79,20 +78,14 @@ export default function OrderManagerLayout() {
                 </div>
             </aside>
 
-            {/* Main Content Area */}
-            <div className="lg:ml-64">
-                {/* Mobile Header */}
-                <header className="p-4 bg-white shadow-md lg:hidden sticky top-0 z-20">
+            <div className="flex-1 flex flex-col">
+                 <header className="p-4 bg-white shadow-md lg:hidden sticky top-0 z-20">
                     <button onClick={() => setShowSidebar(true)}>
                         <svg className="w-6 h-6 text-[#072679]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" /></svg>
                     </button>
                 </header>
-                
-                {/* Main Content */}
-                <main className="min-h-screen p-4 lg:p-6">
-                    <div className="max-w-7xl mx-auto">
-                        <Outlet />
-                    </div>
+                <main className="flex-1 p-4 lg:p-8">
+                    <Outlet />
                 </main>
             </div>
         </div>
