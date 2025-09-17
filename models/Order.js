@@ -27,14 +27,13 @@ const orderSchema = new mongoose.Schema({
     required: true
   },
   address: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'User',
+    type: String,
     required: true
   },
   status: {
     type: String,
-    enum: ['Processing', 'Out for Delivery', 'Delivered', 'Cancelled'],
-    default: 'Processing'
+    enum: ['cart_pending', 'created', 'processing', 'completed', 'cancelled', 'Processing', 'Out for Delivery', 'Delivered', 'Cancelled'],
+    default: 'cart_pending'
   },
   date: {
     type: Date,
@@ -43,7 +42,7 @@ const orderSchema = new mongoose.Schema({
   paymentId: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Payment',
-    required: true
+    required: false
   }
 });
 

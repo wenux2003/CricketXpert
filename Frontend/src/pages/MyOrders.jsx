@@ -2,14 +2,15 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { Package, Clock, CheckCircle, XCircle } from 'lucide-react';
+import { getCurrentUserId } from '../utils/getCurrentUser';
 
 const MyOrders = () => {
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
 
-  // Hardcoded user ID for now - in real app this would come from authentication
-  const userId = '68a34c9c6c30e2b6fa15c978';
+  // Get current logged-in user ID
+  const userId = getCurrentUserId();
 
   useEffect(() => {
     fetchOrders();

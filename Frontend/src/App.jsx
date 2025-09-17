@@ -18,6 +18,16 @@ import ForgotPassword from './pages/ForgotPassword.jsx';
 import UserManagement from './pages/UserManagement.jsx'; 
 import MyOrders from './pages/MyOrders.jsx';
 
+// --- New E-commerce Pages ---
+import Home from './pages/Home.jsx';
+import Cart from './pages/Cart.jsx';
+import Delivery from './pages/Delivery.jsx';
+import Payment from './pages/Payment.jsx';
+import OrderSummary from './pages/OrderSummary.jsx';
+import Orders from './pages/Orders.jsx';
+import OrderTracking from './pages/OrderTracking.jsx';
+import OrderDetails from './pages/OrderDetails.jsx';
+
 // --- Order Manager Pages ---
 import ListOrders from './pages/OrderManager/ListOrders.jsx';
 import ListProducts from './pages/OrderManager/ListProducts.jsx';
@@ -38,7 +48,19 @@ export default function App() {
           <Route path="/signup" element={<SignUpMultiStep />} />
           <Route path="/forgot-password" element={<ForgotPassword />} />
         </Route>
-        <Route path="/" element={<HomePage />} />
+        
+        {/* --- E-commerce Public Routes --- */}
+        <Route path="/" element={<Home />} />
+        <Route path="/cart" element={<Cart />} />
+        <Route path="/delivery" element={<Delivery />} />
+        <Route path="/payment" element={<Payment />} />
+        <Route path="/orders" element={<OrderSummary />} />
+        <Route path="/my-orders" element={<MyOrders />} />
+        <Route path="/track-order" element={<OrderTracking />} />
+        <Route path="/orders/:orderId" element={<OrderDetails />} />
+        
+        {/* --- Legacy Home Route --- */}
+        <Route path="/homepage" element={<HomePage />} />
 
         {/* --- CUSTOMER ROUTES --- */}
         <Route element={<ProtectedRoute allowedRoles={['customer']} />}>
