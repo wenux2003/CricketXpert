@@ -152,11 +152,11 @@ export default function SignUpMultiStep() {
             // --- FIX IS HERE: AUTOMATICALLY LOG THE USER IN ---
             localStorage.setItem('userInfo', JSON.stringify(data));
             
-            setMessage("Account created successfully! Redirecting to your profile...");
+            setMessage("Account created successfully! Redirecting to home page...");
             
-            // --- REDIRECT TO PROFILE PAGE ---
+            // --- REDIRECT TO HOME PAGE ---
             setTimeout(() => {
-                navigate('/profile');
+                navigate('/');
             }, 2000);
 
         } catch (regError) {
