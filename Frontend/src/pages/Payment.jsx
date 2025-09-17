@@ -19,6 +19,7 @@ const Payment = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [cartOrder, setCartOrder] = useState(null);
+  const [products, setProducts] = useState([]);
 
   // Get current logged-in user ID
   const userId = getCurrentUserId();
@@ -68,13 +69,27 @@ const Payment = () => {
       }
     };
 
+    const fetchProducts = async () => {
+      try {
+        const res = await axios.get('http://localhost:5000/api/products/');
+        setProducts(res.data || []);
+      } catch (err) {
+        console.error('Error fetching products:', err);
+      }
+    };
+
     fetchUserDetails();
     fetchCartOrder();
+    fetchProducts();
     console.log('Received state in Payment:', location.state);
     if (!location.state) {
       console.warn('No state passed to Payment page.');
     }
   }, [location.state, userId]);
+
+  const getProductDetails = (productId) => {
+    return products.find(product => product._id === productId) || {};
+  };
 
   const handleChange = (field, value) => {
     setPaymentInfo(prev => ({ ...prev, [field]: value }));
@@ -112,11 +127,14 @@ const Payment = () => {
       // If no cart order exists, create one first
       if (!cartOrder) {
         console.log('No cart order found, creating one...');
-        const orderItems = cart.map(item => ({
-          productId: item.productId,
-          quantity: item.quantity,
-          priceAtOrder: totalData.subtotal / cart.reduce((sum, i) => sum + i.quantity, 0)
-        }));
+        const orderItems = cart.map(item => {
+          const product = getProductDetails(item.productId);
+          return {
+            productId: item.productId,
+            quantity: item.quantity,
+            priceAtOrder: product.price || 0
+          };
+        });
         
         // Use the address from state, user data, or fallback
         const deliveryAddress = address || user?.address || 'No address provided';
@@ -207,11 +225,11 @@ const Payment = () => {
           
           <div className="space-y-3">
             {cart.map((item) => {
-              const product = { price: totalData.subtotal / cart.reduce((sum, i) => sum + i.quantity, 0) };
+              const product = getProductDetails(item.productId);
               return (
                 <div key={item.productId} className="flex justify-between text-sm">
-                  <span>{item.productId} (Qty {item.quantity})</span>
-                  <span>LKR {(product.price * item.quantity).toFixed(2)}</span>
+                  <span>{product.name || item.productId} (Qty {item.quantity})</span>
+                  <span>LKR {((product.price || 0) * item.quantity).toFixed(2)}</span>
                 </div>
               );
             })}
