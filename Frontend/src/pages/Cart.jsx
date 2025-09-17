@@ -124,7 +124,12 @@ const Cart = () => {
   };
 
   const handleRemoveItem = (productId) => {
-    setCart(prevCart => prevCart.filter(item => item.productId !== productId));
+    setCart(prevCart => {
+      const newCart = prevCart.filter(item => item.productId !== productId);
+      // Dispatch cart update event for header to update count
+      window.dispatchEvent(new CustomEvent('cartUpdated'));
+      return newCart;
+    });
   };
 
   const handleQuantityChange = (productId, change) => {
@@ -156,6 +161,10 @@ const Cart = () => {
       } else {
         return prevCart;
       }
+      
+      // Dispatch cart update event for header to update count
+      window.dispatchEvent(new CustomEvent('cartUpdated'));
+      
       return newCart;
     });
   };

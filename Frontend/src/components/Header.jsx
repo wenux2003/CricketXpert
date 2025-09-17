@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import bellIcon from '../assets/bell-icon.svg';
 import cricketexpertLogo from '../assets/cricketexpert.png';
@@ -7,10 +7,39 @@ const Header = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const [repairDropdownOpen, setRepairDropdownOpen] = useState(false);
+  const [cartCount, setCartCount] = useState(0);
+
+  // Update cart count from localStorage
+  useEffect(() => {
+    const updateCartCount = () => {
+      try {
+        const cart = JSON.parse(localStorage.getItem('cricketCart') || '[]');
+        const count = cart.reduce((sum, item) => sum + item.quantity, 0);
+        setCartCount(count);
+      } catch (error) {
+        console.error('Error reading cart from localStorage:', error);
+        setCartCount(0);
+      }
+    };
+
+    // Initial load
+    updateCartCount();
+
+    // Listen for cart changes
+    window.addEventListener('cartUpdated', updateCartCount);
+    
+    // Also check periodically in case localStorage is updated elsewhere
+    const interval = setInterval(updateCartCount, 1000);
+
+    return () => {
+      window.removeEventListener('cartUpdated', updateCartCount);
+      clearInterval(interval);
+    };
+  }, []);
 
   const navItems = [
     { path: '/', label: 'Home' },
-    { path: '/', label: 'Products' }, // Products are shown on the Home page
+    { path: '/products', label: 'Products' },
     { path: '/coaching', label: 'Coaching Program' },
     { path: '/ground-booking', label: 'Ground Booking' },
   ];
@@ -105,22 +134,8 @@ const Header = () => {
               </div>
             </div>
 
-            {/* Right side - Search and Icons */}
+            {/* Right side - Icons */}
             <div className="flex items-center space-x-6">
-              {/* Search Input */}
-              <input
-                type="text"
-                placeholder="Search all products..."
-                className="border border-gray-300 p-2 rounded text-gray-900"
-                aria-label="Search products"
-                onChange={(e) => {
-                  // Pass search query to Home page via URL params or state
-                  if (location.pathname === '/') {
-                    // If on home page, trigger search
-                    window.dispatchEvent(new CustomEvent('searchProducts', { detail: e.target.value }));
-                  }
-                }}
-              />
               {/* Cart Icon */}
               <button 
                 onClick={() => navigate('/cart')}
@@ -131,7 +146,7 @@ const Header = () => {
                 </svg>
                 {/* Cart Badge */}
                 <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center font-bold">
-                  0
+                  {cartCount}
                 </span>
               </button>
 

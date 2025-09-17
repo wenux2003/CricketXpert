@@ -1,327 +1,274 @@
-import { useEffect, useState, useMemo } from 'react';
-import axios from 'axios';
-import { debounce } from 'lodash';
-import { useNavigate } from 'react-router-dom';
+import React from 'react';
+import { Link } from 'react-router-dom';
 import Header from '../components/Header';
-import { getCurrentUserId } from '../utils/getCurrentUser';
-import bat1 from '../assets/Bat.webp';
-import Accessories1 from '../assets/Accessories1.jpg';
-import Electronics1 from '../assets/electronic.jpg';
-import Gaming1 from '../assets/Gaming.jpg';
-import Wearables1 from '../assets/Wearables.jpg';
-import Ball1 from '../assets/ball.jpeg';
-import Sports1 from '../assets/sports.jpg';
-import cricket1 from '../assets/crikert.jpg';
+import Footer from '../components/Footer';
 
 const Home = () => {
-  const [categories, setCategories] = useState([]);
-  const [products, setProducts] = useState([]);
-  const [selectedCategory, setSelectedCategory] = useState('');
-  const [searchQuery, setSearchQuery] = useState('');
-  const [error, setError] = useState(null);
-  const [cart, setCart] = useState([]); // Local cart state
-  const [user, setUser] = useState(null);
-  const navigate = useNavigate();
-
-  // Get current logged-in user ID
-  const userId = getCurrentUserId();
-
-  const categoryImages = useMemo(
-    () => ({
-      Accessories: Accessories1,
-      Bat: bat1,
-      Ball: Ball1,
-      Electronics: Electronics1,
-      Gaming: Gaming1,
-      Sports: Sports1,
-      Wearables: Wearables1,
-    }),
-    []
-  );
-
-  useEffect(() => {
-    fetchCategories();
-    fetchProducts();
-    fetchUserDetails();
-  }, [selectedCategory, searchQuery]);
-
-  // Listen for search events from Header component
-  useEffect(() => {
-    const handleSearch = (event) => {
-      setSearchQuery(event.detail);
-    };
-
-    window.addEventListener('searchProducts', handleSearch);
-    return () => window.removeEventListener('searchProducts', handleSearch);
-  }, []);
-
-  useEffect(() => {
-    // Save cart to localStorage whenever it changes
-    localStorage.setItem('cricketCart', JSON.stringify(cart));
-    
-    // Update cart order in database when cart changes
-    if (cart.length > 0) {
-      updateCartOrder();
-    } else {
-      deleteCartOrder();
+  const features = [
+    {
+      icon: '🔧',
+      title: 'Equipment Repair',
+      description: 'Professional cricket equipment repair services with expert technicians and quality guarantee.',
+      link: '/repair',
+      color: 'from-blue-500 to-blue-600'
+    },
+    {
+      icon: '🏏',
+      title: 'Coaching Programs',
+      description: 'Expert cricket coaching programs for all skill levels. Learn from professional coaches.',
+      link: '/coaching',
+      color: 'from-green-500 to-green-600'
+    },
+    {
+      icon: '🏟️',
+      title: 'Ground Booking',
+      description: 'Book cricket grounds and facilities for practice sessions and matches.',
+      link: '/ground-booking',
+      color: 'from-purple-500 to-purple-600'
+    },
+    {
+      icon: '🛒',
+      title: 'Cricket Products',
+      description: 'Premium cricket equipment, gear, and accessories from top brands.',
+      link: '/products',
+      color: 'from-orange-500 to-orange-600'
     }
-  }, [cart]);
+  ];
 
-  const fetchUserDetails = async () => {
-    try {
-      const userInfo = JSON.parse(localStorage.getItem('userInfo'));
-      const config = {
-        headers: {
-          Authorization: `Bearer ${userInfo.token}`
-        }
-      };
-      const response = await axios.get(`http://localhost:5000/api/users/profile`, config);
-      setUser(response.data);
-    } catch (err) {
-      console.error('Error fetching user details:', err);
-      // Don't show error to user as this is background sync
+  const stats = [
+    { number: '500+', label: 'Repairs Completed' },
+    { number: '50+', label: 'Expert Coaches' },
+    { number: '1000+', label: 'Happy Customers' },
+    { number: '24/7', label: 'Support Available' }
+  ];
+
+  const testimonials = [
+    {
+      name: 'Saman Perera',
+      role: 'Club Player',
+      content: 'Excellent repair service! My bat was fixed perfectly and delivered on time.',
+      rating: 5
+    },
+    {
+      name: 'Priya Fernando',
+      role: 'Student',
+      content: 'The coaching program helped me improve my batting technique significantly.',
+      rating: 5
+    },
+    {
+      name: 'Rajesh Kumar',
+      role: 'Professional Player',
+      content: 'Top-quality equipment and professional service. Highly recommended!',
+      rating: 5
     }
-  };
-
-  const fetchCategories = async () => {
-    try {
-      const res = await axios.get('http://localhost:5000/api/products/categories');
-      setCategories(res.data);
-      setError(null);
-    } catch (err) {
-      console.error('Error fetching categories:', err.response ? err.response.data : err.message);
-      setCategories(['Accessories', 'Bat', 'Ball', 'Electronics', 'Gaming', 'Sports', 'Wearables']);
-      setError('Failed to load categories. Showing default options.');
-    }
-  };
-
-  const fetchProducts = async () => {
-    try {
-      const params = {
-        page: 1,
-        limit: 10,
-        ...(selectedCategory && { category: selectedCategory }),
-        ...(searchQuery && { query: searchQuery }),
-      };
-      const res = await axios.get('http://localhost:5000/api/products/search', { params });
-      setProducts(res.data.products || []);
-      setError(null);
-    } catch (err) {
-      console.error('Error fetching products:', err.response ? err.response.data : err.message);
-      setProducts([]);
-      setError('Failed to load products. Please try again.');
-    }
-  };
-
-  // Create or update cart order in database
-  const updateCartOrder = async () => {
-    try {
-      if (cart.length === 0) return;
-
-      const orderItems = cart.map(item => {
-        const product = products.find(p => p._id === item.productId);
-        if (!product) {
-          console.error('Product not found for item:', item.productId);
-          return null;
-        }
-        return {
-          productId: item.productId,
-          quantity: item.quantity,
-          priceAtOrder: product.price
-        };
-      }).filter(item => item !== null);
-
-      // Calculate total amount
-      const subtotal = cart.reduce((sum, item) => {
-        const product = products.find(p => p._id === item.productId);
-        return sum + (product?.price || 0) * item.quantity;
-      }, 0);
-      const total = subtotal + 450; // Adding delivery charge
-
-      const cartOrderData = {
-        customerId: userId,
-        items: orderItems,
-        amount: total,
-        address: user?.address || 'No address provided'
-      };
-
-      await axios.post('http://localhost:5000/api/orders/cart', cartOrderData);
-      console.log('Cart order updated in database from Home page');
-    } catch (err) {
-      console.error('Error updating cart order from Home:', err);
-      // Don't show error to user as this is background sync
-    }
-  };
-
-  // Delete cart order from database
-  const deleteCartOrder = async () => {
-    try {
-      await axios.delete(`http://localhost:5000/api/orders/cart/${userId}`);
-      console.log('Cart order deleted from database from Home page');
-    } catch (err) {
-      console.error('Error deleting cart order from Home:', err);
-      // Don't show error to user as this is background sync
-    }
-  };
-
-  const handleQuantityChange = (productId, change) => {
-    setCart((prevCart) => {
-      const existingItem = prevCart.find(item => item.productId === productId);
-      const product = products.find(p => p._id === productId);
-      
-      if (!product) return prevCart;
-      
-      let newCart;
-      if (existingItem) {
-        const newQuantity = existingItem.quantity + change;
-        if (newQuantity <= 0) {
-          // Remove item if quantity becomes 0
-          newCart = prevCart.filter(item => item.productId !== productId);
-        } else if (newQuantity > product.stock_quantity) {
-          alert(`Only ${product.stock_quantity} items available in stock`);
-          return prevCart;
-        } else {
-          newCart = prevCart.map(item =>
-            item.productId === productId ? { ...item, quantity: newQuantity } : item
-          );
-        }
-      } else if (change > 0) {
-        if (product.stock_quantity <= 0) {
-          alert('This product is out of stock');
-          return prevCart;
-        }
-        // Add new item with quantity 1
-        newCart = [...prevCart, { productId, quantity: 1 }];
-      } else {
-        return prevCart; // No change if trying to decrease non-existent item
-      }
-      return newCart;
-    });
-  };
-
-  const handleSearchChange = debounce((value) => {
-    setSearchQuery(value);
-  }, 300);
-
-  const goToCart = () => {
-    navigate('/cart', { state: { cart } }); // Pass cart state to Cart page
-  };
-
-  const cartItemCount = cart.reduce((sum, item) => sum + item.quantity, 0);
+  ];
 
   return (
-    <div className="bg-[#F1F2F7] min-h-screen text-[#36516C]">
-      {/* Original Header Component */}
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-blue-100">
       <Header />
-
-      {/* Error Message */}
-      {error && (
-        <div className="bg-red-100 text-red-700 p-4 mx-8 my-4 rounded" role="alert">
-          {error}
-        </div>
-      )}
-
+      
       {/* Hero Section */}
-      <div className="bg-gradient-to-r from-[#072679] to-[#42ADF5] text-white p-16 flex justify-between items-center">
-        <div className="max-w-lg">
-          <h1 className="text-5xl font-bold mb-4">Order your favourite cricket equipment here</h1>
-          <p className="text-lg mb-6">
-            Choose from a diverse menu featuring a delectable array of cricket gears and skill development tools.
-          </p>
-        </div>
-        <img
-          src={cricket1}
-          alt="Cricket equipment"
-          className="rounded-lg shadow-lg"
-          onError={(e) => { e.target.src = 'https://placehold.co/500x300'; }}
-        />
-      </div>
-
-      {/* Explore Menu (Category Circles) */}
-      <section className="p-8 text-center">
-        <h2 className="text-3xl font-bold text-[#072679] mb-4">Explore our menu</h2>
-        <p className="text-[#36516C] mb-8 max-w-2xl mx-auto">
-          Choose from a diverse selection of cricket equipment and skill development tools.
-        </p>
-        <div className="flex justify-center gap-8 flex-wrap">
-          {categories.map((cat) => (
-            <div
-              key={cat}
-              onClick={() => setSelectedCategory(cat === selectedCategory ? '' : cat)}
-              className={`cursor-pointer text-center w-32 ${
-                selectedCategory === cat ? 'border-4 border-[#42ADF5] rounded-full' : ''
-              }`}
-            >
-              <img
-                src={categoryImages[cat] || `https://placehold.co/100?text=${cat}`}
-                alt={cat}
-                className="w-24 h-24 rounded-full object-cover mx-auto mb-2 shadow-md"
-                onError={(e) => {
-                  console.error(`Image load failed for category: ${cat}`);
-                  e.target.src = `https://placehold.co/100?text=${cat}`;
-                }}
-              />
-              <p className="text-[#000000] font-medium">{cat}</p>
+      <section className="relative overflow-hidden">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20">
+          <div className="text-center">
+            <h1 className="text-5xl md:text-6xl font-bold text-gray-900 mb-6">
+              Welcome to{' '}
+              <span className="bg-gradient-to-r from-blue-600 to-green-600 bg-clip-text text-transparent">
+                CricketXpert
+              </span>
+            </h1>
+            <p className="text-xl md:text-2xl text-gray-600 mb-8 max-w-3xl mx-auto">
+              Your one-stop destination for cricket equipment repair, professional coaching, 
+              ground booking, and premium cricket products.
+            </p>
+            <div className="flex flex-col sm:flex-row gap-4 justify-center">
+              <Link
+                to="/repair"
+                className="bg-blue-600 text-white px-8 py-4 rounded-lg text-lg font-semibold hover:bg-blue-700 transition-colors duration-200 shadow-lg hover:shadow-xl"
+              >
+                Get Equipment Repaired
+              </Link>
+              <Link
+                to="/coaching"
+                className="bg-green-600 text-white px-8 py-4 rounded-lg text-lg font-semibold hover:bg-green-700 transition-colors duration-200 shadow-lg hover:shadow-xl"
+              >
+                Join Coaching Program
+              </Link>
             </div>
-          ))}
+          </div>
+        </div>
+        
+        {/* Background decoration */}
+        <div className="absolute top-0 left-0 w-full h-full overflow-hidden pointer-events-none">
+          <div className="absolute top-20 left-10 w-20 h-20 bg-blue-200 rounded-full opacity-20 animate-pulse"></div>
+          <div className="absolute top-40 right-20 w-16 h-16 bg-green-200 rounded-full opacity-20 animate-pulse delay-1000"></div>
+          <div className="absolute bottom-20 left-1/4 w-12 h-12 bg-purple-200 rounded-full opacity-20 animate-pulse delay-2000"></div>
         </div>
       </section>
 
-      {/* Products Display */}
-      <section className="p-8">
-        <h2 className="text-3xl font-bold text-[#072679] mb-4 text-center">Top products near you</h2>
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-          {products.length === 0 ? (
-            <p className="text-center col-span-4">No products available matching your search or category.</p>
-          ) : (
-            products.map((product) => {
-              const cartItem = cart.find(item => item.productId === product._id);
-              const quantity = cartItem ? cartItem.quantity : 0;
-              return (
-                <div key={product._id} className="bg-white rounded-lg shadow-md overflow-hidden">
-                  <img
-                    src={product.image_url || 'https://placehold.co/600x500'}
-                    alt={product.name}
-                    className="w-full h-48 object-cover"
-                    onError={(e) => {
-                      console.error(`Product image failed for: ${product.name}`);
-                      console.error(`Failed image URL: ${product.image_url}`);
-                      e.target.src = 'https://placehold.co/300x200';
-                    }}
-                    onLoad={() => {
-                      console.log(`Image loaded successfully for: ${product.name}`);
-                      console.log(`Image URL: ${product.image_url}`);
-                    }}
-                  />
-                  <div className="p-4">
-                    <h3 className="text-xl font-bold text-[#000000] mb-2">{product.name}</h3>
-                    <p className="text-[#36516C] mb-2">{product.description?.slice(0, 100) || 'No description'}...</p>
-                    <p className="text-[#072679] font-bold mb-4">LKR {product.price || 0}</p>
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-2">
-                        <button
-                          onClick={() => handleQuantityChange(product._id, -1)}
-                          className="bg-[#D88717] text-white px-3 py-1 rounded hover:bg-[#B36F14] disabled:bg-gray-300"
-                          disabled={quantity === 0}
-                        >
-                          -
-                        </button>
-                        <span className="text-[#000000] font-medium">{quantity}</span>
-                        <button
-                          onClick={() => handleQuantityChange(product._id, 1)}
-                          className="bg-[#42ADF5] text-white px-3 py-1 rounded hover:bg-[#2C8ED1]"
-                        >
-                          +
-                        </button>
-                      </div>
-                    </div>
+      {/* Stats Section */}
+      <section className="py-16 bg-white">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
+            {stats.map((stat, index) => (
+              <div key={index} className="text-center">
+                <div className="text-4xl md:text-5xl font-bold text-blue-600 mb-2">
+                  {stat.number}
+                </div>
+                <div className="text-gray-600 font-medium">
+                  {stat.label}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Features Section */}
+      <section className="py-20">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center mb-16">
+            <h2 className="text-4xl font-bold text-gray-900 mb-4">
+              Our Services
+            </h2>
+            <p className="text-xl text-gray-600 max-w-3xl mx-auto">
+              Comprehensive cricket solutions designed to enhance your game and equipment
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+            {features.map((feature, index) => (
+              <Link
+                key={index}
+                to={feature.link}
+                className="group block"
+              >
+                <div className="bg-white rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 p-8 h-full transform group-hover:-translate-y-2">
+                  <div className={`w-16 h-16 bg-gradient-to-r ${feature.color} rounded-lg flex items-center justify-center mb-6 group-hover:scale-110 transition-transform duration-300`}>
+                    <span className="text-white text-2xl">{feature.icon}</span>
+                  </div>
+                  <h3 className="text-xl font-bold text-gray-900 mb-4">
+                    {feature.title}
+                  </h3>
+                  <p className="text-gray-600 leading-relaxed">
+                    {feature.description}
+                  </p>
+                  <div className="mt-6 text-blue-600 font-semibold group-hover:text-blue-700 transition-colors">
+                    Learn More →
                   </div>
                 </div>
-              );
-            })
-          )}
+              </Link>
+            ))}
+          </div>
         </div>
       </section>
+
+      {/* Why Choose Us Section */}
+      <section className="py-20 bg-white">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center mb-16">
+            <h2 className="text-4xl font-bold text-gray-900 mb-4">
+              Why Choose CricketXpert?
+            </h2>
+            <p className="text-xl text-gray-600 max-w-3xl mx-auto">
+              We provide exceptional service with a commitment to quality and customer satisfaction
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+            <div className="text-center">
+              <div className="w-20 h-20 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-6">
+                <span className="text-blue-600 text-3xl">⭐</span>
+              </div>
+              <h3 className="text-xl font-bold text-gray-900 mb-4">Expert Technicians</h3>
+              <p className="text-gray-600">
+                Our certified technicians have years of experience in cricket equipment repair and maintenance.
+              </p>
+            </div>
+
+            <div className="text-center">
+              <div className="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-6">
+                <span className="text-green-600 text-3xl">🏆</span>
+              </div>
+              <h3 className="text-xl font-bold text-gray-900 mb-4">Professional Coaches</h3>
+              <p className="text-gray-600">
+                Learn from experienced coaches who have played at professional and international levels.
+              </p>
+            </div>
+
+            <div className="text-center">
+              <div className="w-20 h-20 bg-purple-100 rounded-full flex items-center justify-center mx-auto mb-6">
+                <span className="text-purple-600 text-3xl">🚀</span>
+        </div>
+              <h3 className="text-xl font-bold text-gray-900 mb-4">Fast Service</h3>
+              <p className="text-gray-600">
+                Quick turnaround times for repairs and responsive customer support for all your needs.
+          </p>
+        </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Testimonials Section */}
+      <section className="py-20">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center mb-16">
+            <h2 className="text-4xl font-bold text-gray-900 mb-4">
+              What Our Customers Say
+            </h2>
+            <p className="text-xl text-gray-600 max-w-3xl mx-auto">
+              Don't just take our word for it - hear from our satisfied customers
+            </p>
+      </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+            {testimonials.map((testimonial, index) => (
+              <div key={index} className="bg-white rounded-xl shadow-lg p-8">
+                <div className="flex items-center mb-4">
+                  {[...Array(testimonial.rating)].map((_, i) => (
+                    <span key={i} className="text-yellow-400 text-xl">⭐</span>
+                  ))}
+                </div>
+                <p className="text-gray-600 mb-6 italic">
+                  "{testimonial.content}"
+                </p>
+                <div>
+                  <div className="font-bold text-gray-900">{testimonial.name}</div>
+                  <div className="text-gray-500 text-sm">{testimonial.role}</div>
+                </div>
+            </div>
+          ))}
+          </div>
+        </div>
+      </section>
+
+      {/* CTA Section */}
+      <section className="py-20 bg-gradient-to-r from-blue-600 to-green-600">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+          <h2 className="text-4xl font-bold text-white mb-4">
+            Ready to Get Started?
+          </h2>
+          <p className="text-xl text-blue-100 mb-8 max-w-3xl mx-auto">
+            Join thousands of cricket enthusiasts who trust CricketXpert for their equipment and training needs.
+          </p>
+          <div className="flex flex-col sm:flex-row gap-4 justify-center">
+            <Link
+              to="/repair"
+              className="bg-white text-blue-600 px-8 py-4 rounded-lg text-lg font-semibold hover:bg-gray-100 transition-colors duration-200 shadow-lg hover:shadow-xl"
+            >
+              Start Your Repair
+            </Link>
+            <Link
+              to="/coaching"
+              className="bg-transparent border-2 border-white text-white px-8 py-4 rounded-lg text-lg font-semibold hover:bg-white hover:text-blue-600 transition-colors duration-200"
+            >
+              Explore Programs
+            </Link>
+                  </div>
+        </div>
+      </section>
+      
+      <Footer />
     </div>
   );
 };
