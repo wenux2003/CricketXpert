@@ -8,6 +8,7 @@ export default function ListProducts() {
     const [searchQuery, setSearchQuery] = useState('');
     const [selectedCategory, setSelectedCategory] = useState('');
     const [loading, setLoading] = useState(true);
+    const [editingProduct, setEditingProduct] = useState(null);
 
     const fetchProducts = async () => {
         try {
@@ -53,9 +54,39 @@ export default function ListProducts() {
         }
     };
     
-    // In a real app, this would open a modal with an edit form.
     const handleEdit = (product) => {
-        alert(`Editing product: ${product.name}`);
+        setEditingProduct(product);
+    };
+
+    const handleSaveEdit = async () => {
+        if (!editingProduct) return;
+        
+        try {
+            const userInfo = JSON.parse(localStorage.getItem('userInfo'));
+            const { data } = await axios.put(
+                `http://localhost:5000/api/products/${editingProduct._id}`,
+                editingProduct,
+                {
+                    headers: { Authorization: `Bearer ${userInfo.token}` }
+                }
+            );
+            
+            setProducts(products.map(p => p._id === editingProduct._id ? data : p));
+            setEditingProduct(null);
+        } catch (err) {
+            alert('Error updating product: ' + (err.response?.data?.message || err.message));
+        }
+    };
+
+    const handleCancelEdit = () => {
+        setEditingProduct(null);
+    };
+
+    const handleEditChange = (field, value) => {
+        setEditingProduct(prev => ({
+            ...prev,
+            [field]: value
+        }));
     };
 
     return (
@@ -95,19 +126,85 @@ export default function ListProducts() {
                         ) : (
                             products.map((product) => (
                                 <tr key={product._id} className="border-b hover:bg-gray-50">
-                                    <td className="p-4"><img src={product.image_url || '[https://placehold.co/64](https://placehold.co/64)'} alt={product.name} className="w-16 h-16 object-cover rounded-md" /></td>
-                                    <td className="p-4 font-medium text-gray-800">{product.name}</td>
-                                    <td className="p-4">
-                                        <span className={`px-2 py-1 rounded-full text-xs font-semibold ${
-                                            product.stock_quantity <= 10 ? 'bg-red-100 text-red-800' : 'bg-green-100 text-green-800'
-                                        }`}>{product.stock_quantity || 0}</span>
+                                    <td className="p-4"><img src={product.image_url || 'https://placehold.co/64'} alt={product.name} className="w-16 h-16 object-cover rounded-md" /></td>
+                                    <td className="p-4 font-medium text-gray-800">
+                                        {editingProduct && editingProduct._id === product._id ? (
+                                            <input 
+                                                type="text" 
+                                                value={editingProduct.name} 
+                                                onChange={(e) => handleEditChange('name', e.target.value)}
+                                                className="w-full px-2 py-1 border rounded"
+                                            />
+                                        ) : (
+                                            product.name
+                                        )}
                                     </td>
-                                    <td className="p-4 text-gray-600">{product.category}</td>
-                                    <td className="p-4 font-semibold text-[#072679]">LKR {product.price}</td>
+                                    <td className="p-4">
+                                        {editingProduct && editingProduct._id === product._id ? (
+                                            <input 
+                                                type="number" 
+                                                value={editingProduct.stock_quantity} 
+                                                onChange={(e) => handleEditChange('stock_quantity', parseInt(e.target.value))}
+                                                className="w-20 px-2 py-1 border rounded"
+                                                min="0"
+                                            />
+                                        ) : (
+                                            <span className={`px-2 py-1 rounded-full text-xs font-semibold ${
+                                                product.stock_quantity <= 10 ? 'bg-red-100 text-red-800' : 'bg-green-100 text-green-800'
+                                            }`}>{product.stock_quantity || 0}</span>
+                                        )}
+                                    </td>
+                                    <td className="p-4 text-gray-600">
+                                        {editingProduct && editingProduct._id === product._id ? (
+                                            <select 
+                                                value={editingProduct.category} 
+                                                onChange={(e) => handleEditChange('category', e.target.value)}
+                                                className="px-2 py-1 border rounded"
+                                            >
+                                                {categories.map((cat) => (
+                                                    <option key={cat} value={cat}>{cat}</option>
+                                                ))}
+                                            </select>
+                                        ) : (
+                                            product.category
+                                        )}
+                                    </td>
+                                    <td className="p-4 font-semibold text-[#072679]">
+                                        {editingProduct && editingProduct._id === product._id ? (
+                                            <input 
+                                                type="number" 
+                                                value={editingProduct.price} 
+                                                onChange={(e) => handleEditChange('price', parseFloat(e.target.value))}
+                                                className="w-24 px-2 py-1 border rounded"
+                                                min="0"
+                                                step="0.01"
+                                            />
+                                        ) : (
+                                            `LKR ${product.price}`
+                                        )}
+                                    </td>
                                     <td className="p-4">
                                         <div className="flex gap-2">
-                                            <button onClick={() => handleEdit(product)} className="p-2 text-blue-600 hover:bg-blue-100 rounded-full"><Edit size={16} /></button>
-                                            <button onClick={() => handleDelete(product._id)} className="p-2 text-red-600 hover:bg-red-100 rounded-full"><Trash2 size={16} /></button>
+                                            {editingProduct && editingProduct._id === product._id ? (
+                                                <>
+                                                    <button onClick={handleSaveEdit} className="p-2 text-green-600 hover:bg-green-100 rounded-full" title="Save">
+                                                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                                            <polyline points="20,6 9,17 4,12"></polyline>
+                                                        </svg>
+                                                    </button>
+                                                    <button onClick={handleCancelEdit} className="p-2 text-gray-600 hover:bg-gray-100 rounded-full" title="Cancel">
+                                                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                                            <line x1="18" y1="6" x2="6" y2="18"></line>
+                                                            <line x1="6" y1="6" x2="18" y2="18"></line>
+                                                        </svg>
+                                                    </button>
+                                                </>
+                                            ) : (
+                                                <>
+                                                    <button onClick={() => handleEdit(product)} className="p-2 text-blue-600 hover:bg-blue-100 rounded-full"><Edit size={16} /></button>
+                                                    <button onClick={() => handleDelete(product._id)} className="p-2 text-red-600 hover:bg-red-100 rounded-full"><Trash2 size={16} /></button>
+                                                </>
+                                            )}
                                         </div>
                                     </td>
                                 </tr>

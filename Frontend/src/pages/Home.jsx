@@ -120,12 +120,16 @@ const Home = () => {
 
       const orderItems = cart.map(item => {
         const product = products.find(p => p._id === item.productId);
+        if (!product) {
+          console.error('Product not found for item:', item.productId);
+          return null;
+        }
         return {
           productId: item.productId,
           quantity: item.quantity,
-          priceAtOrder: product?.price || 0
+          priceAtOrder: product.price
         };
-      });
+      }).filter(item => item !== null);
 
       // Calculate total amount
       const subtotal = cart.reduce((sum, item) => {
@@ -163,18 +167,29 @@ const Home = () => {
   const handleQuantityChange = (productId, change) => {
     setCart((prevCart) => {
       const existingItem = prevCart.find(item => item.productId === productId);
+      const product = products.find(p => p._id === productId);
+      
+      if (!product) return prevCart;
+      
       let newCart;
       if (existingItem) {
         const newQuantity = existingItem.quantity + change;
         if (newQuantity <= 0) {
           // Remove item if quantity becomes 0
           newCart = prevCart.filter(item => item.productId !== productId);
+        } else if (newQuantity > product.stock_quantity) {
+          alert(`Only ${product.stock_quantity} items available in stock`);
+          return prevCart;
         } else {
           newCart = prevCart.map(item =>
             item.productId === productId ? { ...item, quantity: newQuantity } : item
           );
         }
       } else if (change > 0) {
+        if (product.stock_quantity <= 0) {
+          alert('This product is out of stock');
+          return prevCart;
+        }
         // Add new item with quantity 1
         newCart = [...prevCart, { productId, quantity: 1 }];
       } else {

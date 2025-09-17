@@ -12,9 +12,13 @@ const OrderTracking = () => {
 
   // Check if orderId was passed from MyOrders page
   useEffect(() => {
+    console.log('OrderTracking useEffect - location.state:', location.state);
     if (location.state?.orderId) {
+      console.log('Order ID received from MyOrders:', location.state.orderId);
       setOrderId(location.state.orderId);
       trackOrder(location.state.orderId);
+    } else {
+      console.log('No order ID in location.state');
     }
   }, [location.state]);
 
@@ -95,16 +99,56 @@ const OrderTracking = () => {
       return;
     }
 
+    console.log('Tracking order with ID:', orderIdToTrack);
     setLoading(true);
     setError('');
     setOrder(null);
 
     try {
-      const response = await axios.get(`http://localhost:5000/api/orders/${orderIdToTrack}`);
-      setOrder(response.data);
+      const userInfo = JSON.parse(localStorage.getItem('userInfo'));
+      console.log('User info:', userInfo);
+      
+      if (!userInfo || !userInfo.token) {
+        setError('Please login to track your orders.');
+        return;
+      }
+      
+      const config = {
+        headers: {
+          Authorization: `Bearer ${userInfo.token}`
+        }
+      };
+      
+      console.log('Making API call to:', `http://localhost:5000/api/orders/${orderIdToTrack}`);
+      const response = await axios.get(`http://localhost:5000/api/orders/${orderIdToTrack}`, config);
+      console.log('API response:', response.data);
+      
+      if (response.data) {
+        console.log('Order data received:', response.data);
+        
+        // Validate order data
+        if (!response.data._id || !response.data.status) {
+          setError('Invalid order data received from server.');
+          return;
+        }
+        
+        setOrder(response.data);
+      } else {
+        setError('No order data received from server.');
+      }
     } catch (err) {
       console.error('Error tracking order:', err);
-      setError('Order not found. Please check your order ID and try again.');
+      console.error('Error response:', err.response);
+      
+      if (err.response?.status === 401) {
+        setError('Please login to track your orders.');
+      } else if (err.response?.status === 404) {
+        setError('Order not found. Please check your order ID and try again.');
+      } else if (err.response?.status === 500) {
+        setError('Server error. Please try again later.');
+      } else {
+        setError(`Error loading order details: ${err.response?.data?.message || err.message}`);
+      }
     } finally {
       setLoading(false);
     }
@@ -152,6 +196,31 @@ const OrderTracking = () => {
             </div>
           )}
         </div>
+
+        {/* Loading State */}
+        {loading && (
+          <div className="bg-white rounded-lg shadow-sm p-8 text-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#42ADF5] mx-auto"></div>
+            <p className="mt-4 text-gray-600">Loading order details...</p>
+          </div>
+        )}
+
+        {/* Error State */}
+        {!loading && error && !order && (
+          <div className="bg-white rounded-lg shadow-sm p-8 text-center">
+            <div className="text-red-500 text-lg mb-4">❌ Unable to load order details</div>
+            <p className="text-gray-600 mb-4">{error}</p>
+            <button
+              onClick={() => {
+                setError('');
+                setOrder(null);
+              }}
+              className="bg-[#42ADF5] text-white px-6 py-2 rounded-lg hover:bg-[#2C8ED1] transition-colors"
+            >
+              Try Again
+            </button>
+          </div>
+        )}
 
         {/* Order Details */}
         {order && (
@@ -247,12 +316,14 @@ const OrderTracking = () => {
                   {order.items.map((item, index) => (
                     <div key={index} className="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
                       <div>
-                        <p className="font-medium">Product ID: {item.productId}</p>
+                        <p className="font-medium">
+                          {item.productId?.name || `Product ID: ${item.productId}` || 'Unknown Product'}
+                        </p>
                         <p className="text-sm text-gray-600">Quantity: {item.quantity}</p>
                       </div>
                       <div className="text-right">
-                                          <p className="font-medium">LKR {(item.priceAtOrder * item.quantity).toFixed(2)}</p>
-                  <p className="text-sm text-gray-600">LKR {item.priceAtOrder} each</p>
+                        <p className="font-medium">LKR {(item.priceAtOrder * item.quantity).toFixed(2)}</p>
+                        <p className="text-sm text-gray-600">LKR {item.priceAtOrder} each</p>
                       </div>
                     </div>
                   ))}

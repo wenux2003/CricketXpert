@@ -129,10 +129,38 @@ exports.getOrders = async (req, res) => {
 // Get order by ID
 exports.getOrder = async (req, res) => {
   try {
+    console.log('Getting order with ID:', req.params.id);
     const order = await Order.findById(req.params.id).populate("items.productId");
-    if (!order) return res.status(404).json({ message: "Order not found" });
-    res.json(order);
+    console.log('Found order:', order ? 'Yes' : 'No');
+    
+    if (!order) {
+      console.log('Order not found for ID:', req.params.id);
+      return res.status(404).json({ message: "Order not found" });
+    }
+    
+    console.log('Order details:', {
+      id: order._id,
+      status: order.status,
+      amount: order.amount,
+      itemsCount: order.items?.length,
+      items: order.items?.map(item => ({
+        productId: item.productId,
+        quantity: item.quantity,
+        priceAtOrder: item.priceAtOrder,
+        productPopulated: !!item.productId
+      }))
+    });
+    
+    // If items don't have populated product data, try to populate them
+    if (order.items && order.items.some(item => !item.productId || typeof item.productId === 'string')) {
+      console.log('Re-populating order items...');
+      const populatedOrder = await Order.findById(req.params.id).populate("items.productId");
+      res.json(populatedOrder);
+    } else {
+      res.json(order);
+    }
   } catch (error) {
+    console.error('Error getting order:', error);
     res.status(500).json({ message: error.message });
   }
 };
@@ -278,7 +306,7 @@ const reduceProductStock = async (orderItems) => {
         product.stock_quantity = newStock;
         
         // Log stock reduction
-        console.log(`📦 Stock reduced for ${product.name}: ${product.stock_quantity + item.quantity} → ${newStock}`);
+        console.log(`📦 Stock reduced for ${product.name}: ${product.stock_quantity + item.quantity} → ${newStock} (reduced by ${item.quantity})`);
         
         // Log low stock warning if stock is low
         if (newStock <= 10) {

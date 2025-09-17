@@ -66,6 +66,8 @@ const MyOrders = () => {
   };
 
   const handleTrackOrder = (orderId) => {
+    console.log('Track Order clicked for ID:', orderId);
+    console.log('Navigating to track-order with state:', { orderId });
     navigate('/track-order', { state: { orderId } });
   };
 
@@ -132,7 +134,10 @@ const MyOrders = () => {
                           </span>
                           <div className="mt-3 space-y-2">
                             <button 
-                              onClick={() => handleTrackOrder(order._id)}
+                              onClick={() => {
+                                console.log('Track Order button clicked for order:', order);
+                                handleTrackOrder(order._id);
+                              }}
                               className="bg-[#42ADF5] text-white px-4 py-2 rounded text-sm hover:bg-[#2C8ED1] transition-colors"
                             >
                               Track Order
