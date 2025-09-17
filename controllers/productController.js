@@ -1,23 +1,54 @@
 const mongoose = require('mongoose');
 const Product = require('../models/Product');
+const { sendLowStockAlert } = require('../utils/wemailService');
 
 
 exports.createProduct = async (req, res) => {
   try {
+    console.log('=== CREATE PRODUCT DEBUG ===');
+    console.log('Request body:', req.body);
+    console.log('Request file:', req.file);
+    console.log('Request headers:', req.headers);
+    
     // The text fields are in req.body
     const productData = req.body;
 
     // The uploaded file info is in req.file
     if (req.file) {
-     
-      productData.image_url = `${req.protocol}://${req.get('host')}/${req.file.path.replace(/\\/g, "/")}`;
+      const imageUrl = `${req.protocol}://${req.get('host')}/${req.file.path.replace(/\\/g, "/")}`;
+      console.log('Creating product with image URL:', imageUrl);
+      console.log('File path:', req.file.path);
+      console.log('Protocol:', req.protocol);
+      console.log('Host:', req.get('host'));
+      console.log('File details:', {
+        fieldname: req.file.fieldname,
+        originalname: req.file.originalname,
+        mimetype: req.file.mimetype,
+        size: req.file.size
+      });
+      productData.image_url = imageUrl;
     } else {
-        
+        console.log('No file uploaded for product');
+        console.log('Multer error:', req.multerError);
         productData.image_url = '';
     }
 
+    console.log('Final product data:', productData);
     const product = new Product(productData);
     await product.save();
+    console.log('Product saved successfully:', product);
+    
+    // Check for low stock alert on new product
+    if (product.stock_quantity <= 10) {
+      console.log(`⚠️ NEW PRODUCT WITH LOW STOCK: ${product.name} - Stock: ${product.stock_quantity}`);
+      try {
+        await sendLowStockAlert(product);
+        console.log(`📧 Low stock email alert sent for new product: ${product.name}`);
+      } catch (emailError) {
+        console.error(`❌ Failed to send low stock email for new product ${product.name}:`, emailError);
+      }
+    }
+    
     res.status(201).json(product);
   } catch (error) {
     console.error("Error creating product:", error); // Log the full error
@@ -57,8 +88,30 @@ exports.getProduct = async (req, res) => {
 // Update product
 exports.updateProduct = async (req, res) => {
   try {
-    const product = await Product.findByIdAndUpdate(req.params.id, req.body, { new: true });
+    const productData = req.body;
+
+    // Handle file upload if image is provided
+    if (req.file) {
+      const imageUrl = `${req.protocol}://${req.get('host')}/${req.file.path.replace(/\\/g, "/")}`;
+      console.log('Updating product with new image URL:', imageUrl);
+      console.log('File path:', req.file.path);
+      productData.image_url = imageUrl;
+    }
+
+    const product = await Product.findByIdAndUpdate(req.params.id, productData, { new: true });
     if (!product) return res.status(404).json({ message: "Product not found" });
+    
+    // Check for low stock alert on updated product
+    if (product.stock_quantity <= 10) {
+      console.log(`⚠️ UPDATED PRODUCT WITH LOW STOCK: ${product.name} - Stock: ${product.stock_quantity}`);
+      try {
+        await sendLowStockAlert(product);
+        console.log(`📧 Low stock email alert sent for updated product: ${product.name}`);
+      } catch (emailError) {
+        console.error(`❌ Failed to send low stock email for updated product ${product.name}:`, emailError);
+      }
+    }
+    
     res.json(product);
   } catch (error) {
     res.status(400).json({ message: error.message });

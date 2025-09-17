@@ -126,7 +126,22 @@ export default function ListProducts() {
                         ) : (
                             products.map((product) => (
                                 <tr key={product._id} className="border-b hover:bg-gray-50">
-                                    <td className="p-4"><img src={product.image_url || 'https://placehold.co/64'} alt={product.name} className="w-16 h-16 object-cover rounded-md" /></td>
+                                    <td className="p-4">
+                                        <img 
+                                            src={product.image_url || 'https://placehold.co/64'} 
+                                            alt={product.name} 
+                                            className="w-16 h-16 object-cover rounded-md" 
+                                            onError={(e) => {
+                                                console.error(`Image failed to load for product: ${product.name}`);
+                                                console.error(`Image URL: ${product.image_url}`);
+                                                e.target.src = 'https://placehold.co/64';
+                                            }}
+                                            onLoad={() => {
+                                                console.log(`Image loaded successfully for: ${product.name}`);
+                                                console.log(`Image URL: ${product.image_url}`);
+                                            }}
+                                        />
+                                    </td>
                                     <td className="p-4 font-medium text-gray-800">
                                         {editingProduct && editingProduct._id === product._id ? (
                                             <input 

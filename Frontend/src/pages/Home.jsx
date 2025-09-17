@@ -285,7 +285,12 @@ const Home = () => {
                     className="w-full h-48 object-cover"
                     onError={(e) => {
                       console.error(`Product image failed for: ${product.name}`);
+                      console.error(`Failed image URL: ${product.image_url}`);
                       e.target.src = 'https://placehold.co/300x200';
+                    }}
+                    onLoad={() => {
+                      console.log(`Image loaded successfully for: ${product.name}`);
+                      console.log(`Image URL: ${product.image_url}`);
                     }}
                   />
                   <div className="p-4">

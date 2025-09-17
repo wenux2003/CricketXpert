@@ -73,8 +73,51 @@ const sendPasswordResetCodeEmail = async (email, code) => {
   console.log(`Password reset code sent to ${email}`);
 };
 
+// --- Function 4: Low Stock Alert Email ---
+const sendLowStockAlert = async (product) => {
+  const mailOptions = {
+    from: process.env.EMAIL_USER,
+    to: process.env.SERVICE_MANAGER_EMAIL, // Send to admin/manager
+    subject: `🚨 LOW STOCK ALERT: ${product.name}`,
+    html: `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+        <h2 style="color: #dc3545;">⚠️ Low Stock Alert</h2>
+        <p>Dear Admin,</p>
+        <p>The following product is running low on stock:</p>
+        
+        <div style="background-color: #f8f9fa; padding: 20px; border-radius: 8px; margin: 20px 0;">
+          <h3 style="color: #072679; margin-top: 0;">${product.name}</h3>
+          <p><strong>Product ID:</strong> ${product.productId}</p>
+          <p><strong>Category:</strong> ${product.category}</p>
+          <p><strong>Brand:</strong> ${product.brand}</p>
+          <p><strong>Current Stock:</strong> <span style="color: #dc3545; font-weight: bold;">${product.stock_quantity}</span></p>
+          <p><strong>Price:</strong> LKR ${product.price}</p>
+        </div>
+        
+        <p style="color: #dc3545; font-weight: bold;">⚠️ Action Required: Please restock this item immediately!</p>
+        
+        <p>This alert was triggered when stock fell to ${product.stock_quantity} units or below.</p>
+        
+        <hr style="margin: 30px 0;">
+        <p style="color: #6c757d; font-size: 12px;">
+          This is an automated alert from CricketExpert Inventory Management System.<br>
+          Generated on: ${new Date().toLocaleString()}
+        </p>
+      </div>
+    `,
+  };
+  
+  try {
+    const info = await transporter.sendMail(mailOptions);
+    console.log(`📧 Low stock alert email sent to admin for ${product.name}: ${info.response}`);
+  } catch (error) {
+    console.error('❌ Failed to send low stock alert email:', error);
+  }
+};
+
 module.exports = {
   sendWelcomeEmail,
   sendNewUserNotification,
   sendPasswordResetCodeEmail,
+  sendLowStockAlert,
 };

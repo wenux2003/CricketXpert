@@ -1,5 +1,6 @@
 const Order = require('../models/Order');
 const Product = require('../models/Product');
+const { sendLowStockAlert } = require('../utils/wemailService');
 
 // Create order
 exports.createOrder = async (req, res) => {
@@ -311,6 +312,14 @@ const reduceProductStock = async (orderItems) => {
         // Log low stock warning if stock is low
         if (newStock <= 10) {
           console.log(`⚠️ LOW STOCK WARNING: ${product.name} (ID: ${product.productId}) - Current stock: ${newStock}`);
+          
+          // Send email alert to admin
+          try {
+            await sendLowStockAlert(product);
+            console.log(`📧 Low stock email alert sent for ${product.name}`);
+          } catch (emailError) {
+            console.error(`❌ Failed to send low stock email for ${product.name}:`, emailError);
+          }
         }
         
         await product.save();
