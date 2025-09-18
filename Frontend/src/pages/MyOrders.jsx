@@ -75,6 +75,61 @@ const MyOrders = () => {
     navigate(`/orders/${order._id}`, { state: { order } });
   };
 
+  const handleDownloadOrder = async (orderId) => {
+    try {
+      const userInfo = JSON.parse(localStorage.getItem('userInfo'));
+      const config = {
+        headers: {
+          Authorization: `Bearer ${userInfo.token}`
+        },
+        responseType: 'blob' // Important for PDF download
+      };
+      
+      const response = await axios.get(`http://localhost:5000/api/orders/${orderId}/download`, config);
+      
+      // Create blob link to download
+      const url = window.URL.createObjectURL(new Blob([response.data]));
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', `order-${orderId}.pdf`);
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.URL.revokeObjectURL(url);
+      
+      console.log('Order PDF downloaded successfully');
+    } catch (error) {
+      console.error('Error downloading order PDF:', error);
+      alert('Failed to download order PDF. Please try again.');
+    }
+  };
+
+  const handleCancelOrder = async (orderId) => {
+    if (!window.confirm('Are you sure you want to cancel this order? This action will notify the order manager for refund processing.')) {
+      return;
+    }
+
+    try {
+      const userInfo = JSON.parse(localStorage.getItem('userInfo'));
+      const config = {
+        headers: {
+          Authorization: `Bearer ${userInfo.token}`
+        }
+      };
+      
+      const response = await axios.put(`http://localhost:5000/api/orders/${orderId}/cancel`, {}, config);
+      
+      if (response.data.success) {
+        alert('Order cancelled successfully! The order manager has been notified for refund processing.');
+        // Refresh the orders list
+        fetchOrders();
+      }
+    } catch (error) {
+      console.error('Error cancelling order:', error);
+      alert('Failed to cancel order. Please try again.');
+    }
+  };
+
   if (loading) {
     return (
       <div className="bg-[#F1F2F7] min-h-screen p-8">
@@ -148,6 +203,20 @@ const MyOrders = () => {
                             >
                               View Details
                             </button>
+                            <button 
+                              onClick={() => handleDownloadOrder(order._id)}
+                              className="block w-full mt-2 border border-[#28a745] text-[#28a745] px-4 py-2 rounded text-sm hover:bg-[#28a745] hover:text-white transition-colors"
+                            >
+                              Download
+                            </button>
+                            {order.status !== 'cancelled' && order.status !== 'completed' && (
+                              <button 
+                                onClick={() => handleCancelOrder(order._id)}
+                                className="block w-full mt-2 border border-[#dc3545] text-[#dc3545] px-4 py-2 rounded text-sm hover:bg-[#dc3545] hover:text-white transition-colors"
+                              >
+                                Cancel Order
+                              </button>
+                            )}
                           </div>
                         </div>
                       </div>

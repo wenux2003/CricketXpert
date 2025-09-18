@@ -12,15 +12,19 @@ const {
   createCartOrder,
   getCartOrder,
   completeCartOrder,
-  deleteCartOrder
+  deleteCartOrder,
+  downloadOrder,
+  cancelOrder
 } = require('../controllers/orderController');
 
 // Regular order routes
 router.post('/', createOrder);
 router.get('/', getOrders);
 router.get('/:id', getOrder);
+router.get('/:id/download', downloadOrder);
 router.put('/:id', updateOrderStatus);
 router.put('/:id/details', updateOrder);
+router.put('/:id/cancel', cancelOrder);
 router.delete('/:id', deleteOrder);
 
 // Cart order routes
