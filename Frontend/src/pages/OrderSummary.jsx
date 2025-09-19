@@ -1,9 +1,10 @@
-import { useLocation } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import Header from '../components/Header';
 import Footer from '../components/Footer';
 
 const OrderSummary = () => {
   const location = useLocation();
+  const navigate = useNavigate();
   const { order } = location.state || { order: { _id: 'ORD123456', status: 'processing', created_at: new Date(), amount: 0, items: [] } };
 
   return (
@@ -38,8 +39,11 @@ const OrderSummary = () => {
                 {new Date(order.created_at).toLocaleDateString()}
               </div>
             </div>
-            <button className="bg-[#42ADF5] text-white px-4 py-2 rounded hover:bg-[#2C8ED1] transition-colors">
-              Track Order
+            <button 
+              onClick={() => navigate('/products')}
+              className="bg-[#42ADF5] text-white px-4 py-2 rounded hover:bg-[#2C8ED1] transition-colors"
+            >
+              Back To
             </button>
           </div>
         </div>
