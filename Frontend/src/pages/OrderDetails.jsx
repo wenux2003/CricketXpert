@@ -2,6 +2,8 @@ import { useState, useEffect } from 'react';
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import axios from 'axios';
 import { getCurrentUserId } from '../utils/getCurrentUser';
+import Header from '../components/Header';
+import Footer from '../components/Footer';
 
 const OrderDetails = () => {
   const { orderId } = useParams(); // Extract orderId from URL (e.g., /orders/:orderId)
@@ -113,74 +115,78 @@ const OrderDetails = () => {
   if (error) return <div className="text-center p-8 text-red-500">{error}</div>;
 
   return (
-    <div className="bg-[#F1F2F7] min-h-screen text-[#36516C] p-8">
-      <div className="max-w-4xl mx-auto bg-white rounded-lg p-6 shadow-sm">
-        <h2 className="text-2xl font-bold mb-6">Order Details</h2>
+    <>
+      <Header />
+      <div className="bg-[#F1F2F7] min-h-screen text-[#36516C] p-8">
+        <div className="max-w-4xl mx-auto bg-white rounded-lg p-6 shadow-sm">
+          <h2 className="text-2xl font-bold mb-6">Order Details</h2>
 
-        {/* Order Information */}
-        <div className="mb-6">
-          <h3 className="font-semibold text-lg mb-2">Order Information</h3>
-          <p><strong>Order ID:</strong> {order._id || 'N/A'}</p>
-          <p><strong>Date:</strong> {new Date(order.date || order.createdAt || Date.now()).toLocaleDateString()}</p>
-          <p><strong>Status:</strong> {order.status || 'N/A'}</p>
-          <p><strong>Address:</strong> {order.address || 'N/A'}</p>
-                          <p><strong>Total Amount:</strong> LKR {order.amount || 0}.00</p>
-        </div>
+          {/* Order Information */}
+          <div className="mb-6">
+            <h3 className="font-semibold text-lg mb-2">Order Information</h3>
+            <p><strong>Order ID:</strong> {order._id || 'N/A'}</p>
+            <p><strong>Date:</strong> {new Date(order.date || order.createdAt || Date.now()).toLocaleDateString()}</p>
+            <p><strong>Status:</strong> {order.status || 'N/A'}</p>
+            <p><strong>Address:</strong> {order.address || 'N/A'}</p>
+                            <p><strong>Total Amount:</strong> LKR {order.amount || 0}.00</p>
+          </div>
 
-        {/* Order Items */}
-        <div className="mb-6">
-          <h3 className="font-semibold text-lg mb-2">Items</h3>
-          {order.items && order.items.length > 0 ? (
-            <ul className="space-y-2">
-              {order.items.map((item, index) => (
-                <li key={index} className="flex justify-between text-sm">
-                  <span>
-                    {item.productId?.name || item.productId || 'Unknown Product'} 
-                    (Qty: {item.quantity})
-                  </span>
-                  <span>LKR {(item.priceAtOrder * item.quantity).toFixed(2)}</span>
-                </li>
-              ))}
-            </ul>
-          ) : (
-            <p>No items in this order.</p>
-          )}
-        </div>
+          {/* Order Items */}
+          <div className="mb-6">
+            <h3 className="font-semibold text-lg mb-2">Items</h3>
+            {order.items && order.items.length > 0 ? (
+              <ul className="space-y-2">
+                {order.items.map((item, index) => (
+                  <li key={index} className="flex justify-between text-sm">
+                    <span>
+                      {item.productId?.name || item.productId || 'Unknown Product'} 
+                      (Qty: {item.quantity})
+                    </span>
+                    <span>LKR {(item.priceAtOrder * item.quantity).toFixed(2)}</span>
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <p>No items in this order.</p>
+            )}
+          </div>
 
-        {/* Payment Information */}
-        <div className="mb-6">
-          <h3 className="font-semibold text-lg mb-2">Payment Information</h3>
-          <p><strong>Payment ID:</strong> {payment._id || 'N/A'}</p>
-                          <p><strong>Amount Paid:</strong> LKR {payment.amount || 0}.00</p>
-          <p><strong>Payment Status:</strong> {payment.status || 'N/A'}</p>
-          <p><strong>Payment Date:</strong> {new Date(payment.paymentDate || Date.now()).toLocaleDateString()}</p>
-        </div>
+          {/* Payment Information */}
+          <div className="mb-6">
+            <h3 className="font-semibold text-lg mb-2">Payment Information</h3>
+            <p><strong>Payment ID:</strong> {payment._id || 'N/A'}</p>
+                            <p><strong>Amount Paid:</strong> LKR {payment.amount || 0}.00</p>
+            <p><strong>Payment Status:</strong> {payment.status || 'N/A'}</p>
+            <p><strong>Payment Date:</strong> {new Date(payment.paymentDate || Date.now()).toLocaleDateString()}</p>
+          </div>
 
-        {/* Actions */}
-        <div className="flex gap-4 flex-wrap">
-          <button
-            onClick={handleBackToOrders}
-            className="bg-[#42ADF5] text-white py-2 px-4 rounded-lg hover:bg-[#2C8ED1] transition-colors"
-          >
-            Back to Orders
-          </button>
-          <button
-            onClick={() => handleDownloadOrder(order._id)}
-            className="bg-[#28a745] text-white py-2 px-4 rounded-lg hover:bg-[#218838] transition-colors"
-          >
-            Download PDF
-          </button>
-          {order.status !== 'cancelled' && order.status !== 'completed' && (
+          {/* Actions */}
+          <div className="flex gap-4 flex-wrap">
             <button
-              onClick={() => handleCancelOrder(order._id)}
-              className="bg-[#dc3545] text-white py-2 px-4 rounded-lg hover:bg-[#c82333] transition-colors"
+              onClick={handleBackToOrders}
+              className="bg-[#42ADF5] text-white py-2 px-4 rounded-lg hover:bg-[#2C8ED1] transition-colors"
             >
-              Cancel Order
+              Back to Orders
             </button>
-          )}
+            <button
+              onClick={() => handleDownloadOrder(order._id)}
+              className="bg-[#28a745] text-white py-2 px-4 rounded-lg hover:bg-[#218838] transition-colors"
+            >
+              Download PDF
+            </button>
+            {order.status !== 'cancelled' && order.status !== 'completed' && (
+              <button
+                onClick={() => handleCancelOrder(order._id)}
+                className="bg-[#dc3545] text-white py-2 px-4 rounded-lg hover:bg-[#c82333] transition-colors"
+              >
+                Cancel Order
+              </button>
+            )}
+          </div>
         </div>
       </div>
-    </div>
+      <Footer />
+    </>
   );
 };
 

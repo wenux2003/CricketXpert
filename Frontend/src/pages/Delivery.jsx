@@ -2,7 +2,8 @@ import { useState, useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { getCurrentUserId, isLoggedIn } from '../utils/getCurrentUser';
-import { Search, User, ShoppingCart } from 'lucide-react';
+import Header from '../components/Header';
+import Footer from '../components/Footer';
 
 const Delivery = () => {
   const location = useLocation();
@@ -75,70 +76,53 @@ const Delivery = () => {
   );
 
   return (
-    <div className="bg-[#F1F2F7] min-h-screen text-[#36516C] p-8">
-      {/* Header */}
-      <nav className="flex justify-between items-center mb-8 bg-white p-4 rounded-lg shadow-sm">
-        <div className="text-2xl font-bold text-[#072679]">CricketExpert.</div>
-        <div className="flex space-x-6 text-gray-600">
-          <span>home</span>
-          <span>menu</span>
-          <span>mobile app</span>
-          <span>contact us</span>
-        </div>
-        <div className="flex items-center space-x-4">
-          <Search className="w-5 h-5 text-gray-600" />
-          <div className="relative">
-            <ShoppingCart className="w-5 h-5 text-gray-600" />
-            <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
-              {cart.reduce((sum, item) => sum + item.quantity, 0)}
-            </span>
+    <>
+      <Header />
+      <div className="bg-[#F1F2F7] min-h-screen text-[#36516C] p-8">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+          {/* Delivery Information */}
+          <div className="lg:col-span-2">
+            <div className="bg-white rounded-lg p-6 shadow-sm">
+              <h2 className="text-xl font-bold mb-6">Delivery Information</h2>
+              <div className="space-y-4">
+                <p><strong>First Name:</strong> {user?.firstName || 'N/A'}</p>
+                <p><strong>Last Name:</strong> {user?.lastName || 'N/A'}</p>
+                <p><strong>Email:</strong> {user?.email || 'N/A'}</p>
+                <p><strong>Phone:</strong> {user?.contactNumber || 'N/A'}</p>
+                <p><strong>Address:</strong> {user?.address || 'No address provided'}</p>
+              </div>
+            </div>
           </div>
-          <User className="w-5 h-5 text-gray-600" />
-        </div>
-      </nav>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        {/* Delivery Information */}
-        <div className="lg:col-span-2">
-          <div className="bg-white rounded-lg p-6 shadow-sm">
-            <h2 className="text-xl font-bold mb-6">Delivery Information</h2>
-            <div className="space-y-4">
-              <p><strong>First Name:</strong> {user?.firstName || 'N/A'}</p>
-              <p><strong>Last Name:</strong> {user?.lastName || 'N/A'}</p>
-              <p><strong>Email:</strong> {user?.email || 'N/A'}</p>
-              <p><strong>Phone:</strong> {user?.contactNumber || 'N/A'}</p>
-              <p><strong>Address:</strong> {user?.address || 'No address provided'}</p>
+          {/* Cart Totals */}
+          <div className="bg-white rounded-lg p-6 shadow-sm h-fit">
+            <h3 className="font-bold text-lg mb-4">Cart Totals</h3>
+            <div className="space-y-2 text-sm">
+              <div className="flex justify-between">
+                <span>Subtotal</span>
+                                <span>LKR {totalData.subtotal}</span>
+              </div>
+              <div className="flex justify-between">
+                <span>Delivery Fee</span>
+                                <span>LKR {totalData.deliveryFee}</span>
+              </div>
+              <div className="flex justify-between font-bold text-lg border-t pt-2">
+                <span>Total</span>
+                                <span>LKR {totalData.total}</span>
+              </div>
             </div>
+            <button 
+              onClick={handleProceedToPayment}
+              className="w-full bg-[#42ADF5] text-white py-3 rounded-lg mt-4 hover:bg-[#2C8ED1] transition-colors"
+              disabled={!user || !cart.length}
+            >
+              Proceed to Payment
+            </button>
           </div>
-        </div>
-
-        {/* Cart Totals */}
-        <div className="bg-white rounded-lg p-6 shadow-sm h-fit">
-          <h3 className="font-bold text-lg mb-4">Cart Totals</h3>
-          <div className="space-y-2 text-sm">
-            <div className="flex justify-between">
-              <span>Subtotal</span>
-                              <span>LKR {totalData.subtotal}</span>
-            </div>
-            <div className="flex justify-between">
-              <span>Delivery Fee</span>
-                              <span>LKR {totalData.deliveryFee}</span>
-            </div>
-            <div className="flex justify-between font-bold text-lg border-t pt-2">
-              <span>Total</span>
-                              <span>LKR {totalData.total}</span>
-            </div>
-          </div>
-          <button 
-            onClick={handleProceedToPayment}
-            className="w-full bg-[#42ADF5] text-white py-3 rounded-lg mt-4 hover:bg-[#2C8ED1] transition-colors"
-            disabled={!user || !cart.length}
-          >
-            Proceed to Payment
-          </button>
         </div>
       </div>
-    </div>
+      <Footer />
+    </>
   );
 };
 

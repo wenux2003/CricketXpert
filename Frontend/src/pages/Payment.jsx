@@ -2,6 +2,8 @@ import { useState, useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { getCurrentUserId, isLoggedIn } from '../utils/getCurrentUser';
+import Header from '../components/Header';
+import Footer from '../components/Footer';
 
 const Payment = () => {
   const location = useLocation();
@@ -216,98 +218,102 @@ const Payment = () => {
   );
 
   return (
-    <div className="bg-[#F1F2F7] min-h-screen text-[#36516C] p-8">
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-        {/* Order Summary */}
-        <div className="bg-white rounded-lg p-6 shadow-sm">
-          <div className="text-2xl font-bold mb-4">Pay Order</div>
-                          <div className="text-3xl font-bold text-green-600 mb-6">LKR {totalData.total}.00</div>
-          
-          <div className="space-y-3">
-            {cart.map((item) => {
-              const product = getProductDetails(item.productId);
-              return (
-                <div key={item.productId} className="flex justify-between text-sm">
-                  <span>{product.name || item.productId} (Qty {item.quantity})</span>
-                  <span>LKR {((product.price || 0) * item.quantity).toFixed(2)}</span>
-                </div>
-              );
-            })}
-            <div className="flex justify-between text-sm border-t pt-2">
-              <span>Delivery Charge</span>
-                              <span>LKR {totalData.deliveryFee}.00</span>
-            </div>
-          </div>
-        </div>
-
-        {/* Payment Form */}
-        <div className="bg-white rounded-lg p-6 shadow-sm">
-          <h3 className="font-bold text-lg mb-6">Pay with Card</h3>
-          
-          <div className="space-y-4">
-            <input 
-              type="email" 
-              placeholder="Email"
-              value={paymentInfo.email}
-              onChange={(e) => handleChange('email', e.target.value)}
-              className="w-full border rounded-lg px-3 py-2"
-            />
+    <>
+      <Header />
+      <div className="bg-[#F1F2F7] min-h-screen text-[#36516C] p-8">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+          {/* Order Summary */}
+          <div className="bg-white rounded-lg p-6 shadow-sm">
+            <div className="text-2xl font-bold mb-4">Pay Order</div>
+                            <div className="text-3xl font-bold text-green-600 mb-6">LKR {totalData.total}.00</div>
             
-            <div className="relative">
-              <input 
-                type="text" 
-                placeholder="1234 1234 1234 1234"
-                value={paymentInfo.cardNumber}
-                onChange={(e) => handleChange('cardNumber', e.target.value)}
-                className="w-full border rounded-lg px-3 py-2 pr-20"
-              />
-              <div className="absolute right-3 top-2 flex space-x-1">
-                <div className="w-6 h-4 bg-red-500 rounded"></div>
-                <div className="w-6 h-4 bg-blue-500 rounded"></div>
+            <div className="space-y-3">
+              {cart.map((item) => {
+                const product = getProductDetails(item.productId);
+                return (
+                  <div key={item.productId} className="flex justify-between text-sm">
+                    <span>{product.name || item.productId} (Qty {item.quantity})</span>
+                    <span>LKR {((product.price || 0) * item.quantity).toFixed(2)}</span>
+                  </div>
+                );
+              })}
+              <div className="flex justify-between text-sm border-t pt-2">
+                <span>Delivery Charge</span>
+                                <span>LKR {totalData.deliveryFee}.00</span>
               </div>
             </div>
+          </div>
+
+          {/* Payment Form */}
+          <div className="bg-white rounded-lg p-6 shadow-sm">
+            <h3 className="font-bold text-lg mb-6">Pay with Card</h3>
             
-            <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-4">
+              <input 
+                type="email" 
+                placeholder="Email"
+                value={paymentInfo.email}
+                onChange={(e) => handleChange('email', e.target.value)}
+                className="w-full border rounded-lg px-3 py-2"
+              />
+              
+              <div className="relative">
+                <input 
+                  type="text" 
+                  placeholder="1234 1234 1234 1234"
+                  value={paymentInfo.cardNumber}
+                  onChange={(e) => handleChange('cardNumber', e.target.value)}
+                  className="w-full border rounded-lg px-3 py-2 pr-20"
+                />
+                <div className="absolute right-3 top-2 flex space-x-1">
+                  <div className="w-6 h-4 bg-red-500 rounded"></div>
+                  <div className="w-6 h-4 bg-blue-500 rounded"></div>
+                </div>
+              </div>
+              
+              <div className="grid grid-cols-2 gap-4">
+                <input 
+                  type="text" 
+                  placeholder="MM/YY"
+                  value={paymentInfo.expiryDate}
+                  onChange={(e) => handleChange('expiryDate', e.target.value)}
+                  className="border rounded-lg px-3 py-2"
+                />
+                <input 
+                  type="text" 
+                  placeholder="CVC"
+                  value={paymentInfo.cvc}
+                  onChange={(e) => handleChange('cvc', e.target.value)}
+                  className="border rounded-lg px-3 py-2"
+                />
+              </div>
+              
               <input 
                 type="text" 
-                placeholder="MM/YY"
-                value={paymentInfo.expiryDate}
-                onChange={(e) => handleChange('expiryDate', e.target.value)}
-                className="border rounded-lg px-3 py-2"
+                placeholder="Cardholder name"
+                value={paymentInfo.cardholderName}
+                onChange={(e) => handleChange('cardholderName', e.target.value)}
+                className="w-full border rounded-lg px-3 py-2"
               />
-              <input 
-                type="text" 
-                placeholder="CVC"
-                value={paymentInfo.cvc}
-                onChange={(e) => handleChange('cvc', e.target.value)}
-                className="border rounded-lg px-3 py-2"
-              />
+              
+            
+               
+              
+              
+              {error && <p className="text-red-500 text-sm">{error}</p>}
+              <button 
+                onClick={handlePay}
+                className="w-full bg-[#42ADF5] text-white py-3 rounded-lg hover:bg-[#2C8ED1] transition-colors"
+                disabled={loading}
+              >
+                {loading ? 'Processing...' : 'Pay'}
+              </button>
             </div>
-            
-            <input 
-              type="text" 
-              placeholder="Cardholder name"
-              value={paymentInfo.cardholderName}
-              onChange={(e) => handleChange('cardholderName', e.target.value)}
-              className="w-full border rounded-lg px-3 py-2"
-            />
-            
-          
-             
-            
-            
-            {error && <p className="text-red-500 text-sm">{error}</p>}
-            <button 
-              onClick={handlePay}
-              className="w-full bg-[#42ADF5] text-white py-3 rounded-lg hover:bg-[#2C8ED1] transition-colors"
-              disabled={loading}
-            >
-              {loading ? 'Processing...' : 'Pay'}
-            </button>
           </div>
         </div>
       </div>
-    </div>
+      <Footer />
+    </>
   );
 };
 

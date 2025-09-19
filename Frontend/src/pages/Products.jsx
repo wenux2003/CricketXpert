@@ -353,6 +353,12 @@ const Products = () => {
                         >
                           +
                         </button>
+                        <button
+                          onClick={() => navigate('/buy', { state: { product, quantity: Math.max(quantity || 1, 1) } })}
+                          className="ml-2 bg-[#072679] text-white px-4 py-1 rounded hover:bg-[#0a2d8d]"
+                        >
+                          Buy
+                        </button>
                       </div>
                     </div>
                   </div>
