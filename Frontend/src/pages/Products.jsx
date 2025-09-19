@@ -22,6 +22,7 @@ const Products = () => {
   const [error, setError] = useState(null);
   const [cart, setCart] = useState([]); // Local cart state
   const [user, setUser] = useState(null);
+  const [selectedImage, setSelectedImage] = useState(null); // For image modal
   const navigate = useNavigate();
 
   // Get current logged-in user ID
@@ -214,6 +215,33 @@ const Products = () => {
 
   const cartItemCount = cart.reduce((sum, item) => sum + item.quantity, 0);
 
+  // Image Modal Component
+  const ImageModal = () => {
+    if (!selectedImage) return null;
+
+    return (
+      <div 
+        className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50 p-4"
+        onClick={() => setSelectedImage(null)}
+      >
+        <div className="relative max-w-4xl max-h-full">
+          <img
+            src={selectedImage.url}
+            alt={selectedImage.alt}
+            className="max-w-full max-h-full object-contain rounded-lg shadow-2xl"
+            onClick={(e) => e.stopPropagation()}
+          />
+          <button
+            onClick={() => setSelectedImage(null)}
+            className="absolute top-4 right-4 bg-white bg-opacity-80 hover:bg-opacity-100 text-black rounded-full w-10 h-10 flex items-center justify-center text-xl font-bold transition-all"
+          >
+            ×
+          </button>
+        </div>
+      </div>
+    );
+  };
+
   return (
     <div className="bg-[#F1F2F7] min-h-screen text-[#36516C]">
       {/* Original Header Component */}
@@ -317,26 +345,61 @@ const Products = () => {
             products.map((product) => {
               const cartItem = cart.find(item => item.productId === product._id);
               const quantity = cartItem ? cartItem.quantity : 0;
+              const stockLevel = product.stock || product.stock_quantity || 0;
+              const isInStock = stockLevel > 0;
+              
               return (
                 <div key={product._id} className="bg-white rounded-lg shadow-md overflow-hidden">
-                  <img
-                    src={product.image_url || 'https://placehold.co/600x500'}
-                    alt={product.name}
-                    className="w-full h-48 object-cover"
-                    onError={(e) => {
-                      console.error(`Product image failed for: ${product.name}`);
-                      console.error(`Failed image URL: ${product.image_url}`);
-                      e.target.src = 'https://placehold.co/300x200';
-                    }}
-                    onLoad={() => {
-                      console.log(`Image loaded successfully for: ${product.name}`);
-                      console.log(`Image URL: ${product.image_url}`);
-                    }}
-                  />
+                  {/* Product Image with Click Handler */}
+                  <div 
+                    className="relative w-full h-48 cursor-pointer group"
+                    onClick={() => setSelectedImage({
+                      url: product.image_url || 'https://placehold.co/600x500',
+                      alt: product.name
+                    })}
+                  >
+                    <img
+                      src={product.image_url || 'https://placehold.co/600x500'}
+                      alt={product.name}
+                      className="w-full h-full object-contain bg-gray-50 group-hover:opacity-90 transition-opacity"
+                      onError={(e) => {
+                        console.error(`Product image failed for: ${product.name}`);
+                        console.error(`Failed image URL: ${product.image_url}`);
+                        e.target.src = 'https://placehold.co/300x200';
+                      }}
+                      onLoad={() => {
+                        console.log(`Image loaded successfully for: ${product.name}`);
+                        console.log(`Image URL: ${product.image_url}`);
+                      }}
+                    />
+                    {/* Click indicator overlay */}
+                    <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-10 transition-all flex items-center justify-center">
+                      <div className="opacity-0 group-hover:opacity-100 transition-opacity bg-white bg-opacity-80 rounded-full p-2">
+                        <svg className="w-6 h-6 text-gray-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                        </svg>
+                      </div>
+                    </div>
+                  </div>
+                  
                   <div className="p-4">
                     <h3 className="text-xl font-bold text-[#000000] mb-2">{product.name}</h3>
                     <p className="text-[#36516C] mb-2">{product.description?.slice(0, 100) || 'No description'}...</p>
+                    
+                    {/* Stock Level Display */}
+                    <div className="mb-3">
+                      <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                        isInStock 
+                          ? 'bg-green-100 text-green-800' 
+                          : 'bg-red-100 text-red-800'
+                      }`}>
+                        {isInStock ? `In Stock: ${stockLevel}` : 'Out of Stock'}
+                      </span>
+                    </div>
+                    
                     <p className="text-[#072679] font-bold mb-4">LKR {product.price || 0}</p>
+                    
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-2">
                         <button
@@ -349,13 +412,15 @@ const Products = () => {
                         <span className="text-[#000000] font-medium">{quantity}</span>
                         <button
                           onClick={() => handleQuantityChange(product._id, 1)}
-                          className="bg-[#42ADF5] text-white px-3 py-1 rounded hover:bg-[#2C8ED1]"
+                          className="bg-[#42ADF5] text-white px-3 py-1 rounded hover:bg-[#2C8ED1] disabled:bg-gray-300"
+                          disabled={!isInStock}
                         >
                           +
                         </button>
                         <button
                           onClick={() => navigate('/buy', { state: { product, quantity: Math.max(quantity || 1, 1) } })}
-                          className="ml-2 bg-[#072679] text-white px-4 py-1 rounded hover:bg-[#0a2d8d]"
+                          className="ml-2 bg-[#072679] text-white px-4 py-1 rounded hover:bg-[#0a2d8d] disabled:bg-gray-300"
+                          disabled={!isInStock}
                         >
                           Buy
                         </button>
@@ -368,6 +433,9 @@ const Products = () => {
           )}
         </div>
       </section>
+      
+      {/* Image Modal */}
+      <ImageModal />
       
       <Footer />
     </div>
