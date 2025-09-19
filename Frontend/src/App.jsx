@@ -28,6 +28,8 @@ import OrderSummary from './pages/OrderSummary.jsx';
 import Orders from './pages/Orders.jsx';
 import OrderTracking from './pages/OrderTracking.jsx';
 import OrderDetails from './pages/OrderDetails.jsx';
+import BuyPage from './pages/BuyPage.jsx';
+import DeliveryPage from './pages/DeliveryPage.jsx';
 
 // --- Order Manager Pages ---
 import ListOrders from './pages/OrderManager/ListOrders.jsx';
@@ -55,6 +57,8 @@ export default function App() {
         <Route path="/products" element={<Products />} />
         <Route path="/cart" element={<Cart />} />
         <Route path="/delivery" element={<Delivery />} />
+        <Route path="/buy" element={<BuyPage />} />
+        <Route path="/buy/delivery" element={<DeliveryPage />} />
         <Route path="/payment" element={<Payment />} />
         <Route path="/orders" element={<OrderSummary />} />
         <Route path="/my-orders" element={<MyOrders />} />
