@@ -16,6 +16,8 @@ import Profile from './pages/Profile.jsx';
 import EditAccount from './pages/EditAccount.jsx';
 import ForgotPassword from './pages/ForgotPassword.jsx';
 import UserManagement from './pages/UserManagement.jsx'; 
+import AllPayments from './pages/Allpayments.jsx'; 
+import Inventorys from './pages/Inventory.jsx'; 
 import MyOrders from './pages/MyOrders.jsx';
 
 // --- New E-commerce Pages ---
@@ -84,9 +86,10 @@ export default function App() {
                 <Route index element={<Navigate to="/admin/dashboard" />} />
                 <Route path="dashboard" element={<AdminDashboardOverview />} />
                 <Route path="users" element={<UserManagement />} />
+                <Route path="payments" element={<AllPayments />} />
+                <Route path="inventory" element={<Inventorys />} />
                 <Route path="profile" element={<Profile />} />
                 <Route path="edit-account" element={<EditAccount />} />
-                <Route path="payments" element={<Payments />} />
                 <Route path="orders" element={<ListOrders />} />
             </Route>
         </Route>
