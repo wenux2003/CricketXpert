@@ -91,6 +91,7 @@ import GroundBooking from "./pages/GroundBooking.jsx";
 import MyBookings from "./pages/MyBookings.jsx";
 import AdminGroundBooking from "./pages/AdminGround/GroundBooking.jsx";
 import GroundsManage from "./pages/AdminGround/GroundsManage.jsx";
+import GroundManagerLayout from "./components/GroundManagerLayout.jsx";
 
 // Wrapper to pass URL param
 function CustomerDashboardWrapper() {
@@ -206,8 +207,15 @@ export default function App() {
           <Route path="profile" element={<Profile />} />
           <Route path="edit-account" element={<EditAccount />} />
           <Route path="orders" element={<ListOrders />} />
-          <Route path="ground-booking" element={<AdminGroundBooking />} />
-          <Route path="grounds" element={<GroundsManage />} />
+        </Route>
+
+        {/* --- GROUND MANAGER ROUTES --- */}
+        <Route element={<ProtectedRoute allowedRoles={["ground_manager"]} />}>
+          <Route path="/ground-manager" element={<GroundManagerLayout />}>
+            <Route index element={<Navigate to="/ground-manager/grounds" />} />
+            <Route path="grounds" element={<GroundsManage />} />
+            <Route path="bookings" element={<AdminGroundBooking />} />
+          </Route>
         </Route>
 
 

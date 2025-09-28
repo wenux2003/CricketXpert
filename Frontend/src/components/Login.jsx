@@ -43,6 +43,8 @@ export default function Login() {
                 navigate('/coach-dashboard');
             } else if (data.role === 'coaching_manager') {
                 navigate('/manager-dashboard');
+            } else if (data.role === 'ground_manager') {
+                navigate('/ground-manager/grounds');
             } else {
                      // Redirect customers and all other roles to home
                  navigate('/'); 

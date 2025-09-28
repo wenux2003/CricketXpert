@@ -632,14 +632,6 @@ const GroundBooking = () => {
             </select>
           </div>
 
-          {/* Create Button */}
-          <button
-            onClick={() => setShowCreateModal(true)}
-            className="px-6 py-2 text-white transition-colors duration-200 rounded-lg hover:opacity-90"
-            style={{ backgroundColor: Brand.primary }}
-          >
-            + Create New Booking
-          </button>
         </div>
       </div>
 

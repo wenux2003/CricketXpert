@@ -73,6 +73,8 @@ const Header = () => {
         navigate('/coach-dashboard');
       } else if (userInfo.role === 'coaching_manager') {
         navigate('/manager-dashboard');
+      } else if (userInfo.role === 'ground_manager') {
+        navigate('/ground-manager/grounds');
       } else {
         // Default for customer and other roles
         navigate('/customer/profile');

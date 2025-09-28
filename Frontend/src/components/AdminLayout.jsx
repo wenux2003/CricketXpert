@@ -83,12 +83,6 @@ export default function AdminLayout() {
                         <a href="#" className="flex items-center px-4 py-2 rounded-lg font-medium text-text-body hover:bg-gray-100">
                             <CalendarIcon /> Coach Bookings
                         </a>
-                        <Link to="/admin/ground-booking" className={`flex items-center px-4 py-2 rounded-lg font-medium transition-colors ${isActive('/admin/ground-booking') ? 'bg-secondary text-white' : 'text-text-body hover:bg-gray-100'}`}>
-                            <GlobeIcon /> Ground Bookings
-                        </Link>
-                        <Link to="/admin/grounds" className={`flex items-center px-4 py-2 rounded-lg font-medium transition-colors ${isActive('/admin/grounds') ? 'bg-secondary text-white' : 'text-text-body hover:bg-gray-100'}`}>
-                            <WrenchIcon /> Ground Management
-                        </Link>
                         <a href="#" className="flex items-center px-4 py-2 rounded-lg font-medium text-text-body hover:bg-gray-100">
                             <ChatAlt2Icon /> Feedbacks
                         </a>

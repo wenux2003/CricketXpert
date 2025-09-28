@@ -78,7 +78,6 @@ app.use('/api/notifications', notificationRoutes);
 app.use('/api/repairs', repairRoutes);
 app.use('/api/feedbacks', feedbackRoutes);
 app.use('/api/technicians', technicianRoutes);
-app.use('/api/users', userRoutes);
 app.use('/api/players', playerRoutes);
 app.use('/api/attendance', attendanceRoutes);
 app.use('/api/payroll', payrollRoutes);

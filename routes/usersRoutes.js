@@ -25,7 +25,7 @@ router.route('/profile')
 // --- ADMIN-ONLY Routes ---
 // Only users with the 'admin' role can access these routes.
 router.route('/')
-    .get(getAllUsers) // Temporarily remove auth for development
+    .get(protect, authorizeRoles('admin'), getAllUsers)
     .post(protect, authorizeRoles('admin'), createUserByAdmin);
 
 router.route('/:id')
