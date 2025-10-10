@@ -74,7 +74,7 @@ const Payment = () => {
           },
         };
         const response = await axios.get(
-          `http://localhost:5000/api/users/profile`,
+          `http://localhost:3001/api/users/profile`,
           config
         );
         setUser(response.data);
@@ -101,7 +101,7 @@ const Payment = () => {
             },
           };
           const response = await axios.get(
-            `http://localhost:5000/api/orders/cart/${userId}`,
+            `http://localhost:3001/api/orders/cart/${userId}`,
             config
           );
           setCartOrder(response.data);
@@ -116,7 +116,7 @@ const Payment = () => {
       // Only fetch products for order payments
       if (type === "order") {
         try {
-          const res = await axios.get("http://localhost:5000/api/products/");
+          const res = await axios.get("http://localhost:3001/api/products/");
           setProducts(res.data || []);
         } catch (err) {
           console.error("Error fetching products:", err);
@@ -192,7 +192,7 @@ const Payment = () => {
 
         // Process enrollment payment using the new endpoint
         const paymentRes = await axios.post(
-          `http://localhost:5000/api/enrollments/${enrollment._id}/payment`,
+          `http://localhost:3001/api/enrollments/${enrollment._id}/payment`,
           {
             userId,
             enrollmentId: enrollment._id,
@@ -227,7 +227,7 @@ const Payment = () => {
 
         // First create the booking with pending status
         const bookingResponse = await axios.post(
-          "http://localhost:5000/api/bookings",
+          "http://localhost:3001/api/bookings",
           {
             ...booking,
             status: "pending", // Explicitly set as pending
@@ -254,7 +254,7 @@ const Payment = () => {
         };
 
         const paymentResponse = await axios.post(
-          "http://localhost:5000/api/payment",
+          "http://localhost:3001/api/payment",
           paymentData,
           config
         );
@@ -262,7 +262,7 @@ const Payment = () => {
         if (paymentResponse.data) {
           // Only after successful payment, confirm the booking
           await axios.put(
-            `http://localhost:5000/api/bookings/${createdBooking._id}`,
+            `http://localhost:3001/api/bookings/${createdBooking._id}`,
             {
               status: "confirmed",
               paymentId: paymentResponse.data._id,
@@ -292,7 +292,7 @@ const Payment = () => {
           address || user?.address || "No address provided";
 
         const payRes = await axios.post(
-          "http://localhost:5000/api/payment/pay-selected",
+          "http://localhost:3001/api/payment/pay-selected",
           {
             cartToken,
             productIds,

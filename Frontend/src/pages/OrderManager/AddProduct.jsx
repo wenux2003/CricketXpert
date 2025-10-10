@@ -81,7 +81,7 @@ export default function AddProduct() {
             const userInfo = JSON.parse(localStorage.getItem('userInfo'));
             console.log('Sending request to backend...');
             
-            const response = await axios.post('http://localhost:5000/api/products/', productData, {
+            const response = await axios.post('http://localhost:3001/api/products/', productData, {
                 headers: {
                     'Content-Type': 'multipart/form-data',
                     Authorization: `Bearer ${userInfo.token}`,

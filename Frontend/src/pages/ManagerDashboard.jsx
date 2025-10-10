@@ -107,7 +107,7 @@ const ManagerDashboard = () => {
       // Try to fetch from API, but fallback to mock data if API is not available
       try {
         // Fetch programs first (this should work)
-        const programsRes = await axios.get('http://localhost:5000/api/programs');
+        const programsRes = await axios.get('http://localhost:3001/api/programs');
         const programsData = programsRes.data.data?.docs || programsRes.data.data || programsRes.data || [];
         setPrograms(programsData);
         console.log('Programs fetched successfully:', programsData.length);
@@ -115,7 +115,7 @@ const ManagerDashboard = () => {
 
         // Try to fetch coaches and sessions, but don't fail if they don't work
         try {
-          const coachesRes = await axios.get('http://localhost:5000/api/coaches');
+          const coachesRes = await axios.get('http://localhost:3001/api/coaches');
           const coachesData = coachesRes.data.data?.docs || coachesRes.data.data || coachesRes.data || [];
           setCoaches(coachesData);
           console.log('Coaches fetched successfully:', coachesData.length);
@@ -125,7 +125,7 @@ const ManagerDashboard = () => {
         }
 
         try {
-          const sessionsRes = await axios.get('http://localhost:5000/api/sessions');
+          const sessionsRes = await axios.get('http://localhost:3001/api/sessions');
           const sessionsData = sessionsRes.data.data?.docs || sessionsRes.data.data || sessionsRes.data || [];
           setSessions(sessionsData);
           console.log('Sessions fetched successfully:', sessionsData.length);
@@ -262,7 +262,7 @@ const ManagerDashboard = () => {
   const handleCreateProgram = async (e) => {
     e.preventDefault();
     try {
-      const response = await axios.post('http://localhost:5000/api/programs', programForm);
+      const response = await axios.post('http://localhost:3001/api/programs', programForm);
       setPrograms([...programs, response.data.data]);
       setShowProgramModal(false);
       resetProgramForm();
@@ -301,7 +301,7 @@ const ManagerDashboard = () => {
   const handleUpdateProgram = async (e) => {
     e.preventDefault();
     try {
-      const response = await axios.put(`http://localhost:5000/api/programs/${selectedProgram._id}`, programForm);
+      const response = await axios.put(`http://localhost:3001/api/programs/${selectedProgram._id}`, programForm);
       setPrograms(programs.map(p => p._id === selectedProgram._id ? response.data.data : p));
       setShowProgramModal(false);
       setSelectedProgram(null);
@@ -357,7 +357,7 @@ const ManagerDashboard = () => {
     if (!window.confirm('Are you sure you want to delete this program?')) return;
     
     try {
-      await axios.delete(`http://localhost:5000/api/programs/${programId}`);
+      await axios.delete(`http://localhost:3001/api/programs/${programId}`);
       setPrograms(programs.filter(p => p._id !== programId));
       alert('Program deleted successfully!');
     } catch (error) {
@@ -403,7 +403,7 @@ const ManagerDashboard = () => {
 
       // Try to assign coach via API
       try {
-        await axios.put(`http://localhost:5000/api/coaches/${selectedCoachId}/assign-program`, {
+        await axios.put(`http://localhost:3001/api/coaches/${selectedCoachId}/assign-program`, {
         programId: selectedProgram._id
       });
       await fetchDashboardData(); // Refresh data
@@ -581,7 +581,7 @@ const ManagerDashboard = () => {
     
     try {
       // First, update the database
-      const response = await axios.put(`http://localhost:5000/api/coaches/${coachId}`, {
+      const response = await axios.put(`http://localhost:3001/api/coaches/${coachId}`, {
         experience: updatedCoach.experience,
         specializations: updatedCoach.specializations,
         isActive: updatedCoach.isActive,
@@ -687,7 +687,7 @@ const ManagerDashboard = () => {
 
       const updatedAvailability = [...currentAvailability, newAvailability];
 
-      const response = await axios.put(`http://localhost:5000/api/coaches/${selectedCoach._id}/availability`, {
+      const response = await axios.put(`http://localhost:3001/api/coaches/${selectedCoach._id}/availability`, {
         availability: updatedAvailability
       });
 
@@ -745,7 +745,7 @@ const ManagerDashboard = () => {
         endTime: availabilityForm.endTime
       };
 
-      const response = await axios.put(`http://localhost:5000/api/coaches/${selectedCoach._id}/availability`, {
+      const response = await axios.put(`http://localhost:3001/api/coaches/${selectedCoach._id}/availability`, {
         availability: updatedAvailability
       });
 
@@ -780,7 +780,7 @@ const ManagerDashboard = () => {
       const currentAvailability = selectedCoach.availability || [];
       const updatedAvailability = currentAvailability.filter((_, i) => i !== index);
 
-      const response = await axios.put(`http://localhost:5000/api/coaches/${selectedCoach._id}/availability`, {
+      const response = await axios.put(`http://localhost:3001/api/coaches/${selectedCoach._id}/availability`, {
         availability: updatedAvailability
       });
 

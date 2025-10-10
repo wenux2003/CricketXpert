@@ -50,7 +50,7 @@ export default function ProgramDetails() {
       setLoading(true);
       setError('');
       
-      const response = await axios.get(`http://localhost:5000/api/programs/${id}`);
+      const response = await axios.get(`http://localhost:3001/api/programs/${id}`);
       
       if (response.data.success) {
         setProgram(response.data.data);
@@ -109,9 +109,9 @@ export default function ProgramDetails() {
       };
       
       console.log('Enrollment payload:', enrollmentPayload);
-      console.log('Making API call to:', 'http://localhost:5000/api/enrollments');
+      console.log('Making API call to:', 'http://localhost:3001/api/enrollments');
 
-      const response = await axios.post('http://localhost:5000/api/enrollments', enrollmentPayload, config);
+      const response = await axios.post('http://localhost:3001/api/enrollments', enrollmentPayload, config);
       
       console.log('Enrollment response:', response.data);
       

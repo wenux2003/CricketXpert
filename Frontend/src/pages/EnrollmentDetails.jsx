@@ -65,7 +65,7 @@ export default function EnrollmentDetails() {
 
       // Fetch enrollment details with cache-busting
       console.log('Fetching enrollment details for ID:', enrollmentId);
-      const enrollmentResponse = await axios.get(`http://localhost:5000/api/enrollments/${enrollmentId}?t=${Date.now()}`, config);
+      const enrollmentResponse = await axios.get(`http://localhost:3001/api/enrollments/${enrollmentId}?t=${Date.now()}`, config);
       console.log('Enrollment response:', enrollmentResponse.data);
       
       if (enrollmentResponse.data.success) {
@@ -74,7 +74,7 @@ export default function EnrollmentDetails() {
         // Fetch sessions for this enrollment with cache-busting
         try {
           console.log('Fetching sessions for enrollment ID:', enrollmentId);
-          const sessionsResponse = await axios.get(`http://localhost:5000/api/sessions/enrollment/${enrollmentId}?t=${Date.now()}`, config);
+          const sessionsResponse = await axios.get(`http://localhost:3001/api/sessions/enrollment/${enrollmentId}?t=${Date.now()}`, config);
           console.log('Sessions response:', sessionsResponse.data);
           if (sessionsResponse.data.success) {
             console.log('Setting sessions:', sessionsResponse.data.data);
@@ -549,9 +549,9 @@ export default function EnrollmentDetails() {
       };
 
       console.log('Submitting session data:', sessionData);
-      console.log('API URL:', 'http://localhost:5000/api/sessions/direct-booking');
+      console.log('API URL:', 'http://localhost:3001/api/sessions/direct-booking');
 
-      const response = await axios.post('http://localhost:5000/api/sessions/direct-booking', sessionData, config);
+      const response = await axios.post('http://localhost:3001/api/sessions/direct-booking', sessionData, config);
       
       console.log('Session booking response:', response.data);
       

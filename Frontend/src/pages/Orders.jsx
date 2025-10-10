@@ -15,7 +15,7 @@ const Orders = () => {
   useEffect(() => {
     const fetchOrders = async () => {
       try {
-        const response = await axios.get(`http://localhost:5000/api/orders/?customerId=${userId}`);
+        const response = await axios.get(`http://localhost:3001/api/orders/?customerId=${userId}`);
         setOrders(response.data || []);
       } catch (err) {
         console.error('Error fetching orders:', err);

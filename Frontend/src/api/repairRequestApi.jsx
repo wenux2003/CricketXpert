@@ -1,6 +1,6 @@
 import axios from 'axios';
 
-const BASE_URL = "http://localhost:5000/api/repairs";
+const BASE_URL = "http://localhost:3001/api/repairs";
 const REPAIRS_BASE_OVERRIDE = typeof import.meta !== 'undefined' && import.meta.env && import.meta.env.VITE_REPAIRS_BASE ? String(import.meta.env.VITE_REPAIRS_BASE) : '';
 
 // Helper to attempt multiple endpoints until one succeeds
@@ -28,11 +28,11 @@ export const submitRepairRequest = (requestData) => {
     `${base}/create`,
     `${base}/new`,
     // Common alternative bases
-    `http://localhost:5000/api/repair-requests`,
-    `http://localhost:5000/api/repair-requests/create`,
-    `http://localhost:5000/api/requests/repairs`,
-    `http://localhost:5000/api/requests`,
-    `http://localhost:5000/repairs`,
+    `http://localhost:3001/api/repair-requests`,
+    `http://localhost:3001/api/repair-requests/create`,
+    `http://localhost:3001/api/requests/repairs`,
+    `http://localhost:3001/api/requests`,
+    `http://localhost:3001/repairs`,
   ];
   return tryPostEndpoints(candidates, requestData);
 };
@@ -87,7 +87,7 @@ export const submitFeedback = (requestId, feedbackData) => {
 
 // Get all technicians
 export const getAllTechnicians = () => {
-  return axios.get('http://localhost:5000/api/technicians');
+  return axios.get('http://localhost:3001/api/technicians');
 };
 
 // Update a repair request (general fields)
@@ -130,16 +130,16 @@ export const fetchUserByUsername = async (identifier) => {
 
   const getCandidates = [
     ...(override ? [`${override}?q=${q}`, `${override}?username=${q}`, `${override}?name=${q}`] : []),
-    `http://localhost:5000/api/users/check/${q}`,
-    `http://localhost:5000/api/users/${q}`,
-    `http://localhost:5000/api/users?username=${q}`,
-    `http://localhost:5000/api/customers/check/${q}`,
-    `http://localhost:5000/api/customers/${q}`,
-    `http://localhost:5000/api/customers?username=${q}`,
-    `http://localhost:5000/api/users/search?name=${q}`,
-    `http://localhost:5000/api/customers/search?name=${q}`,
-    `http://localhost:5000/api/users?name=${q}`,
-    `http://localhost:5000/api/customers?name=${q}`,
+    `http://localhost:3001/api/users/check/${q}`,
+    `http://localhost:3001/api/users/${q}`,
+    `http://localhost:3001/api/users?username=${q}`,
+    `http://localhost:3001/api/customers/check/${q}`,
+    `http://localhost:3001/api/customers/${q}`,
+    `http://localhost:3001/api/customers?username=${q}`,
+    `http://localhost:3001/api/users/search?name=${q}`,
+    `http://localhost:3001/api/customers/search?name=${q}`,
+    `http://localhost:3001/api/users?name=${q}`,
+    `http://localhost:3001/api/customers?name=${q}`,
   ];
 
   const postCandidates = [
@@ -148,12 +148,12 @@ export const fetchUserByUsername = async (identifier) => {
       { url: override, body: { username: identifier } },
       { url: override, body: { name: identifier } },
     ] : []),
-    { url: 'http://localhost:5000/api/users/find', body: { username: identifier } },
-    { url: 'http://localhost:5000/api/customers/find', body: { username: identifier } },
-    { url: 'http://localhost:5000/api/users/search', body: { name: identifier } },
-    { url: 'http://localhost:5000/api/customers/search', body: { name: identifier } },
-    { url: 'http://localhost:5000/api/users/find', body: { query: identifier } },
-    { url: 'http://localhost:5000/api/customers/find', body: { query: identifier } },
+    { url: 'http://localhost:3001/api/users/find', body: { username: identifier } },
+    { url: 'http://localhost:3001/api/customers/find', body: { username: identifier } },
+    { url: 'http://localhost:3001/api/users/search', body: { name: identifier } },
+    { url: 'http://localhost:3001/api/customers/search', body: { name: identifier } },
+    { url: 'http://localhost:3001/api/users/find', body: { query: identifier } },
+    { url: 'http://localhost:3001/api/customers/find', body: { query: identifier } },
   ];
 
   let lastError;
@@ -182,7 +182,7 @@ export const fetchUserByUsername = async (identifier) => {
 
 // Legacy helper
 export const checkUsername = (username) => {
-  return axios.get(`http://localhost:5000/api/users/check/${username}`);
+  return axios.get(`http://localhost:3001/api/users/check/${username}`);
 };
 
 // Download repair report

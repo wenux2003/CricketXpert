@@ -65,7 +65,7 @@ export default function Profile() {
                         Authorization: `Bearer ${userInfo.token}`,
                     },
                 };
-                const { data } = await axios.get('http://localhost:5000/api/users/profile', config);
+                const { data } = await axios.get('http://localhost:3001/api/users/profile', config);
                 setUser(data);
             } catch (err) {
                 console.error('Error fetching user profile:', err);
@@ -133,7 +133,7 @@ export default function Profile() {
                             Authorization: `Bearer ${userInfo.token}`,
                         },
                     };
-                    const { data } = await axios.get(`http://localhost:5000/api/enrollments/user/${userInfo._id}`, config);
+                    const { data } = await axios.get(`http://localhost:3001/api/enrollments/user/${userInfo._id}`, config);
                     
                     // Handle both response structures
                     if (data.data && data.data.docs) {
@@ -170,7 +170,7 @@ export default function Profile() {
                     },
                 };
 
-                const { data } = await axios.get(`http://localhost:5000/api/enrollments/user/${userInfo._id}`, config);
+                const { data } = await axios.get(`http://localhost:3001/api/enrollments/user/${userInfo._id}`, config);
                 
                 // Handle both response structures
                 if (data.data && data.data.docs) {
@@ -239,7 +239,7 @@ export default function Profile() {
                             Authorization: `Bearer ${userInfo.token}`,
                         },
                     };
-                    const { data } = await axios.get(`http://localhost:5000/api/enrollments/user/${userInfo._id}`, config);
+                    const { data } = await axios.get(`http://localhost:3001/api/enrollments/user/${userInfo._id}`, config);
                     // Handle both response structures
                     if (data.data && data.data.docs) {
                         // Paginated response

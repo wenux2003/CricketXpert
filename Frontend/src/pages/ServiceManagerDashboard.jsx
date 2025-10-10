@@ -300,7 +300,7 @@ const ServiceManagerDashboard = () => {
     
     setDeletingTechnician(technicianId);
     try {
-      const response = await fetch(`http://localhost:5000/api/technicians/${technicianId}`, {
+      const response = await fetch(`http://localhost:3001/api/technicians/${technicianId}`, {
         method: 'DELETE',
       });
       

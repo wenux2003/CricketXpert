@@ -29,7 +29,7 @@ export default function WeeklySessionBooking({ coachId, onSessionSelect, enrollm
       setLoading(true);
       setError('');
       
-      const response = await axios.get(`http://localhost:5000/api/coaches/${coachId}/weekly-sessions?enrollmentDate=${enrollmentDate}&programDuration=${programDuration}`);
+      const response = await axios.get(`http://localhost:3001/api/coaches/${coachId}/weekly-sessions?enrollmentDate=${enrollmentDate}&programDuration=${programDuration}`);
       
       if (response.data.success) {
         setWeeklyStructure(response.data.data);
@@ -73,7 +73,7 @@ export default function WeeklySessionBooking({ coachId, onSessionSelect, enrollm
           
           console.log(`Fetching availability for ${date} with params:`, params.toString());
           
-          const response = await axios.get(`http://localhost:5000/api/coaches/${coachId}/availability?${params}`);
+          const response = await axios.get(`http://localhost:3001/api/coaches/${coachId}/availability?${params}`);
           
           console.log(`Response for ${date}:`, response.data);
           
@@ -122,7 +122,7 @@ export default function WeeklySessionBooking({ coachId, onSessionSelect, enrollm
         endTime: endTime
       });
       
-      const response = await axios.get(`http://localhost:5000/api/grounds/availability?${params}`);
+      const response = await axios.get(`http://localhost:3001/api/grounds/availability?${params}`);
       
       if (response.data.success) {
         // Filter to show only Practice Ground A

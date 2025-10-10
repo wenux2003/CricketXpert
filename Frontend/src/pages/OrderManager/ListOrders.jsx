@@ -71,9 +71,9 @@ export default function ListOrders() {
             setLoading(true);
             let url;
             if (selectedStatus) {
-                url = `http://localhost:5000/api/orders/status/${selectedStatus}`;
+                url = `http://localhost:3001/api/orders/status/${selectedStatus}`;
             } else {
-                url = 'http://localhost:5000/api/orders?includeCartPending=true';
+                url = 'http://localhost:3001/api/orders?includeCartPending=true';
             }
             const { data } = await axios.get(url);
             setOrders(Array.isArray(data) ? data : []);
@@ -96,7 +96,7 @@ export default function ListOrders() {
     const handleUpdateStatus = async (id, status) => {
         try {
             const userInfo = JSON.parse(localStorage.getItem('userInfo'));
-            await axios.put(`http://localhost:5000/api/orders/${id}`, { status }, {
+            await axios.put(`http://localhost:3001/api/orders/${id}`, { status }, {
                 headers: { Authorization: `Bearer ${userInfo.token}` }
             });
             fetchOrders();
@@ -111,7 +111,7 @@ export default function ListOrders() {
         if (window.confirm('Are you sure you want to delete this order?')) {
             try {
                 const userInfo = JSON.parse(localStorage.getItem('userInfo'));
-                await axios.delete(`http://localhost:5000/api/orders/${id}`, {
+                await axios.delete(`http://localhost:3001/api/orders/${id}`, {
                     headers: { Authorization: `Bearer ${userInfo.token}` }
                 });
                 fetchOrders();
@@ -132,7 +132,7 @@ export default function ListOrders() {
         
         try {
             const userInfo = JSON.parse(localStorage.getItem('userInfo'));
-            await axios.put(`http://localhost:5000/api/orders/${editingOrder._id}`, { status: editingOrder.status }, {
+            await axios.put(`http://localhost:3001/api/orders/${editingOrder._id}`, { status: editingOrder.status }, {
                 headers: { Authorization: `Bearer ${userInfo.token}` }
             });
             fetchOrders();

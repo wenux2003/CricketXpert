@@ -74,7 +74,7 @@ const CoachDashboard = () => {
       }
 
       // Get coach profile by user ID
-      const coachResponse = await axios.get(`http://localhost:5000/api/coaches/user/${userInfo._id}`);
+      const coachResponse = await axios.get(`http://localhost:3001/api/coaches/user/${userInfo._id}`);
       const coachData = coachResponse.data.data;
       
       
@@ -96,7 +96,7 @@ const CoachDashboard = () => {
       // Get coach's enrolled programs (students enrolled in coach's programs)
       let enrolledProgramsData = [];
       try {
-        const enrolledProgramsResponse = await axios.get(`http://localhost:5000/api/coaches/${coachData._id}/enrolled-programs`);
+        const enrolledProgramsResponse = await axios.get(`http://localhost:3001/api/coaches/${coachData._id}/enrolled-programs`);
         enrolledProgramsData = enrolledProgramsResponse.data.data.docs || [];
         setEnrolledPrograms(enrolledProgramsData);
       } catch (enrolledError) {
@@ -109,7 +109,7 @@ const CoachDashboard = () => {
       try {
         // Fetch customers data with attendance statistics from the API
         // Fetch customers data with attendance statistics from the API
-        const enrolledCustomersResponse = await axios.get(`http://localhost:5000/api/coaches/customers/68d438cb66caa02c82ffdd9f?t=${Date.now()}`);
+        const enrolledCustomersResponse = await axios.get(`http://localhost:3001/api/coaches/customers/68d438cb66caa02c82ffdd9f?t=${Date.now()}`);
         const enrolledCustomersData = enrolledCustomersResponse.data.data.customersByProgram || [];
         
         // Flatten the customers data
@@ -153,7 +153,7 @@ const CoachDashboard = () => {
       
       // Fetch coach's sessions with attendance data
       try {
-        const coachSessionsResponse = await axios.get(`http://localhost:5000/api/coaches/68d438cb66caa02c82ffdd9f/sessions`);
+        const coachSessionsResponse = await axios.get(`http://localhost:3001/api/coaches/68d438cb66caa02c82ffdd9f/sessions`);
         const coachSessionsData = coachSessionsResponse.data.data.docs || [];
         setSessions(coachSessionsData);
         setCoachSessions(coachSessionsData);
@@ -182,7 +182,7 @@ const CoachDashboard = () => {
 
   const handleSubmitFeedback = async (feedbackData) => {
     try {
-      const response = await axios.post('http://localhost:5000/api/player-feedback', feedbackData);
+      const response = await axios.post('http://localhost:3001/api/player-feedback', feedbackData);
       setShowFeedbackModal(false);
       setSelectedParticipant(null);
       // Refresh data after feedback submission
@@ -239,7 +239,7 @@ const CoachDashboard = () => {
         console.log('Selected session ID:', selectedSession._id);
         
       const response = await axios.put(
-          `http://localhost:5000/api/coaches/attendance-only`,
+          `http://localhost:3001/api/coaches/attendance-only`,
           { 
             sessionId: originalSessionId,
             attendanceData: validAttendanceData
@@ -253,7 +253,7 @@ const CoachDashboard = () => {
           
           // Refresh the customers data specifically to show updated attendance statistics
           try {
-            const enrolledCustomersResponse = await axios.get(`http://localhost:5000/api/coaches/customers/68d438cb66caa02c82ffdd9f?t=${Date.now()}`);
+            const enrolledCustomersResponse = await axios.get(`http://localhost:3001/api/coaches/customers/68d438cb66caa02c82ffdd9f?t=${Date.now()}`);
             const enrolledCustomersData = enrolledCustomersResponse.data.data.customersByProgram || [];
             
             // Flatten the customers data
@@ -347,7 +347,7 @@ const CoachDashboard = () => {
         
         // Refresh customers data from API to get updated attendance statistics
         try {
-          const enrolledCustomersResponse = await axios.get(`http://localhost:5000/api/coaches/customers/68d438cb66caa02c82ffdd9f?t=${Date.now()}`);
+          const enrolledCustomersResponse = await axios.get(`http://localhost:3001/api/coaches/customers/68d438cb66caa02c82ffdd9f?t=${Date.now()}`);
           const enrolledCustomersData = enrolledCustomersResponse.data.data.customersByProgram || [];
           
           // Flatten the customers data
@@ -392,7 +392,7 @@ const CoachDashboard = () => {
     try {
       if (!coach || !coach._id) return;
       
-      const response = await axios.get(`http://localhost:5000/api/coaches/customers/68d438cb66caa02c82ffdd9f`);
+      const response = await axios.get(`http://localhost:3001/api/coaches/customers/68d438cb66caa02c82ffdd9f`);
       setEnrolledCustomers(response.data.data.customersByProgram || []);
     } catch (error) {
       console.warn('Could not fetch enrolled customers (this is optional):', error.message);
@@ -424,7 +424,7 @@ const CoachDashboard = () => {
           },
         };
 
-        const response = await axios.post('http://localhost:5000/api/sessions/cleanup-duplicates', {}, config);
+        const response = await axios.post('http://localhost:3001/api/sessions/cleanup-duplicates', {}, config);
         
         if (response.data.success) {
           alert(`Cleanup completed! Removed ${response.data.data.removedCount} duplicate sessions.`);
@@ -899,7 +899,7 @@ const CoachDashboard = () => {
                   <button
                     onClick={async () => {
                       try {
-                        const enrolledCustomersResponse = await axios.get(`http://localhost:5000/api/coaches/customers/68d438cb66caa02c82ffdd9f?t=${Date.now()}`);
+                        const enrolledCustomersResponse = await axios.get(`http://localhost:3001/api/coaches/customers/68d438cb66caa02c82ffdd9f?t=${Date.now()}`);
                         const enrolledCustomersData = enrolledCustomersResponse.data.data.customersByProgram || [];
                         
                         const updatedCustomers = [];
@@ -936,7 +936,7 @@ const CoachDashboard = () => {
                   <button
                     onClick={async () => {
                       try {
-                        const debugResponse = await axios.get(`http://localhost:5000/api/coaches/68d438cb66caa02c82ffdd9f/debug-attendance`);
+                        const debugResponse = await axios.get(`http://localhost:3001/api/coaches/68d438cb66caa02c82ffdd9f/debug-attendance`);
                         console.log('Debug attendance data:', debugResponse.data);
                         alert('Debug data logged to console. Check browser console for details.');
                       } catch (error) {

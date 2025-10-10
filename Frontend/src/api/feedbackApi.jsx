@@ -1,6 +1,6 @@
 import axios from 'axios';
 
-const BASE_URL = 'http://localhost:5000/api/feedback';
+const BASE_URL = 'http://localhost:3001/api/feedback';
 
 export const getAllFeedbacks = () => axios.get(BASE_URL);
 export const getCustomerFeedbacks = (customerId) => axios.get(`${BASE_URL}/customer/${customerId}`);

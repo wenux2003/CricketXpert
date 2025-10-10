@@ -121,8 +121,8 @@ const OrderTracking = () => {
         }
       };
       
-      console.log('Making API call to:', `http://localhost:5000/api/orders/${orderIdToTrack}`);
-      const response = await axios.get(`http://localhost:5000/api/orders/${orderIdToTrack}`, config);
+      console.log('Making API call to:', `http://localhost:3001/api/orders/${orderIdToTrack}`);
+      const response = await axios.get(`http://localhost:3001/api/orders/${orderIdToTrack}`, config);
       console.log('API response:', response.data);
       
       if (response.data) {
