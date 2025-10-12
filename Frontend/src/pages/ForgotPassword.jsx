@@ -23,7 +23,7 @@ export default function ForgotPassword() {
         setError('');
         setMessage('');
         try {
-            const { data } = await axios.post('http://localhost:5000/api/auth/forgot-password', { email });
+            const { data } = await axios.post('http://localhost:3001/api/auth/forgot-password', { email });
             setMessage(data.message);
             setStep(2);
         } catch (err) {

@@ -52,7 +52,7 @@ export default function EditAccount() {
             try {
                 const userInfo = JSON.parse(localStorage.getItem('userInfo'));
                 const config = { headers: { Authorization: `Bearer ${userInfo.token}` } };
-                const { data } = await axios.get('http://localhost:5000/api/users/profile', config);
+                const { data } = await axios.get('http://localhost:3001/api/users/profile', config);
 
                 // Populate basic form data
                 setFormData({

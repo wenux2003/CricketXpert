@@ -18,7 +18,7 @@ export default function ListProducts() {
     const fetchProducts = async () => {
         try {
             setLoading(true);
-            let url = `http://localhost:5000/api/products/search?query=${searchQuery}&category=${selectedCategory}`;
+            let url = `http://localhost:3001/api/products/search?query=${searchQuery}&category=${selectedCategory}`;
             const { data } = await axios.get(url);
             setProducts(data.products || data);
         } catch (err) {

@@ -65,7 +65,7 @@ export default function EnrollmentDetails() {
 
       // Fetch enrollment details with cache-busting
       console.log('Fetching enrollment details for ID:', enrollmentId);
-      const enrollmentResponse = await axios.get(`http://localhost:5000/api/enrollments/${enrollmentId}?t=${Date.now()}`, config);
+      const enrollmentResponse = await axios.get(`http://localhost:3001/api/enrollments/${enrollmentId}?t=${Date.now()}`, config);
       console.log('Enrollment response:', enrollmentResponse.data);
       
       if (enrollmentResponse.data.success) {

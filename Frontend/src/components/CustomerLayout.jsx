@@ -170,7 +170,7 @@ export default function CustomerLayout() {
                         <img
                             src={
                                 userInfo?.profileImageURL
-                                    ? `http://localhost:5000${userInfo.profileImageURL}`
+                                    ? `http://localhost:3001${userInfo.profileImageURL}`
                                     : `https://placehold.co/100x100/42ADF5/FFFFFF?text=${userInfo?.username
                                         ?.charAt(0)
                                         .toUpperCase()}`

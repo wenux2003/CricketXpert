@@ -125,7 +125,7 @@ const ManagerDashboard = () => {
         }
 
         try {
-          const sessionsRes = await axios.get('http://localhost:5000/api/sessions');
+          const sessionsRes = await axios.get('http://localhost:3001/api/sessions');
           const sessionsData = sessionsRes.data.data?.docs || sessionsRes.data.data || sessionsRes.data || [];
           setSessions(sessionsData);
           console.log('Sessions fetched successfully:', sessionsData.length);

@@ -74,7 +74,7 @@ const CoachDashboard = () => {
       }
 
       // Get coach profile by user ID
-      const coachResponse = await axios.get(`http://localhost:5000/api/coaches/user/${userInfo._id}`);
+      const coachResponse = await axios.get(`http://localhost:3001/api/coaches/user/${userInfo._id}`);
       const coachData = coachResponse.data.data;
       
       

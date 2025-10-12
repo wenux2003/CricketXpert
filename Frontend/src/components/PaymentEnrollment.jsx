@@ -48,7 +48,7 @@ export default function PaymentEnrollment({ enrollment, program, onClose }) {
             }
 
             // Update enrollment status to active
-            await axios.put(`http://localhost:5000/api/enrollments/${enrollment._id}/activate`, {}, config);
+            await axios.put(`http://localhost:3001/api/enrollments/${enrollment._id}/activate`, {}, config);
             
             setSuccess(true);
         } catch (err) {

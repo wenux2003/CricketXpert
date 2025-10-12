@@ -26,7 +26,7 @@ const Inventory = () => {
   const fetchProducts = async () => {
     try {
       setLoading(true);
-      const response = await axios.get('http://localhost:5000/api/products');
+      const response = await axios.get('http://localhost:3001/api/products');
       setProducts(response.data);
       setError(null);
     } catch (err) {

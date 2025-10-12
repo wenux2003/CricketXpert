@@ -20,7 +20,7 @@ const MyOrders = () => {
     try {
       setLoading(true);
       // Fetch orders for the specific user
-      const res = await axios.get(`http://localhost:5000/api/orders/`);
+      const res = await axios.get(`http://localhost:3001/api/orders/`);
       // Filter orders for the current user (in real app, backend should handle this)
       const userOrders = res.data.filter(order => order.customerId === userId);
       setOrders(userOrders);

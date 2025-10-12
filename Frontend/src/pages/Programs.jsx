@@ -29,7 +29,7 @@ export default function Programs() {
       setLoading(true);
       setError('');
       
-      const response = await axios.get('http://localhost:5000/api/programs');
+      const response = await axios.get('http://localhost:3001/api/programs');
       
       if (response.data.success) {
         setPrograms(response.data.data.docs || []);

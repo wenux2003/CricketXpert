@@ -111,7 +111,7 @@ export default function ListOrders() {
         if (window.confirm('Are you sure you want to delete this order?')) {
             try {
                 const userInfo = JSON.parse(localStorage.getItem('userInfo'));
-                await axios.delete(`http://localhost:5000/api/orders/${id}`, {
+                await axios.delete(`http://localhost:3001/api/orders/${id}`, {
                     headers: { Authorization: `Bearer ${userInfo.token}` }
                 });
                 fetchOrders();

@@ -37,7 +37,7 @@ const Delivery = () => {
             Authorization: `Bearer ${userInfo.token}`
           }
         };
-        const response = await axios.get(`http://localhost:5000/api/users/profile`, config);
+        const response = await axios.get(`http://localhost:3001/api/users/profile`, config);
         setUser(response.data);
         setEditedUser({
           firstName: response.data.firstName || '',
